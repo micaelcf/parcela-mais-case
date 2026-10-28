@@ -75,4 +75,23 @@ describe("errorsPlugin", () => {
     expect(response.status).toBe(422);
     expect(await response.json()).toMatchObject({ code: "VALIDATION" });
   });
+
+  it("answers an unexpected error with 500 INTERNAL and no internals", async () => {
+    const app = new Elysia().use(errorsPlugin).get("/x", () => {
+      throw new Error("connect ECONNREFUSED postgres:5432 password=s3cret");
+    });
+
+    const response = await app.handle(new Request("http://localhost/x"));
+    const text = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("content-type")).toBe("application/problem+json");
+    expect(JSON.parse(text)).toEqual({
+      type: "urn:parcela:error:internal",
+      title: "Erro interno",
+      status: 500,
+      code: "INTERNAL",
+    });
+    expect(text).not.toMatch(/ECONNREFUSED|s3cret|postgres/);
+  });
 });
