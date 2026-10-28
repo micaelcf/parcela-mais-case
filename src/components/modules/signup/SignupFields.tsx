@@ -78,7 +78,11 @@ function FieldFrame({
       {description ? (
         <FieldDescription id={`${id}-description`}>{description}</FieldDescription>
       ) : null}
-      <FieldError id={errorId}>{messages.length > 0 ? messages.join(" ") : null}</FieldError>
+      {/* Always rendered with one line reserved: an error appearing on blur must not move the
+          buttons below, or a click on "Voltar"/"Próximo" lands on empty space. */}
+      <div className="min-h-5">
+        <FieldError id={errorId}>{messages.length > 0 ? messages.join(" ") : null}</FieldError>
+      </div>
     </Field>
   );
 }

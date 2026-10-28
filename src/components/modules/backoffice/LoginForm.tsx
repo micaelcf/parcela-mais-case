@@ -167,7 +167,10 @@ function CredentialField({
         aria-describedby={invalid ? `${id}-error` : undefined}
         className="h-10"
       />
-      <FieldError id={`${id}-error`}>{invalid ? messages.join(" ") : null}</FieldError>
+      {/* One line reserved so an error appearing on blur doesn't move "Entrar" mid-click. */}
+      <div className="min-h-5">
+        <FieldError id={`${id}-error`}>{invalid ? messages.join(" ") : null}</FieldError>
+      </div>
     </Field>
   );
 }
