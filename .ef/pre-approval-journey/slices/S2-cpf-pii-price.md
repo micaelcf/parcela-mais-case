@@ -32,7 +32,7 @@ Proof: `vp test src/server/lib/crypto/cpf-crypto.test.ts -t "refuses to decrypt 
 Proof: `vp test src/server/lib/crypto/cpf-crypto.test.ts -t "blind index is deterministic per key"`
 
 **C20** · RF-802, RF-402 — `priceInstallment({ principalCents: 1_000_000, monthlyRate: "0.024900", termMonths: 12 })` → `{ installmentCents: 97428, totalCents: 1169136 }`
-Proof: `vp test src/server/modules/pricing/price.test.ts -t "matches the PDF formula for R$ 10.000 at 2,49% in 12x"`
+Proof: `vp test src/server/modules/pricing/price.test.ts -t "matches the PDF formula for 10.000 reais at 2,49% in 12x"`
 
 **C21** · RF-802 — `priceInstallment` matches every row of the reference table below (36 rows: 3 principals × 12 lender rate/term pairs)
 Proof: `vp test src/server/modules/pricing/price.test.ts -t "matches the reference table for every lender rate and term"`

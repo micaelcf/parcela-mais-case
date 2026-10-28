@@ -48,3 +48,11 @@ Ground truth about the template and toolchain as they existed before `pre-approv
 - **drizzle 1.0.0-rc.5:** `drizzle({ client, relations })` (no `schema` key); `defineRelationsPart` works per file if every relation has explicit `from`/`to`; migrations in `drizzle/<timestamp>_<name>/`; `numeric` → string; `bigint({mode:"bigint"})` isn't JSON-serialisable through Elysia; `timestamp` → `Date` schema rejects ISO strings in bodies.
 - **pg-boss 12.38.0:** `fromDrizzle(tx, sql)` joins node-postgres drizzle transactions (rollback drops the job); `pg_notify` inside a TX is delivered on commit only; `work()` handlers receive arrays; queues must exist before `send`/`schedule`.
 - **TypeBox 1.4.3:** no per-schema `errorMessage`; ships a `pt_BR` locale; `Type.Refine` is enforced by Elysia and by `Compile`; `required` errors are reported on the parent; `maxErrors` defaults to 8.
+
+## Verified in Stage 4 (2026-10-28)
+
+- **TypeScript 7.0.2** (`latest` dist-tag; Go-native `tsc`) is the repo compiler. `bun pm why typescript` shows only optional peers (`vite-plus-core` `^5 || ^6 || ^7`, `@t3-oss/env-core` `>=5`, `elysia` `>=5.7`); `tsc --noEmit`, `vp build`, `vp test` and `drizzle-kit generate` all pass on it.
+- **TanStack Start 1.169:** `defaultSsr` is a `createStart(() => ({ defaultSsr }))` option in `src/start.ts`, not a `createRouter` option. `routeTree.gen.ts` must come from the Start Vite plugin (`vp build`/`vp dev`); `tsr generate` drops the `@tanstack/react-start` `Register` block, which breaks server-route and `startInstance` typing.
+- **Env files:** Bun's `--env-file` expands `$…` even inside single quotes (`scrypt$16384$…` became `scrypt=/nT…`); Compose interpolates `$` in env files too. Values containing `$` don't survive env files, hence the `scrypt:N:r:p:salt:hash` encoding.
+- **Elysia 2 `onError`:** scope is a positional argument (`.onError("global", fn)`); `code` in the handler context is undefined for validation errors (the error carries `code = "validation"`); `ValidationError.schema` keeps refinements, so re-running `Compile(schema).Errors(value)` recovers every field issue.
+- **Vitest `-t` is a regex:** a `$` (as in "R$") in a test title makes a `-t` proof match nothing and exit 0.

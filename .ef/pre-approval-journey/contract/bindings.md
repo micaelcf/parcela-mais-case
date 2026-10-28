@@ -4,19 +4,19 @@ The house rules every slice codes against. Feature-specific delta on top of `AGE
 
 ## Gate commands
 
-| Gate                      | Command                                                                               | Notes                                                                                                                                                             |
-| ------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Format + lint + typecheck | `vp check`                                                                            | oxfmt + oxlint (type-aware, `typeCheck: true`, `vite.config.ts:16-20`). Red on the untouched template: see Pre-existing defects in the RFC; S0 must make it green |
-| Tests                     | `vp test`                                                                             | Bundled Vitest 5.0.5 on Node. First tests in the repo; no `test` block exists yet                                                                                 |
-| Build                     | `vp build`                                                                            | nitro `bun` preset → `.output/server/index.mjs` + `.output/public/`                                                                                               |
-| Ops                       | `vp run doctor` · `vp run up` · `vp run up --prod` · `vp run prune` · `vp run deploy` | `package.json` scripts (uncached), running `bun scripts/ops/<name>.ts`                                                                                            |
-| DB                        | `vp run db:generate` · `vp run db:migrate`                                            | drizzle-kit 1.0.0-rc.5                                                                                                                                            |
+| Gate                      | Command                                                                               | Notes                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format + lint + typecheck | `vp check` · `vp run typecheck`                                                       | oxfmt + oxlint (type-aware, `typeCheck: true` via tsgolint); `typecheck` = `tsc --noEmit` on TypeScript 7 (native `tsgo` compiler)            |
+| Tests                     | `vp test`                                                                             | Bundled Vitest 5.0.5 on Node. First tests in the repo; no `test` block exists yet                                                             |
+| Build                     | `vp build`                                                                            | nitro `bun` preset → `.output/server/index.mjs` + `.output/public/`                                                                           |
+| Ops                       | `vp run doctor` · `vp run up` · `vp run up --prod` · `vp run prune` · `vp run deploy` | `package.json` scripts (uncached), running `bun scripts/ops/<name>.ts`                                                                        |
+| DB                        | `vp run db:generate` · `vp run db:migrate`                                            | drizzle-kit 1.0.0-rc.5 generates; `db:migrate` runs `scripts/ops/migrate.ts` (drizzle + pg-boss + queues), never `drizzle-kit migrate`/`push` |
 
 Never run `npm` in the repo (`devEngines` pins bun 1.4.4). Install with `vp install` / `bun add`.
 
 ## Pinned versions (exact, no ranges)
 
-`drizzle-orm@1.0.0-rc.5` · `drizzle-kit@1.0.0-rc.5` · `typebox@1.4.3` · `elysia@2.0.0-rc.0` · `@elysia/eden@2.0.0-rc.0` · `pg-boss@12.38.0` · `typescript@6.0.3` (pin it: Elysia's optional TS peer would pull 7.x).
+`drizzle-orm@1.0.0-rc.5` · `drizzle-kit@1.0.0-rc.5` · `typebox@1.4.3` · `elysia@2.0.0-rc.0` · `@elysia/eden@2.0.0-rc.0` · `pg-boss@12.38.0` · `typescript@7.0.2` (the Go-native compiler; owner decision 2026-10-28. Every `typescript` dependent in the tree is an optional peer with a range that admits 7, and nothing calls the removed JS compiler API).
 Elysia peers to add explicitly: `exact-mirror`, `openapi-types`. Remove: `zod`, `@faker-js/faker`, `@tanstack/match-sorter-utils` (demo-only), Vercel add-on.
 UI: `@base-ui/react`, shadcn base style deps (`class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`), `recharts` (charts), `sonner` (toasts).
 

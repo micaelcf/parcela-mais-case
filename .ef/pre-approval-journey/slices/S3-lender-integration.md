@@ -12,7 +12,7 @@ Proof: `vp test src/server/integrations/lenders/simulator/simulator.plugin.test.
 Proof: `vp test src/server/integrations/lenders/simulator/simulator.plugin.test.ts -t "Beta approves 60% rounded half up"`
 
 **C26** · RF-212 — Gama `NORMAL`: age 24 → `RECUSADO`/`IDADE_MINIMA`; amount 2 000 001 → `RECUSADO`/`VALOR_MAXIMO` with `tetoCentavos` 2 000 000; age 25 with 2 000 000 → `APROVADO` 2 000 000
-Proof: `vp test src/server/integrations/lenders/simulator/simulator.plugin.test.ts -t "Gama refuses under 25 or above R$ 20.000"`
+Proof: `vp test src/server/integrations/lenders/simulator/simulator.plugin.test.ts -t "Gama refuses under 25 or above 20.000 reais"`
 
 **C27** · RF-213 — Delta `NORMAL` with failure rate 0.3 over 200 calls: the HTTP 500 share is within [23 %, 37 %] and every other call approves 100 % of the amount
 Proof: `vp test src/server/integrations/lenders/simulator/simulator.plugin.test.ts -t "Delta fails about 30% of NORMAL calls"`
