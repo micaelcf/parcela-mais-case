@@ -77,22 +77,32 @@ describe("errorsPlugin", () => {
   });
 
   it("answers a body sent as text/plain with 422 VALIDATION, not a 500", async () => {
-    // fetch sends `text/plain;charset=UTF-8` for a string body without headers.
-    const app = new Elysia().use(errorsPlugin).post("/x", { body: Body }, ({ body }) => body);
+    // fetch sends `text/plain;charset=UTF-8` for a string body without headers. A route with its
+    // own `parse` hook (throttle, backoffice guard) never reaches Elysia's 415, so both shapes of
+    // route must give the same answer.
+    const plain = new Elysia().use(errorsPlugin).post("/x", { body: Body }, ({ body }) => body);
+    const withParseHook = new Elysia()
+      .use(errorsPlugin)
+      .post("/x", { parse: () => undefined, body: Body }, ({ body }) => body);
 
-    const response = await app.handle(
-      new Request("http://localhost/x", {
-        method: "POST",
-        headers: { "content-type": "text/plain;charset=UTF-8" },
-        body: JSON.stringify({ cpf: "52998224725" }),
-      }),
-    );
+    for (const app of [plain, withParseHook]) {
+      const response = await app.handle(
+        new Request("http://localhost/x", {
+          method: "POST",
+          headers: { "content-type": "text/plain;charset=UTF-8" },
+          body: JSON.stringify({ cpf: "52998224725" }),
+        }),
+      );
 
-    expect(response.status).toBe(422);
-    expect(await response.json()).toMatchObject({
-      code: "VALIDATION",
-      detail: "Envie o corpo como JSON (Content-Type: application/json).",
-    });
+      expect(response.status).toBe(422);
+      expect(await response.json()).toEqual({
+        type: "urn:parcela:error:validation",
+        title: "Dados inválidos",
+        status: 422,
+        code: "VALIDATION",
+        detail: "Envie o corpo como JSON (Content-Type: application/json).",
+      });
+    }
   });
 
   it("answers an unexpected error with 500 INTERNAL and no internals", async () => {

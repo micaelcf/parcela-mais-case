@@ -63,25 +63,51 @@ export function isUnsupportedMediaType(error: unknown): boolean {
   return error instanceof ElysiaStatus && error.status === 415;
 }
 
+/** Body content types Elysia parses into an object (JSON, form-encoded, multipart). */
+const PARSED_BODY_TYPE =
+  /^(application\/(.+\+)?json|application\/x-www-form-urlencoded|multipart\/form-data)\b/i;
+
+/**
+ * A body sent with a content type Elysia doesn't parse. Without a route `parse` hook Elysia throws
+ * its 415; with one (throttle, backoffice guard) it skips that check and the body fails validation
+ * as a whole. Both must answer the same.
+ */
+function hasUnparsedBody(request: Request): boolean {
+  const contentType = request.headers.get("content-type");
+  return contentType !== null && contentType !== "" && !PARSED_BODY_TYPE.test(contentType);
+}
+
+const NOT_JSON = "Envie o corpo como JSON (Content-Type: application/json).";
+
+/** Name and message of anything thrown; Elysia also throws plain status objects. */
+function describeThrown(error: unknown): { name: string; message: string } {
+  if (error instanceof Error) return { name: error.name, message: error.message };
+  const name = (typeof error === "object" && error?.constructor?.name) || typeof error;
+  let message: string;
+  try {
+    message = JSON.stringify(error) ?? String(error);
+  } catch {
+    message = String(error);
+  }
+  return { name, message };
+}
+
 /** Maps every thrown error to one RFC 9457 problem+json response (contract `api.md` § Errors). */
-export const errorsPlugin = new Elysia({ name: "errors" }).onError("global", ({ error }) => {
-  if (error instanceof DomainError) return problem(error);
-  if (error instanceof ValidationError && error.status === 422) {
-    const fields = validationFields(error);
-    return problem(new DomainError("VALIDATION", "Verifique os campos destacados.", fields));
-  }
-  if (error instanceof NotFound) return problem(new DomainError("NOT_FOUND", ""));
-  if (error instanceof ParseError) {
-    return problem(new DomainError("VALIDATION", "O corpo da requisição não é um JSON válido."));
-  }
-  if (isUnsupportedMediaType(error)) {
-    return problem(
-      new DomainError("VALIDATION", "Envie o corpo como JSON (Content-Type: application/json)."),
-    );
-  }
-  logger.error("http.unhandled_error", {
-    name: error instanceof Error ? error.name : typeof error,
-    message: error instanceof Error ? error.message : String(error),
-  });
-  return problem(new DomainError("INTERNAL", ""));
-});
+export const errorsPlugin = new Elysia({ name: "errors" }).onError(
+  "global",
+  ({ error, request }) => {
+    if (error instanceof DomainError) return problem(error);
+    if (isUnsupportedMediaType(error)) return problem(new DomainError("VALIDATION", NOT_JSON));
+    if (error instanceof ValidationError && error.status === 422) {
+      if (hasUnparsedBody(request)) return problem(new DomainError("VALIDATION", NOT_JSON));
+      const fields = validationFields(error);
+      return problem(new DomainError("VALIDATION", "Verifique os campos destacados.", fields));
+    }
+    if (error instanceof NotFound) return problem(new DomainError("NOT_FOUND", ""));
+    if (error instanceof ParseError) {
+      return problem(new DomainError("VALIDATION", "O corpo da requisição não é um JSON válido."));
+    }
+    logger.error("http.unhandled_error", describeThrown(error));
+    return problem(new DomainError("INTERNAL", ""));
+  },
+);
