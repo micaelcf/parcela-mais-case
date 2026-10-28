@@ -25,28 +25,31 @@ function PatientStep() {
       <form.AppField name="fullName">
         {(field) => <field.TextField label="Nome completo" autoComplete="name" />}
       </form.AppField>
-      <form.AppField name="cpf">
-        {(field) => (
-          <field.TextField
-            label="CPF"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="000.000.000-00"
-            mask={maskCpf}
-          />
-        )}
-      </form.AppField>
-      <form.AppField name="birthdate">
-        {(field) => (
-          <field.DateField
-            label="Data de nascimento"
-            autoComplete="bday"
-            startMonth={new Date(thisYear - MAX_AGE_YEARS - BIRTH_YEAR_SLACK, thisMonth, 1)}
-            endMonth={new Date(thisYear - MIN_AGE_YEARS + BIRTH_YEAR_SLACK, thisMonth, 1)}
-            defaultMonth={new Date(thisYear - 40, 0, 1)}
-          />
-        )}
-      </form.AppField>
+      {/* Fixed-length values: CPF and birthdate share a row, each sized to its content. */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-[11rem_12rem]">
+        <form.AppField name="cpf">
+          {(field) => (
+            <field.TextField
+              label="CPF"
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="000.000.000-00"
+              mask={maskCpf}
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="birthdate">
+          {(field) => (
+            <field.DateField
+              label="Data de nascimento"
+              autoComplete="bday"
+              startMonth={new Date(thisYear - MAX_AGE_YEARS - BIRTH_YEAR_SLACK, thisMonth, 1)}
+              endMonth={new Date(thisYear - MIN_AGE_YEARS + BIRTH_YEAR_SLACK, thisMonth, 1)}
+              defaultMonth={new Date(thisYear - 40, 0, 1)}
+            />
+          )}
+        </form.AppField>
+      </div>
       <form.AppField name="cep">{(field) => <field.CepField status={cepStatus} />}</form.AppField>
       {cepStatus === "found" || cepStatus === "unavailable" ? (
         <>
