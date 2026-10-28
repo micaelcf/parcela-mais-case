@@ -4,6 +4,7 @@ import { describe, expect, it } from "vite-plus/test";
 import type { StandardResult } from "#/lib/validation/standard-schema";
 
 import {
+  classifySearchText,
   ConsultationSearchSchema,
   listSearchValidator,
   SwitchLogSearchSchema,
@@ -74,5 +75,31 @@ describe("backoffice table search params (RF-617)", () => {
       createdAtTo: new Date("2026-10-28T23:59:59.999").toISOString(),
       page: 2,
     });
+  });
+
+  it("keeps a CPF typed in the search box out of the URL", () => {
+    // A CPF, formatted or not, alone or next to a name: never applied; the box points to
+    // "Buscar por CPF" instead.
+    for (const text of [
+      "52998224725",
+      "529.982.247-25",
+      " 529 982 247 25 ",
+      "529982247-25",
+      "Ana 52998224725",
+      "Ana 529.982.247-25",
+      // One digit too many is still a CPF on its way to the URL.
+      "529982247251",
+    ]) {
+      expect([text, classifySearchText(text)]).toEqual([text, "cpf"]);
+    }
+    // Digits that may still become a CPF: applied on Enter only, never by the typing pause.
+    for (const text of ["5", "529.982", "529982247", "0193"]) {
+      expect([text, classifySearchText(text)]).toEqual([text, "digits"]);
+    }
+    // Names, ids and anything else with a letter search as usual (a UUID never holds a CPF run).
+    for (const text of ["Maria", "019a2b3c-0000-7000-8000-000000000000", "Ana 1234"]) {
+      expect([text, classifySearchText(text)]).toEqual([text, "text"]);
+    }
+    expect(classifySearchText("   ")).toBe("empty");
   });
 });

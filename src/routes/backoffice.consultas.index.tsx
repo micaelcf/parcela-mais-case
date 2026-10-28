@@ -8,13 +8,14 @@ import { ConsultationTable } from "#/components/modules/backoffice/ConsultationT
 import { CpfSearchForm } from "#/components/modules/backoffice/CpfSearchForm";
 import { PageHeader, Section } from "#/components/modules/backoffice/PageHeader";
 import {
+  type ConsultationSearch,
   ConsultationSearchSchema,
   listSearchValidator,
   parseListSearch,
   toListQuery,
 } from "#/components/modules/backoffice/table-search";
 import { Button } from "#/components/ui/button";
-import { LIST_DEFAULTS, type ListResponse } from "#/lib/list/list-contract";
+import type { ListResponse } from "#/lib/list/list-contract";
 import type { ConsultationListItem } from "#/server/modules/backoffice/backoffice.dto";
 
 const validateSearch = listSearchValidator(ConsultationSearchSchema);
@@ -26,9 +27,13 @@ export const Route = createFileRoute("/backoffice/consultas/")({
   component: ConsultationsPage,
 });
 
-/** A CPF search in progress: the CPF stays in memory, never in the URL. */
+/**
+ * A CPF search in progress: the CPF and its table state (sort, filters, search, page) stay in
+ * memory and go out in the POST body, never in the URL (RF-617).
+ */
 type CpfResults = {
   cpf: string;
+  search: ConsultationSearch;
   list: ListResponse<ConsultationListItem>;
 };
 
@@ -38,13 +43,13 @@ function ConsultationsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const [cpfResults, setCpfResults] = useState<CpfResults | null>(null);
 
-  async function searchByCpf(cpf: string, page = 1, pageSize: number = LIST_DEFAULTS.pageSize) {
-    const result = await searchConsultationsByCpf({ cpf, page, pageSize });
+  async function searchByCpf(cpf: string, cpfSearch: ConsultationSearch) {
+    const result = await searchConsultationsByCpf({ cpf, ...toListQuery(cpfSearch) });
     if (!result.ok) {
       toast.error(result.problem.title);
       return;
     }
-    setCpfResults({ cpf, list: result.value });
+    setCpfResults({ cpf, search: cpfSearch, list: result.value });
   }
 
   return (
@@ -58,22 +63,21 @@ function ConsultationsPage() {
           <div className="flex flex-col gap-4">
             <CpfSearchForm
               active={cpfResults !== null}
-              onSearch={(cpf) => searchByCpf(cpf)}
+              onSearch={(cpf) => searchByCpf(cpf, {})}
               onClear={() => setCpfResults(null)}
             />
             {cpfResults ? (
               <ConsultationTable
                 caption="Consultas do CPF buscado"
                 list={cpfResults.list}
-                query={{ page: cpfResults.list.page, pageSize: cpfResults.list.pageSize }}
+                query={cpfResults.search}
                 onQueryChange={(patch) =>
                   void searchByCpf(
                     cpfResults.cpf,
-                    typeof patch.page === "number" ? patch.page : 1,
-                    typeof patch.pageSize === "number" ? patch.pageSize : LIST_DEFAULTS.pageSize,
+                    parseListSearch(validateSearch, { ...cpfResults.search, ...patch }),
                   )
                 }
-                explorer={false}
+                searchLabel="Buscar nas consultas do CPF"
               />
             ) : null}
           </div>
@@ -83,7 +87,7 @@ function ConsultationsPage() {
             caption="Consultas"
             list={list}
             query={search}
-            explorer
+            searchLabel="Buscar"
             onQueryChange={(patch) =>
               void navigate({
                 search: (previous) => parseListSearch(validateSearch, { ...previous, ...patch }),

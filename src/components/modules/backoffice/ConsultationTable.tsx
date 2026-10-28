@@ -107,23 +107,23 @@ const filters: DataTableFilter[] = [
 ];
 
 /**
- * Consultations, server-paged (RF-611, RF-615). The explorer passes search and filters; the CPF
- * search passes neither and turns sorting off (its endpoint takes only page and page size).
+ * Consultations, paged, sorted, filtered and searched on the server (RF-611, RF-615): the explorer
+ * keeps its state in the URL, the CPF search in component state (its CPF must never reach a URL).
  */
 export function ConsultationTable({
   caption,
   list,
   query,
   onQueryChange,
-  explorer,
+  searchLabel,
   toolbar,
 }: {
   caption: string;
   list: ListResponse<ConsultationListItem>;
   query: DataTableQuery;
   onQueryChange: (patch: DataTableQueryPatch) => void;
-  /** Search box, filters and sorting: the explorer's controls. */
-  explorer: boolean;
+  /** The search box's label; distinct per table when both are on the page. */
+  searchLabel: string;
   toolbar?: ReactNode;
 }) {
   return (
@@ -135,9 +135,8 @@ export function ConsultationTable({
       page={list}
       query={query}
       onQueryChange={onQueryChange}
-      search={explorer ? { label: "Buscar", placeholder: "Nome do paciente ou ID" } : undefined}
-      filters={explorer ? filters : []}
-      enableSorting={explorer}
+      search={{ label: searchLabel, placeholder: "Nome do paciente ou ID" }}
+      filters={filters}
       noun={{ one: "consulta", other: "consultas" }}
       emptyMessage="Nenhuma consulta encontrada."
       toolbar={toolbar}

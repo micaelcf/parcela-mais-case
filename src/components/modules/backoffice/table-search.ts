@@ -114,6 +114,26 @@ export function sortOf(sorting: ReadonlyArray<{ id: string; desc: boolean }>): s
   return first ? `${first.id}:${first.desc ? "desc" : "asc"}` : undefined;
 }
 
+/**
+ * What a table's search box may do with the typed text (RF-617): `q` is a URL param, so a CPF must
+ * never become one. `cpf`: holds a CPF (formatted or not, alone or next to other words): never
+ * applied. `digits`: only digits and CPF punctuation, still short of a CPF: applied on Enter only,
+ * so a pause while typing a CPF never puts its first digits in the URL. `text`: applied as usual.
+ */
+export type SearchTextKind = "empty" | "text" | "digits" | "cpf";
+
+/** A CPF-shaped run: 11 digits, optionally punctuated as `000.000.000-00`, not inside a longer run. */
+const CPF_RUN = /(^|\D)\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}(?!\d)/;
+const DIGITS_AND_PUNCTUATION = /^[\d.\-\s]+$/;
+
+export function classifySearchText(text: string): SearchTextKind {
+  const trimmed = text.trim();
+  if (trimmed === "") return "empty";
+  if (CPF_RUN.test(trimmed)) return "cpf";
+  if (!DIGITS_AND_PUNCTUATION.test(trimmed)) return "text";
+  return trimmed.replace(/\D/g, "").length >= 11 ? "cpf" : "digits";
+}
+
 // ── Per-table schemas (allow-lists of `backoffice.repository.ts`) ──────────────────────────────
 
 export const ConsultationSearchSchema = listSearchSchema({

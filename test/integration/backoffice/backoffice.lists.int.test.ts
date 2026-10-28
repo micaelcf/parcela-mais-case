@@ -237,6 +237,58 @@ describe("backoffice lists", () => {
       [low, ...tied].sort(),
     );
 
+    // ── search by CPF: the same controls in the POST body, scoped to one patient ──
+    const cpf = uniqueCpf();
+    const cpfToken = uniqueToken();
+    const cpfName = `${cpfToken} Rocha`;
+    const cpfLow = await createConsultation(
+      { cpf, fullName: cpfName, treatmentAmountCents: 700_000 },
+      "NONE_APPROVE",
+    );
+    const cpfTiedA = await createConsultation(
+      { cpf, fullName: cpfName, treatmentAmountCents: 900_000 },
+      "NONE_APPROVE",
+    );
+    const cpfTiedB = await createConsultation(
+      { cpf, fullName: cpfName, treatmentAmountCents: 900_000 },
+      "ALL_APPROVE",
+    );
+    const cpfTied = [cpfTiedA, cpfTiedB];
+    const searchByCpf = async (params: Record<string, string | number>) =>
+      readOk(
+        await backofficeFetch("/consultations/search-by-cpf", {
+          method: "POST",
+          cookie,
+          body: { cpf: formatCpf(cpf), ...params },
+        }),
+        ConsultationPage,
+      );
+    const cpfIds = async (params: Record<string, string | number>) =>
+      (await searchByCpf(params)).items.map((item) => item.id);
+
+    expect(await cpfIds({ sort: "treatmentAmountCents:asc" })).toEqual([
+      cpfLow,
+      ...byId(cpfTied, "asc"),
+    ]);
+    expect(await cpfIds({ sort: "treatmentAmountCents:desc" })).toEqual([
+      ...byId(cpfTied, "desc"),
+      cpfLow,
+    ]);
+    const cpfSecondPage = await searchByCpf({
+      sort: "treatmentAmountCents:asc",
+      page: 2,
+      pageSize: 2,
+    });
+    expect(cpfSecondPage).toMatchObject({ page: 2, pageSize: 2, total: 3, totalPages: 2 });
+    expect(cpfSecondPage.items.map((item) => item.id)).toEqual([byId(cpfTied, "asc")[1]]);
+    expect(await cpfIds({ simulationScenario: "ALL_APPROVE" })).toEqual([cpfTiedB]);
+    expect((await cpfIds({ treatmentAmountCentsFrom: 800_000 })).sort()).toEqual(
+      [...cpfTied].sort(),
+    );
+    expect((await cpfIds({ q: cpfToken })).sort()).toEqual([cpfLow, ...cpfTied].sort());
+    // `q` narrows within the CPF's rows: the explorer token's rows never join them.
+    expect((await searchByCpf({ q: token })).total).toBe(0);
+
     // ── switch log: four changes on Beta (ends enabled) ──
     for (const enabled of [false, true, false, true]) {
       const response = await backofficeFetch("/lenders/beta/switch", {
@@ -301,11 +353,23 @@ describe("backoffice lists", () => {
   });
 
   it("rejects unknown sort and filter fields", async () => {
+    // The CPF search carries its CPF in the body, so its unknown filter is another key.
+    const endpoints: ReadonlyArray<{ path: string; post?: Record<string, string> }> = [
+      { path: "/consultations" },
+      { path: "/lenders/switch-log" },
+      { path: "/throttle-events" },
+      { path: "/consultations/search-by-cpf", post: { cpf: uniqueCpf() } },
+    ];
     const outcomes: string[] = [];
-    for (const path of ["/consultations", "/lenders/switch-log", "/throttle-events"]) {
-      const cases: Array<Record<string, string>> = [{ sort: "nope:asc" }, { cpf: uniqueCpf() }];
+    for (const { path, post } of endpoints) {
+      const cases: Array<Record<string, string>> = [
+        { sort: "nope:asc" },
+        post ? { cpfHmac: "00" } : { cpf: uniqueCpf() },
+      ];
       for (const params of cases) {
-        const response = await backofficeFetch(`${path}?${query(params)}`, { cookie });
+        const response = post
+          ? await backofficeFetch(path, { method: "POST", cookie, body: { ...post, ...params } })
+          : await backofficeFetch(`${path}?${query(params)}`, { cookie });
         const code = response.status === 422 ? (await readProblem(response)).code : "";
         outcomes.push(`${path} ${Object.keys(params)[0]}: ${response.status} ${code}`);
       }
@@ -317,6 +381,8 @@ describe("backoffice lists", () => {
       "/lenders/switch-log cpf: 422 VALIDATION",
       "/throttle-events sort: 422 VALIDATION",
       "/throttle-events cpf: 422 VALIDATION",
+      "/consultations/search-by-cpf sort: 422 VALIDATION",
+      "/consultations/search-by-cpf cpfHmac: 422 VALIDATION",
     ]);
   });
 });

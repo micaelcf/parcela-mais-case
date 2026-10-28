@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { afterAll, describe, expect, it } from "vite-plus/test";
+import { afterAll, afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { appFetch, closeTestApp } from "../setup/app-fetch";
 import { readProblem, uniqueCpf } from "../consultation/consultation-client";
@@ -137,5 +137,46 @@ describe("backoffice session", () => {
     const after = await backofficeFetch("/session", { cookie: cookieHeader() });
     expect(after.status).toBe(401);
     expect((await readProblem(after)).code).toBe("UNAUTHENTICATED");
+  });
+});
+
+// The env is read once at module load, so each case re-imports a fresh module graph (Elysia
+// included, so the routes and the root share one Elysia instance) after stubbing it.
+describe("backoffice session cookie over HTTP and HTTPS", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /** The login Set-Cookie attributes of a fresh app module graph built from the current env. */
+  async function loginAttributes(): Promise<string[]> {
+    vi.resetModules();
+    const { Elysia } = await import("elysia");
+    const { backofficeCookieConfig } =
+      await import("#/server/modules/backoffice/auth/backoffice-auth.plugin");
+    const { backofficeRoutes } = await import("#/server/modules/backoffice/backoffice.routes");
+    const app = new Elysia({ cookie: backofficeCookieConfig }).use(backofficeRoutes);
+    const response = await app.handle(
+      new Request("http://localhost/backoffice/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: USERNAME, password: PASSWORD }),
+      }),
+    );
+    expect(response.status).toBe(204);
+    const header = response.headers.getSetCookie().find((line) => line.startsWith("bo_session="));
+    return (header ?? "").split(";").map((part) => part.trim());
+  }
+
+  it("marks the session cookie Secure exactly when Caddy terminates TLS", async () => {
+    // Plain-HTTP prod-parity deploy: no APP_DOMAIN, Caddy on :80; a Secure cookie would be dropped.
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("APP_DOMAIN", undefined);
+    expect(await loginAttributes()).not.toContain("Secure");
+
+    // APP_DOMAIN set: Caddy serves HTTPS for it, whatever NODE_ENV says.
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("APP_DOMAIN", "parcela.example.com");
+    expect(await loginAttributes()).toContain("Secure");
   });
 });

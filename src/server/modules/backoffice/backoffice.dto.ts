@@ -13,7 +13,7 @@ import {
   type QuoteStatus,
   type SimulationScenario,
 } from "#/lib/enums";
-import { LIST_DEFAULTS } from "#/lib/list/list-contract";
+import { ListQuerySchema } from "#/lib/list/list-contract";
 import {
   JOURNEY_STATUSES,
   journeyStatusOf,
@@ -207,11 +207,15 @@ export const ConsultationListItemSchema = Type.Object({
 });
 export type ConsultationListItem = Static<typeof ConsultationListItemSchema>;
 
-export const SearchByCpfRequestSchema = Type.Object({
-  cpf: CpfSchema,
-  page: Type.Optional(Type.Integer({ minimum: 1 })),
-  pageSize: Type.Optional(Type.Integer({ minimum: 1, maximum: LIST_DEFAULTS.maxPageSize })),
-});
+/**
+ * The CPF plus the explorer's list controls (`page`, `pageSize`, `sort`, `q` and its allow-listed
+ * filters as top-level keys), all in the POST body so the CPF never reaches a URL.
+ */
+export const SearchByCpfRequestSchema = Type.Object(
+  { cpf: CpfSchema, ...ListQuerySchema.properties },
+  // Filters are top-level keys, exactly as `ListQuerySchema` allows them in a query string.
+  { additionalProperties: Type.Union([Type.String(), Type.Number()]) },
+);
 export type SearchByCpfRequest = Static<typeof SearchByCpfRequestSchema>;
 
 export const ConsultationDetailSchema = Type.Object({

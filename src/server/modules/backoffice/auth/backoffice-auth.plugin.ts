@@ -17,12 +17,16 @@ export const backofficeCookieConfig = {
   sign: [SESSION_COOKIE],
 };
 
-/** Attributes of every `bo_session` Set-Cookie (login and logout must agree on the path). */
+/**
+ * Attributes of every `bo_session` Set-Cookie (login and logout must agree on the path). `Secure`
+ * exactly when the site is served over HTTPS: `APP_DOMAIN` set means Caddy terminates TLS for it;
+ * unset means plain HTTP on :80 (RFC O1), where browsers would drop a Secure cookie.
+ */
 export const sessionCookieAttributes = {
   path: "/api/backoffice",
   httpOnly: true,
   sameSite: "lax",
-  secure: env.NODE_ENV === "production",
+  secure: env.APP_DOMAIN !== undefined,
 } as const;
 
 const unauthenticated = () =>

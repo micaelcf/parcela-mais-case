@@ -92,7 +92,10 @@ export function listConsultations(query: ListParams): Promise<ListResponse<Consu
   return read(() => backoffice.consultations.get({ query }));
 }
 
-/** Exact-CPF search: a POST body, so the CPF never reaches a URL (RF-613, RF-617). */
+/**
+ * Exact-CPF search with the explorer's list controls (page, sort, `q`, filters): all in a POST
+ * body, so the CPF never reaches a URL (RF-613, RF-615, RF-617).
+ */
 export function searchConsultationsByCpf(
   body: SearchByCpfRequest,
 ): Promise<Result<ListResponse<ConsultationListItem>>> {

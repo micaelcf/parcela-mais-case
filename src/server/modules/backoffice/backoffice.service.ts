@@ -37,13 +37,16 @@ export const backofficeService = {
     return toListResponse(rows.map(toConsultationListItem), total, parsed);
   },
 
-  /** Exact match through the blind index: the CPF never reaches SQL, so no prefix search exists. */
-  async searchByCpf(request: SearchByCpfRequest): Promise<ListResponse<ConsultationListItem>> {
-    const parsed = parseListQuery(
-      { page: request.page, pageSize: request.pageSize },
-      consultationListSpec,
-    );
-    const cpfHmac = cpfCrypto.blindIndex(normalizeCpf(request.cpf));
+  /**
+   * Exact match through the blind index: the CPF never reaches SQL, so no prefix search exists.
+   * The rest of the body is the explorer's list query, checked against the same allow-lists.
+   */
+  async searchByCpf({
+    cpf,
+    ...query
+  }: SearchByCpfRequest): Promise<ListResponse<ConsultationListItem>> {
+    const parsed = parseListQuery(query, consultationListSpec);
+    const cpfHmac = cpfCrypto.blindIndex(normalizeCpf(cpf));
     const { rows, total } = await backofficeRepository.listConsultations(parsed, { cpfHmac });
     return toListResponse(rows.map(toConsultationListItem), total, parsed);
   },

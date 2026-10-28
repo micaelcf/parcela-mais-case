@@ -45,7 +45,7 @@ import {
 import { LIST_DEFAULTS } from "#/lib/list/list-contract";
 
 import { formatCount } from "./backoffice-format";
-import { sortingOf, sortOf } from "./table-search";
+import { classifySearchText, sortingOf, sortOf } from "./table-search";
 
 /** Every backoffice table pages, sorts and filters on the server (RF-615): all four stages manual. */
 export const dataTableFeatures = tableFeatures({
@@ -76,6 +76,8 @@ export type DataTableQueryPatch = Record<string, FilterValue | undefined>;
 
 const PAGE_SIZES = [10, 20, 50, 100] as const;
 const SEARCH_DEBOUNCE_MS = 400;
+const CPF_HINT =
+  "O CPF não entra nesta busca. Para encontrar um paciente pelo CPF, use “Buscar por CPF” em Consultas.";
 
 type DataTableProps<TData extends RowData> = {
   /** The table's accessible name, shown above it. */
@@ -93,16 +95,15 @@ type DataTableProps<TData extends RowData> = {
   /** Shown next to the total: "consultas", "alterações"… */
   noun: { one: string; other: string };
   emptyMessage?: string;
-  /** False when the endpoint takes no `sort` (the CPF search). */
-  enableSorting?: boolean;
   /** Extra controls next to the search box. */
   toolbar?: ReactNode;
 };
 
 /**
  * The one server-driven table (TanStack Table v9, manual pagination, sorting and filtering).
- * Table state is controlled from `query` (the route's search params); every change becomes a patch
- * for the owner to put back in the URL, which reloads the page of rows from the API.
+ * Table state is controlled from `query` (the route's search params, or component state for the
+ * CPF search); every change becomes a patch for the owner to apply, which reloads the page of rows
+ * from the API.
  */
 export function DataTable<TData extends RowData>({
   caption,
@@ -116,7 +117,6 @@ export function DataTable<TData extends RowData>({
   filters = [],
   noun,
   emptyMessage = "Nenhum registro encontrado.",
-  enableSorting = true,
   toolbar,
 }: DataTableProps<TData>) {
   // The table object is stable while its rows change with each response; opt out of the React
@@ -141,7 +141,6 @@ export function DataTable<TData extends RowData>({
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
-    enableSorting,
     enableMultiSort: false,
     rowCount: page.total,
     state: { pagination, sorting, globalFilter, columnFilters },
@@ -336,7 +335,11 @@ export function DataTable<TData extends RowData>({
   );
 }
 
-/** The search box: applies after a pause in typing, or at once on Enter. */
+/**
+ * The search box: applies after a pause in typing, or at once on Enter. Its text becomes the `q`
+ * URL param, so a CPF is never applied (RF-617) and bare digits wait for Enter (see
+ * `classifySearchText`).
+ */
 function SearchBox({
   label,
   placeholder,
@@ -349,7 +352,9 @@ function SearchBox({
   onSearch: (text: string) => void;
 }) {
   const id = useId();
+  const hintId = useId();
   const [draft, setDraft] = useState(value);
+  const kind = classifySearchText(draft);
 
   // The URL is the source of truth: a back/forward or a reset elsewhere refills the box.
   useEffect(() => setDraft(value), [value]);
@@ -360,15 +365,15 @@ function SearchBox({
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (draft.trim() === value) return;
+    if (draft.trim() === value || kind === "cpf" || kind === "digits") return;
     pending.current = setTimeout(() => onSearch(draft), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(pending.current);
-  }, [draft, value, onSearch]);
+  }, [draft, kind, value, onSearch]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
     clearTimeout(pending.current);
-    if (draft.trim() !== value) onSearch(draft);
+    if (kind !== "cpf" && draft.trim() !== value) onSearch(draft);
   }
 
   return (
@@ -381,8 +386,14 @@ function SearchBox({
         placeholder={placeholder}
         onChange={(event) => setDraft(event.target.value)}
         autoComplete="off"
+        aria-describedby={kind === "cpf" ? hintId : undefined}
         className="h-9"
       />
+      {kind === "cpf" ? (
+        <p id={hintId} role="status" className="text-sm text-muted-foreground">
+          {CPF_HINT}
+        </p>
+      ) : null}
     </form>
   );
 }
