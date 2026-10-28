@@ -19,7 +19,7 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-104` — The form and API reject applicants younger than 18 or older than 80
 - `RF-105` — The form and API reject treatment amounts outside R$ 1.000,00 – R$ 50.000,00
 - `RF-106` — Moving back a step keeps every value already entered
-- `RF-107` — No signup data is written to browser storage
+- `RF-107` — Signup data never reaches `localStorage`, and leaves `sessionStorage` once sent
 - `RF-108` — Replaying a submission with the same `Idempotency-Key` and body returns the original consultation
 - `RF-109` — Reusing an `Idempotency-Key` with a different body is rejected
 - `RF-110` — Resubmitting a known CPF reuses the same patient record
@@ -35,6 +35,7 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-120` — A later step can't be shown with earlier steps incomplete
 - `RF-121` — The stepper header moves to any reachable step, forward as well as back
 - `RF-122` — A review step shows everything that will be sent before submitting
+- `RF-123` — A reload resumes the signup from this tab's draft
 - `RF-201` — Submitting returns the consultation id before any lender answers
 - `RF-202` — All four lenders are queried in parallel for each consultation
 - `RF-203` — The consultation page shows each lender's status as consultando, aprovada, recusada or indisponível
@@ -194,4 +195,4 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 | S9    | backoffice UI                                                                                      | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168, C217                       |
 | S10   | E2E suite + browser smoke                                                                          | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157, C164                             |
 | S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs                      | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C195                                   |
-| S12   | stepper, blur/submit validation, optional e-mail, date picker, pacer search, routes; review, reach | 8    | done   | [slices/S12-signup-ux.md](slices/S12-signup-ux.md)                       | C197–C207, C218–C223                        |
+| S12   | stepper, blur/submit validation, optional e-mail, date picker, pacer search, routes; review, draft | 8    | done   | [slices/S12-signup-ux.md](slices/S12-signup-ux.md)                       | C197–C207, C218–C223, C233–C236             |

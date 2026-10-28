@@ -261,6 +261,8 @@ _Amended 2026-10-28 (Stage 5 verification): `Secure` only when `APP_DOMAIN` is s
 **Test.** Fill step 1–2, go back, go forward: all values intact. Reload: form empty, nothing in Web Storage.
 **Would reopen if.** Clinic feedback reports lost drafts as a real pain.
 
+**Amendment (2026-10-28, user decision; RFC D34).** Reopened by the owner: a reload now resumes the draft. The form's values and the CEP lookup behind the address are kept in **this tab's `sessionStorage`** (never `localStorage`, which the HTML `:234` rule names), saved when a field is left and when the page goes away. The draft expires 30 minutes after the last edit, is discarded once the signup is sent or "Novo cadastro" is used, and never holds the idempotency key (one per page load). Residual risk accepted by the owner: browsers bring `sessionStorage` back with a reopened or restored tab, so on a shared computer a draft stays readable for up to 30 minutes after the last edit.
+
 ### Q15 — Is the patient an entity, and what does a consultation freeze?
 
 **Decision.** `patient` is unique on CPF and holds identity/contact (upserted on submit, last write wins for contact fields). `consultation` references `patient` and freezes the decision inputs: monthly income, treatment amount, birthdate and age at submission. Each consultation is standalone: no `retry_of_consultation_id` and no link between consultations. Many consultations per patient are normal.

@@ -302,3 +302,10 @@ Verdict **PASS** (`local://audit-round-3.md`): N1–N5 fixed, QN1 recorded (O10)
 - Deviation accepted: the step being left is checked on the way, like "Próximo", so the next step is always clickable; arrivals by reload/URL/history use the strict rule.
 - Follow-up (2026-10-28, user request): "Novo cadastro" in the consultation header (RF-414, C229). Found while checking it: `<Link className={buttonVariants(…)}>` skipped tailwind-merge, so the base `border-transparent` beat the variant's `border-border` (outline links had no border; `px-0` overrides could lose too); every call site outside `ui/` now wraps it in `cn()`.
 - Follow-ups (2026-10-28): the `buttonVariants` merge moved into `ui/button.tsx` (reviewer: one fix at the source instead of seven call-site `cn()` wrappers; a documented local change to the registry file); the RF-414 PRD row, reported earlier but lost to a rejected batched edit, added. Theme toggle in both top bars (RFC D33, RF-812, C230–C232).
+
+## Signup draft in sessionStorage (2026-10-28, owner decision) — S12
+
+- Owner reversed grill Q14 / RFC D14 for reloads: RFC D34, PRD RF-123, RF-107 and RF-120 amended, API handoff storage guidance amended. `signup-draft.ts` (schema-checked, 30 minutes from the last edit, never `localStorage`, never the idempotency key); `useCepLookup` takes a restored answer so the address is neither looked up again nor refilled; the layout saves on field blur and `pagehide`, discards on a sent signup; the three "new signup" links discard too.
+- Found while testing: expiry counted from the last save let `pagehide` re-saves keep an idle draft alive forever; now from the last edit (E2E with a pinned clock, C235).
+- Infra incident during the run: the dev server process stayed alive but stopped listening on the WSL adapter address (Caddy 502, `dial tcp 192.168.160.1:3000: i/o timeout`); 21 E2E timed out. Restarting `vp run up` fixed it. Suspected adapter reset; not confirmed.
+- Gates: `vp check`/`tsc` clean; unit 25 in the signup module; full E2E 70 passed / 1 skipped.

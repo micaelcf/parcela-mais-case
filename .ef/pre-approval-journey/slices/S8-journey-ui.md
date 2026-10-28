@@ -36,8 +36,8 @@ Proof: `vp run e2e test/e2e/signup.spec.ts -g "flags amounts outside the bounds"
 **C126** · RF-106 — after filling steps 1–2, going back to step 1 and forward again shows every value intact
 Proof: `vp run e2e test/e2e/signup.spec.ts -g "keeps values when moving back"`
 
-**C127** · RF-107 — after filling and reloading before submit, `localStorage` and `sessionStorage` hold no entered value and the form is empty
-Proof: `vp run e2e test/e2e/signup.spec.ts -g "stores nothing in the browser"`
+**C127** · RF-107 — while filling, `localStorage` holds no entered value (the draft is in `sessionStorage` only); once sent, neither store holds one and a new signup in the tab starts empty (amended 2026-10-28, RFC D34)
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "keeps the draft in this tab's session only, and drops it once sent"`
 
 **C128** · RF-215 — with `/api/config` answering `simulationControls: false` (route intercepted), the scenario picker isn't rendered
 Proof: `vp run e2e test/e2e/signup.spec.ts -g "hides the scenario picker when controls are off"`

@@ -41,8 +41,8 @@ Signup navigation round (added 2026-10-28, user report and request, RFC D32):
 **C218** · RF-120, RF-121 — a step is complete when its fields pass the form schema (step 1 only with the address shown); a step opens once every earlier step but the one being left is complete; the review collects no field
 Proof: `vp test src/components/modules/signup/signup-form.test.ts`
 
-**C219** · RF-120 — a reload on a later step lands on the first step, empty and without error messages
-Proof: `vp run e2e test/e2e/signup.spec.ts -g "starts over on the first step after a reload on a later one"`
+**C219** · RF-120, RF-123 — a reload on a later step resumes it from the draft: same step, values and the looked-up address as typed, no new CEP lookup, no error shown (amended 2026-10-28, RFC D34: was "lands on the first step, empty")
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "resumes on the same step after a reload, values and address intact"`
 
 **C220** · RF-120 — a later step (Financeiro, Revisão) opened directly lands on the first step
 Proof: `vp run e2e test/e2e/signup.spec.ts -g "sends a later step opened directly to the first one"`
@@ -55,3 +55,17 @@ Proof: `vp run e2e test/e2e/signup.spec.ts -g "stops a stepper jump at an incomp
 
 **C223** · RF-122 — Revisão shows the formatted values grouped by step with "Editar" per group (each goes to its step), and the POST body equals what is shown
 Proof: `vp run e2e test/e2e/signup.spec.ts -g "reviews exactly what it sends"`
+
+Signup draft (added 2026-10-28, owner decision, RFC D34):
+
+**C233** · RF-123 — a stored draft restores half-typed values and the CEP lookup within 30 minutes of the last edit; past that, or unreadable, or foreign-shaped (other version, wrong types, unknown scenario), it's dropped and removed
+Proof: `vp test src/components/modules/signup/signup-draft.test.ts`
+
+**C234** · RF-123 — two tabs keep separate drafts: each reload restores its own tab's values
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "keeps each tab's draft to itself"`
+
+**C235** · RF-123 — with the clock 31 minutes past the last edit, a reload (which saves the draft once more) lands on the first step, empty, with the draft removed
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "drops a draft last edited more than 30 minutes ago"`
+
+**C236** · RF-123, RF-414 — "Novo cadastro" from a consultation discards a half-done draft: the signup opens empty
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "starts empty from Novo cadastro, dropping a half-done draft"`

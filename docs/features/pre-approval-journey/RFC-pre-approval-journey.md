@@ -320,15 +320,15 @@ Resume across reloads and devices with no session machinery. A leaked link expos
 
 Covers "nada se perde se a pessoa voltar um passo" while keeping PII out of browser storage and out of the DB until submit.
 
-| Option                 | Verdict                                                   |
-| ---------------------- | --------------------------------------------------------- |
-| In-memory across steps | **Chosen**                                                |
-| sessionStorage draft   | Rejected: PII in browser storage                          |
-| Server-side draft      | Rejected: persists unsubmitted PII; needs a retention job |
+| Option                 | Verdict                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| In-memory across steps | **Chosen**                                                                              |
+| sessionStorage draft   | Rejected: PII in browser storage. _Chosen on 2026-10-28 by the owner, bounded: see D34_ |
+| Server-side draft      | Rejected: persists unsubmitted PII; needs a retention job                               |
 
 **Evidence.** A.
 
-**Decision.** One form instance spans all steps, with state above the step routes. A reload before submit restarts the form. After submit, the consultation URL resumes everything. Dissent preserved: an accidental reload loses typed data.
+**Decision.** One form instance spans all steps, with state above the step routes. A reload before submit restarts the form. After submit, the consultation URL resumes everything. Dissent preserved: an accidental reload loses typed data. _Superseded for reloads on 2026-10-28 by D34 (the in-memory form across steps stays)._
 
 ### D15. The patient is unique by CPF; each consultation freezes its decision inputs; consultations are not linked (grill Q15)
 
@@ -556,6 +556,12 @@ The user asked for a full address in step 1, right after the birthdate. The CEP 
 **Decision.** The `<html>` class is the one source of truth: the existing pre-paint script in `routes/__root.tsx` applies `localStorage["theme"]` (`light`/`dark`) or else the system preference; `useThemeMode` (`useSyncExternalStore` over that class, following system changes live while no choice is stored) and `ThemeToggle` (a `Tema escuro` toggle button, `aria-pressed`) set and remember it. Both top bars carry the toggle; the shells pass the mode to `Toaster`, which otherwise asked `next-themes` with no provider mounted and so always followed the OS. No `next-themes` provider: its injected `<script>` is rendered client-side here (no SSR) and the pre-paint script already covers the flash.
 
 **Evidence.** A (E2E: system default and live change, toggle + reload persistence before paint, backoffice toggle).
+
+### D34. A per-tab signup draft in sessionStorage (owner decision, 2026-10-28; amends D14, grill Q14)
+
+**Decision.** The signup's values and the CEP lookup behind the address are saved in this tab's `sessionStorage` (`parcela:signup-draft`, `signup-draft.ts`) whenever a field is left and on `pagehide`, and restored on load, so a reload resumes on the same step (the reachability guard of D32 then applies to the restored values). Bounds: never `localStorage`; one draft per tab (a duplicated tab copies it, but keeps its own idempotency key, which is never stored: one per page load); it expires 30 minutes after the **last edit**, since re-saving on blur or `pagehide` must not extend it; a restored draft is checked against its schema and dropped if malformed; it's discarded once the signup is sent and by every "Novo cadastro"/"Começar um novo cadastro" link (the brand link and "Ir para o cadastro" resume it). A restored lookup counts as already answered while its CEP stays, so the address isn't refilled and no lookup runs. Residual risk, accepted by the owner: browsers restore `sessionStorage` with a reopened or restored tab, so on a shared computer a draft is readable for up to 30 minutes after the last edit.
+
+**Evidence.** A (unit: expiry from the last edit, malformed drafts; E2E: reload resumes the step without a new lookup, tabs independent, 31 idle minutes drop it, sent and "Novo cadastro" clear it, nothing in `localStorage`).
 
 ### Supporting decisions taken by the agent during the grill (vetoable)
 
