@@ -41,7 +41,7 @@ src/server/
   lib/
     crypto/cpf-crypto.ts                    # blind index + AES-256-GCM (the only node:crypto user for PII)
     crypto/ip-hash.ts                       # HMAC("ip:v1:" + ip)
-    log/logger.ts                           # one JSON line per event to stdout
+    log/logger.ts                           # tslog: pretty in dev, one JSON line per event with TSLOG_TYPE=json
     errors/domain-error.ts                  # DomainError(code, status, detail?) mapped by infra/http/errors.plugin
   integrations/
     lenders/

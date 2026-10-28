@@ -309,3 +309,8 @@ Verdict **PASS** (`local://audit-round-3.md`): N1–N5 fixed, QN1 recorded (O10)
 - Found while testing: expiry counted from the last save let `pagehide` re-saves keep an idle draft alive forever; now from the last edit (E2E with a pinned clock, C235).
 - Infra incident during the run: the dev server process stayed alive but stopped listening on the WSL adapter address (Caddy 502, `dial tcp 192.168.160.1:3000: i/o timeout`); 21 E2E timed out. Restarting `vp run up` fixed it. Suspected adapter reset; not confirmed.
 - Gates: `vp check`/`tsc` clean; unit 25 in the signup module; full E2E 70 passed / 1 skipped.
+
+## tslog for every log (2026-10-28, user request) — S5
+
+- `src/server/lib/log/logger.ts` now wraps tslog 5 (`createLogger`, same `logger.info(event, fields)` shape, so no call site changed); ops scripts log through `scripts/ops/lib/script-log.ts`; `up` colours `[app]` cyan and `[worker]` magenta, gives children `TSLOG_NAME` and, on a terminal, `FORCE_COLOR`; compose sets `TSLOG_TYPE=json` and `TSLOG_NAME` per service (merged into the shared env anchor: YAML merges are shallow, verified with `compose config`); tests run with `TSLOG_TYPE=hidden` and capture JSON lines through a transport instead of console spies. RFC D35, PRD RF-713 and RF-811 amended, C237.
+- Checked: JSON shape and PII masking by hand; app and worker lines through tslog live; unit/integration 59 files / 256 tests; full E2E 70 passed / 1 skipped.

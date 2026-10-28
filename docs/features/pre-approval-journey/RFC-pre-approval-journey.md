@@ -563,6 +563,12 @@ The user asked for a full address in step 1, right after the birthdate. The CEP 
 
 **Evidence.** A (unit: expiry from the last edit, malformed drafts; E2E: reload resumes the step without a new lookup, tabs independent, 31 idle minutes drop it, sent and "Novo cadastro" clear it, nothing in `localStorage`).
 
+### D35. tslog for every log in the project (user request, 2026-10-28)
+
+**Decision.** `src/server/lib/log/logger.ts` wraps [tslog](https://tslog.js.org/) 5 behind the existing `logger.info|warn|error(event, fields)`, so no call site changed; the ops scripts use the same factory through `scripts/ops/lib/script-log.ts`. Output follows tslog's own env (`TSLOG_TYPE`, `TSLOG_NAME`, `TSLOG_LEVEL`): pretty and coloured in dev, `json` in the compose stack (`event`, `level`, `ts`, fields, `_logMeta.name`), `hidden` in tests, which capture JSON lines through a transport. Per-process colour lives in `vp run up`'s line prefixes (`[app]` cyan, `[worker]` magenta), not in the tslog line, because the prefix also covers output tslog doesn't write (Vite's own lines, crash stacks); `up` forwards `FORCE_COLOR` to its piped children when it runs in a terminal. A masking list of PII field names backs RF-811. Not using `Logger.fromEnv`'s name for colour, nor the devtools console decoration: our code no longer calls `console`, so the devtools transform has nothing to rewrite.
+
+**Evidence.** A (unit/integration green with transport capture; prefix alignment and colour test; JSON shape and masking checked by hand; full E2E against the tslog build). C for the colour codes in a live terminal (the agent's terminal view strips them).
+
 ### Supporting decisions taken by the agent during the grill (vetoable)
 
 From grill §3 (renamed AD*n* = grill §3 D*n*). Normative unless vetoed.

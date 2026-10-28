@@ -79,3 +79,8 @@ Proof: `log.md` § S5 "RF-703 up --prod run (docker)"
 
 **C88** · RF-601 — `hashPassword` output matches `scrypt:16384:8:1:<saltB64>:<hashB64>`; `verifyPassword` accepts the password, rejects another, and returns false on a malformed value
 Proof: `vp test src/server/modules/backoffice/auth/password.test.ts -t "hashes and verifies scrypt passwords"`
+
+Logging (added 2026-10-28, user request, RFC D35):
+
+**C237** · RF-713 — each dev process gets its own prefix colour, and coloured or not every prefix ends in the same column
+Proof: `vp test scripts/ops/lib/up-plan.test.ts -t "give each process its own colour"`

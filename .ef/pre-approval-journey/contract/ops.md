@@ -111,6 +111,15 @@ Already trusted ⇒ silent. Declined prompt or missing tool ⇒ `up` continues w
 
 `scripts/ops/migrate.ts`: drizzle `migrate(db, { migrationsFolder: "./drizzle" })`, then install/upgrade the pg-boss schema (`new PgBoss({ connectionString, migrate: true, supervise: false, schedule: false }).start()` then `.stop()`), then create queues and schedules from `queues.ts`. It's idempotent. App and worker start pg-boss with `migrate: false`.
 
+## Logging (tslog, added 2026-10-28, RFC D35)
+
+One logger for the whole project: `src/server/lib/log/logger.ts` wraps [tslog](https://tslog.js.org/) (`createLogger(name?)`, the process's `logger`), with the same call shape as before, `logger.info(event, fields)`.
+
+- **Dev (`vp run up`)**: pretty lines, `HH:MM:SS.mmm LEVEL event { …fields }` with the level in its colour. Each child's lines carry its prefix in its own colour (`[app]` bright cyan, `[worker]` bright magenta, padded to one column), and `up` gives the children `TSLOG_NAME` and, when its own stdout is a terminal (and `NO_COLOR` is unset), `FORCE_COLOR=1`, since their output is piped through it. The ops scripts log through `scripts/ops/lib/script-log.ts` (a tslog logger named after the script; `✗` lines at ERROR, `!` at WARN, the rest INFO). `backoffice:hash-password` prints its env line with `console.log`: that's the command's output, not a log.
+- **Prod stack (compose)**: `TSLOG_TYPE=json`, one line per event: `{ "event", "level" ("INFO"…), "ts", …fields, "_logMeta": { "name": app|worker|migrate, runtime, hostname, … } }`. `TSLOG_TYPE=pretty` in the shell overrides it for reading by hand.
+- **PII**: callers pass ids, codes and measurements only (RF-811); the logger also masks a fixed list of PII field names (`cpf`, `fullName`, `phone`, `email`, `cep`, …) as `[***]` in every output.
+- **Tests**: `TSLOG_TYPE=hidden` prints nothing; tests that assert on log lines attach a JSON transport (`logger.attachTransport({ format: "json", write })`) instead of spying on `console`.
+
 ## Worker process (`src/server/worker.main.ts`)
 
 Boots env, `boss.start()`, then `work("lender.<code>", { batchSize: 1, localConcurrency: <=20 }, handler)` per lender, `work("consultation.finalize", …)`, `work("throttle.purge", …)`. On SIGTERM/SIGINT: `boss.stop({ graceful: true, timeout: 15000 })`, then close the pool. Verify the exact `work()` concurrency option name against `pg-boss@12.38.0` types in S-worker.
