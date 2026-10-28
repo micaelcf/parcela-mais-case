@@ -4,11 +4,13 @@ import {
   type ConsultationSubscription,
   consultationEvents,
 } from "#/server/infra/realtime/consultation-events";
+import { throttlePlugin } from "#/server/modules/throttle/throttle.plugin";
 
 import {
   ChooseRequestSchema,
   type ConsultationPublicView,
   IdempotencyHeadersSchema,
+  RequoteRequestSchema,
   SignupRequestSchema,
 } from "./consultation.dto";
 import { consultationService } from "./consultation.service";
@@ -27,11 +29,16 @@ async function waitForUpdate(
   await subscription.next(signal);
 }
 
-/** Public consultation API: create, read, live events, choose (`api.md` § Public). */
+/** Public consultation API: create, read, live events, choose, requote (`api.md` § Public). */
 export const consultationRoutes = new Elysia({ name: "consultation" })
+  .use(throttlePlugin)
   .post(
     "/consultations",
-    { body: SignupRequestSchema, headers: IdempotencyHeadersSchema },
+    {
+      throttle: "consultation.create",
+      body: SignupRequestSchema,
+      headers: IdempotencyHeadersSchema,
+    },
     async ({ body, headers, set }) => {
       const created = await consultationService.create(body, headers["idempotency-key"]);
       set.status = 202;
@@ -72,4 +79,21 @@ export const consultationRoutes = new Elysia({ name: "consultation" })
   })
   .post("/consultations/:id/choice", { body: ChooseRequestSchema }, ({ params, body }) =>
     consultationService.choose(params.id, body.offerId),
+  )
+  .post(
+    "/consultations/:id/requote",
+    {
+      throttle: "consultation.requote",
+      body: RequoteRequestSchema,
+      headers: IdempotencyHeadersSchema,
+    },
+    async ({ params, body, headers, set }) => {
+      const created = await consultationService.requote(
+        params.id,
+        body,
+        headers["idempotency-key"],
+      );
+      set.status = 202;
+      return created;
+    },
   );

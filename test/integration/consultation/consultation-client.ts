@@ -140,6 +140,23 @@ export function choose(id: string, offerId: string): Promise<Response> {
   });
 }
 
+/** POSTs a requote of `sourceId` (fresh Idempotency-Key and X-Forwarded-For unless given). */
+export function postRequote(
+  sourceId: string,
+  body: unknown,
+  options: { key?: string; ip?: string } = {},
+): Promise<Response> {
+  return appFetch(`${API}/consultations/${sourceId}/requote`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "idempotency-key": options.key ?? randomUUID(),
+      "x-forwarded-for": options.ip ?? uniqueIp(),
+    },
+    body: JSON.stringify(body),
+  });
+}
+
 export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Polls `read` until `done` holds (every `intervalMs`), failing after `timeoutMs`. */

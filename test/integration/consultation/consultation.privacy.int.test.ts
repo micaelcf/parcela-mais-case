@@ -1,0 +1,216 @@
+import { Client } from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
+
+import { cpfCheckDigits } from "#/lib/cpf/cpf";
+import type { ConsultationPublicView } from "#/server/modules/consultation/consultation.dto";
+import { createWorker } from "#/server/worker";
+
+import { closeTestApp, testLenderRegistry } from "../setup/app-fetch";
+import {
+  birthdateTurning,
+  choose,
+  createConsultation,
+  formatCpf,
+  postRequote,
+  readCreatedId,
+  readEvents,
+  readView,
+  type StreamEvent,
+  waitSettled,
+} from "./consultation-client";
+
+const worker = createWorker({ lenderRegistry: testLenderRegistry });
+
+/**
+ * A fixed CPF: none of its 3-digit windows occurs in the catalogue's monthly rates ("0.024900",
+ * "0.019900", "0.032900", "0.021900"), the only digit-bearing strings a public view legitimately
+ * carries besides ids and timestamps.
+ */
+const CPF_BASE = "586371845";
+const CPF = `${CPF_BASE}${cpfCheckDigits(CPF_BASE)}`;
+const PHONE_DIGITS = "21976543210";
+const INCOME_CENTS = 8_765_431;
+const BIRTHDATE = birthdateTurning(44);
+const [FIRST_NAME, ...OTHER_NAMES] = ["Joana", "Ribeiro", "Castanheira"];
+const PATIENT = {
+  fullName: [FIRST_NAME, ...OTHER_NAMES].join(" "),
+  cpf: formatCpf(CPF),
+  birthdate: BIRTHDATE,
+  phone: "(21) 97654-3210",
+  monthlyIncomeCents: INCOME_CENTS,
+  treatmentAmountCents: 1_200_000,
+};
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
+/** Every public payload of one patient's journey: GETs, SSE snapshots, choose and requote bodies. */
+type Payloads = { views: ConsultationPublicView[]; all: unknown[] };
+
+async function snapshotsOf(
+  stream: Promise<{ status: number; events: StreamEvent[] }>,
+): Promise<unknown[]> {
+  const { status, events } = await stream;
+  expect(status).toBe(200);
+  const snapshots = events.filter((event) => event.event === "snapshot").map((e) => e.data);
+  expect(snapshots.length).toBeGreaterThan(0);
+  return snapshots;
+}
+
+async function journeyPayloads(): Promise<Payloads> {
+  const approvedId = await createConsultation(PATIENT, "ALL_APPROVE");
+  const approvedStream = readEvents(approvedId);
+  const refusedId = await createConsultation(PATIENT, "NONE_APPROVE");
+  const refusedStream = readEvents(refusedId);
+
+  const approved = await waitSettled(approvedId);
+  const offer = approved.offers[0];
+  if (!offer) throw new Error("ALL_APPROVE produced no offer");
+  const chosen = await choose(approvedId, offer.id);
+  expect(chosen.status).toBe(200);
+  const chooseBody: unknown = await chosen.json();
+
+  await waitSettled(refusedId);
+  const requote = await postRequote(refusedId, { treatmentAmountCents: 600_000 });
+  const requoteBody: unknown = JSON.parse(await requote.clone().text());
+  const requotedId = await readCreatedId(requote);
+  const requotedStream = readEvents(requotedId);
+  await waitSettled(requotedId);
+
+  const snapshots = [
+    ...(await snapshotsOf(approvedStream)),
+    ...(await snapshotsOf(refusedStream)),
+    ...(await snapshotsOf(requotedStream)),
+  ];
+  const views = await Promise.all([approvedId, refusedId, requotedId].map(readView));
+  return { views, all: [...views, ...snapshots, chooseBody, requoteBody] };
+}
+
+let payloads: Payloads;
+beforeAll(async () => {
+  await worker.start();
+  payloads = await journeyPayloads();
+});
+afterAll(async () => {
+  await worker.stop();
+  await closeTestApp();
+});
+
+/** Every object key and leaf value in a JSON payload. */
+function leaves(value: unknown, keys: string[] = [], values: unknown[] = []) {
+  if (Array.isArray(value)) {
+    for (const item of value) leaves(item, keys, values);
+  } else if (value !== null && typeof value === "object") {
+    for (const [key, item] of Object.entries(value)) {
+      keys.push(key);
+      leaves(item, keys, values);
+    }
+  } else {
+    values.push(value);
+  }
+  return { keys, values };
+}
+
+/** String leaves, minus ids and timestamps. */
+function scannedStrings(all: unknown[]): string[] {
+  return leaves(all).values.filter(
+    (value): value is string =>
+      typeof value === "string" && !UUID.test(value) && !ISO_TIMESTAMP.test(value),
+  );
+}
+
+describe("public payload privacy", () => {
+  it("public payloads carry no CPF digits", () => {
+    const strings = scannedStrings(payloads.all);
+    const windows = Array.from({ length: CPF.length - 2 }, (_, at) => CPF.slice(at, at + 3));
+    const leaking = strings.filter((value) => windows.some((window) => value.includes(window)));
+    expect(leaking).toEqual([]);
+
+    const identityKeys = leaves(payloads.all).keys.filter((key) => /cpf|document|taxid/i.test(key));
+    expect(identityKeys).toEqual([]);
+
+    expect(strings.filter((value) => value.includes("*") || value.includes("•"))).toEqual([]);
+  });
+
+  it("public payloads carry only the first name", () => {
+    const { values } = leaves(payloads.all);
+    const strings = scannedStrings(payloads.all);
+    const [year, month, day] = BIRTHDATE.split("-");
+    const forbidden = [
+      BIRTHDATE,
+      `${day}/${month}/${year}`,
+      PHONE_DIGITS,
+      String(INCOME_CENTS),
+      ...OTHER_NAMES.map((name) => name.toLowerCase()),
+    ];
+    const leaking = strings.filter((value) =>
+      forbidden.some((needle) => value.toLowerCase().includes(needle)),
+    );
+    expect(leaking).toEqual([]);
+    expect(
+      values.filter((value) => value === INCOME_CENTS || value === Number(PHONE_DIGITS)),
+    ).toEqual([]);
+
+    for (const view of payloads.views) expect(view.patientFirstName).toBe(FIRST_NAME);
+    const firstNames = payloads.all.flatMap((payload) =>
+      payload !== null && typeof payload === "object" && "patientFirstName" in payload
+        ? [payload.patientFirstName]
+        : [],
+    );
+    // 3 GETs + at least one snapshot per stream + the choose response.
+    expect(firstNames.length).toBeGreaterThanOrEqual(7);
+    expect(new Set(firstNames)).toEqual(new Set([FIRST_NAME]));
+  });
+
+  it("never stores the CPF in plaintext", async () => {
+    const client = new Client({ connectionString: process.env.DATABASE_URL });
+    await client.connect();
+    try {
+      const columns = await client.query<{
+        table_schema: string;
+        table_name: string;
+        column_name: string;
+        data_type: string;
+      }>(
+        `select c.table_schema, c.table_name, c.column_name, c.data_type
+           from information_schema.columns c
+           join information_schema.tables t
+             on t.table_schema = c.table_schema and t.table_name = c.table_name
+          where t.table_type = 'BASE TABLE'
+            and c.table_schema not in ('pg_catalog', 'information_schema')
+            and c.data_type in ('text', 'character varying', 'bytea')`,
+      );
+      const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
+      const cpfBytes = Buffer.from(CPF, "utf8");
+      const scanned = new Set<string>();
+      const found: string[] = [];
+      let sawFullName = false;
+
+      for (const column of columns.rows) {
+        const where = `${column.table_schema}.${column.table_name}.${column.column_name}`;
+        const { rows } = await client.query<{ value: string | Buffer }>(
+          `select ${quote(column.column_name)} as value
+             from ${quote(column.table_schema)}.${quote(column.table_name)}
+            where ${quote(column.column_name)} is not null`,
+        );
+        scanned.add(where);
+        for (const { value } of rows) {
+          if (Buffer.isBuffer(value)) {
+            if (value.includes(cpfBytes)) found.push(`${where} (bytes)`);
+          } else {
+            if (value.includes(CPF) || value.includes(PATIENT.cpf)) found.push(`${where} (text)`);
+            if (value === PATIENT.fullName) sawFullName = true;
+          }
+        }
+      }
+
+      // The scan reaches the patient's columns and reads their data (positive control).
+      expect(scanned).toContain("public.patient.cpf_ciphertext");
+      expect(scanned).toContain("public.patient.cpf_hmac");
+      expect(sawFullName).toBe(true);
+      expect(found).toEqual([]);
+    } finally {
+      await client.end();
+    }
+  });
+});

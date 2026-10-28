@@ -5,6 +5,7 @@ import {
 } from "#/server/integrations/lenders/registry";
 import { consultationFinalizeJob } from "#/server/modules/consultation/consultation-finalize.job";
 import { lenderAttemptJobs } from "#/server/modules/lender/lender-attempt.job";
+import { throttlePurgeJob } from "#/server/modules/throttle/throttle-purge.job";
 
 export type Worker = { start(): Promise<void>; stop(): Promise<void> };
 
@@ -13,5 +14,6 @@ export function createWorker(deps: { lenderRegistry?: LenderRegistry } = {}): Wo
   return createWorkerRuntime([
     ...lenderAttemptJobs(deps.lenderRegistry ?? defaultLenderRegistry),
     consultationFinalizeJob,
+    throttlePurgeJob,
   ]);
 }

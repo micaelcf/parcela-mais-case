@@ -1,12 +1,16 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
 
 import type { SimulationScenario } from "#/lib/enums";
 import { db, type DbOrTx, type Tx } from "#/server/infra/db/client";
 import { consultation } from "#/server/modules/consultation/db/consultation.table";
+import { patient } from "#/server/modules/patient/db/patient.table";
 
 import type { ConsultationViewRows } from "./consultation.dto";
 
 export type ConsultationRow = typeof consultation.$inferSelect;
+
+/** The view rows with the full consultation row (requote reads its frozen inputs). */
+export type ConsultationReadRows = ConsultationViewRows & { consultation: ConsultationRow };
 
 export type NewConsultation = {
   patientId: string;
@@ -59,6 +63,38 @@ export const consultationRepository = {
   },
 
   /**
+   * `SELECT … FOR UPDATE` on the consultation's patient: serialises one patient's creates (and
+   * requotes) so the per-patient cap counts committed rows only.
+   */
+  async lockPatient(tx: Tx, patientId: string): Promise<void> {
+    await tx
+      .select({ id: patient.id })
+      .from(patient)
+      .where(eq(patient.id, patientId))
+      .for("update");
+  },
+
+  /** The patient's consultations, optionally only those created in the last `withinHours`. */
+  async countByPatient(
+    patientId: string,
+    options: { withinHours?: number; executor?: DbOrTx } = {},
+  ): Promise<number> {
+    const { withinHours, executor = db } = options;
+    const [row] = await executor
+      .select({ count: sql<number>`count(*)::int` })
+      .from(consultation)
+      .where(
+        and(
+          eq(consultation.patientId, patientId),
+          withinHours === undefined
+            ? undefined
+            : gt(consultation.createdAt, sql`now() - make_interval(hours => ${withinHours})`),
+        ),
+      );
+    return row?.count ?? 0;
+  },
+
+  /**
    * `SELECT … FOR NO KEY UPDATE`: the consultation row lock that serialises settle and choose.
    * Not `FOR UPDATE`: every offer insert takes `FOR KEY SHARE` on its consultation (FK check), which
    * `FOR UPDATE` conflicts with, so two attempts settling with offers would deadlock.
@@ -92,11 +128,11 @@ export const consultationRepository = {
     return rows.length > 0;
   },
 
-  /** The view rows plus whether the deadline has passed (database clock). */
+  /** The view rows (with the full consultation row) plus whether the deadline has passed (database clock). */
   async findViewRows(
     executor: DbOrTx,
     id: string,
-  ): Promise<(ConsultationViewRows & { pastDeadline: boolean }) | undefined> {
+  ): Promise<(ConsultationReadRows & { pastDeadline: boolean }) | undefined> {
     const row = await executor.query.consultation.findFirst({
       where: { id },
       extras: { pastDeadline: (table) => sql<boolean>`${table.deadlineAt} <= clock_timestamp()` },
@@ -107,10 +143,10 @@ export const consultationRepository = {
       },
     });
     if (!row) return undefined;
-    const { patient, attempts, offers, pastDeadline, ...consultationRow } = row;
+    const { patient: patientRow, attempts, offers, pastDeadline, ...consultationRow } = row;
     return {
       consultation: consultationRow,
-      patientFullName: patient.fullName,
+      patientFullName: patientRow.fullName,
       attempts,
       offers,
       pastDeadline,
