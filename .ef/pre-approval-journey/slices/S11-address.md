@@ -56,3 +56,9 @@ Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t
 
 **C193** · RF-612 — the backoffice detail shows the decrypted CPF and the address
 Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "shows the decrypted CPF and the address on the detail"`
+
+**C194** · RF-614, RF-116 — CEP lookups from an IP stay out of the abuse figures (`requests`, limit hits, 429s, `topIps` cover create/requote only); throttle events still list them
+Proof: `vp test test/integration/backoffice/backoffice.metrics.int.test.ts -t "summarises abuse in the last 24 h"`
+
+**C195** · (no RF; regression guard for C190) — no file under `src/server` or `src/lib` is named `*.client.*`/`*.server.*` (TanStack Start strips those per environment); a planted `probe.client.ts` made it fail
+Proof: `vp test src/server/server-file-names.test.ts`

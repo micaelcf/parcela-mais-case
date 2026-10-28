@@ -162,7 +162,7 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 
 | Slice | Outcome                                                                        | Wave | Status | File                                                                     | Checks                                      |
 | ----- | ------------------------------------------------------------------------------ | ---- | ------ | ------------------------------------------------------------------------ | ------------------------------------------- |
-| S0    | toolchain, env, validation bridge and an empty `/api` serve and pass the gates | 0    | done   | [slices/S0-foundation.md](slices/S0-foundation.md)                       | C1–C8, C163, C172                           |
+| S0    | toolchain, env, validation bridge and an empty `/api` serve and pass the gates | 0    | done   | [slices/S0-foundation.md](slices/S0-foundation.md)                       | C1–C8, C163, C172, C196                     |
 | S1    | schema, migrations, queue and integration harness run against real Postgres    | 0    | done   | [slices/S1-schema-infra.md](slices/S1-schema-infra.md)                   | C9–C11                                      |
 | S2    | CPF validation, CPF/IP protection and exact Price are correct in isolation     | 1    | done   | [slices/S2-cpf-pii-price.md](slices/S2-cpf-pii-price.md)                 | C12–C23, C174                               |
 | S3    | simulated lenders, adapters and breaker derivation                             | 1    | done   | [slices/S3-lender-integration.md](slices/S3-lender-integration.md)       | C24–C40                                     |
@@ -173,4 +173,4 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 | S8    | public journey UI + UI kit                                                     | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144                                   |
 | S9    | backoffice UI                                                                  | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168                             |
 | S10   | E2E suite + browser smoke                                                      | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157, C164                             |
-| S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs  | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C193                                   |
+| S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs  | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C195                                   |

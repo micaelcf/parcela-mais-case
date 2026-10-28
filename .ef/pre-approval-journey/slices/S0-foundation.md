@@ -22,6 +22,9 @@ Proof: `vp test src/server/infra/http/errors.plugin.test.ts -t "answers an unexp
 **C172** · (no RF; error contract) — a body sent as `text/plain;charset=UTF-8` → 422 `VALIDATION` with detail "Envie o corpo como JSON (Content-Type: application/json)." and no `fields`, not a 500, both on a plain route (Elysia's 415) and on one with its own `parse` hook (throttle, backoffice guard) (added 2026-10-28, handoff fact-check F6; parse-hook case 2026-10-28)
 Proof: `vp test src/server/infra/http/errors.plugin.test.ts -t "answers a body sent as text/plain with 422 VALIDATION, not a 500"`
 
+**C196** · (no RF; error contract) — a body-less request (GET/HEAD/OPTIONS) with a stray `Content-Type: text/plain` keeps its field errors (422 `fields: [{ path: "cep" }]`), never the "send JSON" detail (added 2026-10-28, handoff fact-check round 3 F2)
+Proof: `vp test src/server/infra/http/errors.plugin.test.ts -t "keeps field errors for a request without a body whatever its Content-Type"`
+
 **C4** · RF-708 — `GET /api/health` returns 200 `{ status: "ok", sha }` with `sha` equal to `GIT_SHA`
 Proof: `vp test src/server/modules/system/system.routes.test.ts -t "reports the configured commit"`
 
