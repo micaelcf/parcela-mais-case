@@ -100,6 +100,8 @@ const config = defineConfig({
           // Each file runs a real worker and races a 2 s lender deadline; more files at once than
           // this starves the event loop enough that slow-but-valid lenders finalize as TIMEOUT.
           maxWorkers: 4,
+          // A project with its own maxWorkers needs its own group: units first, then integration.
+          sequence: { groupOrder: 1 },
         },
       },
     ],
