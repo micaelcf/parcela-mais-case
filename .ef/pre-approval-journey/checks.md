@@ -9,7 +9,7 @@ Sources:
 - `contract/` (this folder): **binding for every interface**
 - Case PDF `C:\Users\Micael\Downloads\Case Técnico · Dev Full Stack Sênior.pdf`: lender table, Price formula, validation bounds
 
-Feature base: none (repository has no commits yet, 2026-10-27).
+Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 
 ## Requirements
 
@@ -105,16 +105,19 @@ Feature base: none (repository has no commits yet, 2026-10-27).
 
 ## Contract
 
-| File                                               | Holds                                                                                             | Read by                   |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------- |
-| [contract/bindings.md](contract/bindings.md)       | gates, version pins, runtime rules, aliases, test conventions, env vars                           | every slice               |
-| [contract/layout.md](contract/layout.md)           | directory tree, file roles, shared names, dependency directions                                   | every slice               |
-| [contract/schema.md](contract/schema.md)           | enums, tables, indexes, relations-part rules                                                      | data + backend slices     |
-| [contract/api.md](contract/api.md)                 | endpoints, view shapes, list contract, errors, simulator HTTP contracts                           | backend + frontend slices |
-| [contract/boundaries.md](contract/boundaries.md)   | transactions, guarded updates, orchestration order, breaker, Price, scenarios, throttle, realtime | backend slices            |
-| [contract/lender-port.md](contract/lender-port.md) | LenderPort, canonical result, mapping rules, lender catalogue                                     | lender + simulator slices |
-| [contract/ops.md](contract/ops.md)                 | compose, Dockerfile, Caddyfile, ops scripts, worker process                                       | ops slice                 |
-| [contract/frontend.md](contract/frontend.md)       | no-SSR shell, routes, data access, forms, UI kit, a11y                                            | frontend slices           |
+| File                                               | Holds                                                                                             | Read by                                  |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| [contract/bindings.md](contract/bindings.md)       | gates, version pins, runtime rules, aliases, test conventions, env vars                           | every slice                              |
+| [contract/layout.md](contract/layout.md)           | API tree (DDD), frontend tree, `lib`, test placement, names, dependency directions                | every slice                              |
+| [contract/signatures.md](contract/signatures.md)   | cross-slice exports, verbatim (Stage 4)                                                           | slices that produce/consume across waves |
+| [contract/schema.md](contract/schema.md)           | enums, tables, indexes, relations-part rules                                                      | data + backend slices                    |
+| [contract/api.md](contract/api.md)                 | endpoints, view shapes, list contract, errors, simulator HTTP contracts                           | backend + frontend slices                |
+| [contract/boundaries.md](contract/boundaries.md)   | transactions, guarded updates, orchestration order, breaker, Price, scenarios, throttle, realtime | backend slices                           |
+| [contract/lender-port.md](contract/lender-port.md) | LenderPort, canonical result, mapping rules, lender catalogue                                     | lender + simulator slices                |
+| [contract/ops.md](contract/ops.md)                 | compose, Dockerfile, Caddyfile, ops scripts, worker process                                       | ops slice                                |
+| [contract/frontend.md](contract/frontend.md)       | no-SSR shell, routes, data access, forms, UI kit, a11y                                            | frontend slices                          |
+
+Swept + Coverage: [verification.md](verification.md).
 
 ## Out of scope
 
@@ -122,20 +125,51 @@ Feature base: none (repository has no commits yet, 2026-10-27).
 - Lender retries: D10. Offer expiry: AD17. Multi-user backoffice: D12. Keyset pagination: D26.
 - Real lender integrations: D19 (simulated).
 - Case-submission README sections: deferred to the audit phase (PRD non-goals).
+- Patient PII retention/deletion policy: not specified by the PRD (raised in `verification.md`).
+
+## Ownership
+
+Per-slice ownership is each slice file's `Owns:` line. Shared files, one writer per wave:
+
+| File                                              | Writer per wave                                                              |
+| ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `package.json`, `bun.lock`                        | W0 lead (deps) · W2 S5 (`scripts`) · W4 S8 (`dependencies`) · W5 S9 · W6 S10 |
+| `src/server/app.ts`                               | W0 lead (skeleton) · W2 S4 · W4 S7 (backoffice line)                         |
+| `src/server/worker.ts`                            | W2 S4 · W3 S6 (purge job)                                                    |
+| `consultation.{service,repository,routes,dto}.ts` | W2 S4 · W3 S6 (`Except:` in S6)                                              |
+| `src/routeTree.gen.ts`                            | regenerated by the router plugin: W0 lead · W4 S8 · W5 S9                    |
+| `vite.config.ts`, `tsconfig.json`                 | lead only                                                                    |
 
 ## Landing
 
-Greenfield feature on a template: the module tree in `contract/layout.md` is the precedent every future feature copies, so it's a door.
+Greenfield feature on a template: the trees in `contract/layout.md` are the precedent every future feature copies, so they're doors.
 
-| One-way door                 | Literal shape                                                                                                            | Alternative rejected                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| Persisted schema             | 7 tables + 5 enums in `contract/schema.md`; cents as `bigint(number)`; uuid v7 from JS                                   | `bigint(mode:"bigint")`: Elysia 2 RC can't serialise it (500/422, probed)                   |
-| Module layout pattern        | `src/server/modules/<feature>/{db/*.table.ts, *.relations.ts, *.repository.ts, *.service.ts, *.routes.ts, *.schemas.ts}` | flat `src/db/schema.ts`: can't say which feature owns a table                               |
-| Queue + transactional outbox | pg-boss 12.38 own pool (max 3) + `send({ db: fromDrizzle(tx, sql) })`                                                    | shared pool + hand-written `listen()`: we'd own LISTEN reconnect (user chose, discovery Q2) |
-| Realtime                     | one LISTEN client per app process + in-memory fan-out; SSE `sse()` envelopes; client-owned reconnect                     | LISTEN per SSE stream: one pinned connection per open tab                                   |
-| Validation stack             | TypeBox everywhere + `shared/schema/standard-schema.ts` adapter + pt-BR locale                                           | zod: user chose TypeBox (D23)                                                               |
-| New dependencies             | elysia, @elysia/eden, typebox, pg-boss, drizzle 1.0 RC, @base-ui/react, shadcn deps, recharts, sonner                    | none forced                                                                                 |
+| One-way door                 | Literal shape                                                                                                                                                                                   | Alternative rejected                                                                                                                  |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Persisted schema             | 7 tables + 5 enums in `contract/schema.md`; cents as `bigint(number)`; uuid v7 from JS                                                                                                          | `bigint(mode:"bigint")`: Elysia 2 RC can't serialise it (500/422, probed)                                                             |
+| API tree                     | `src/server/{app.ts, worker.ts, worker.main.ts, infra/, lib/, integrations/<system>/, modules/<feature>/{db/*.table.ts, *.relations.ts, *.repository.ts, *.service.ts, *.routes.ts, *.dto.ts}}` | `src/server/shared/**` grab-bag: a folder named `shared` says nothing about its contents (user, 2026-10-28)                           |
+| Frontend tree                | `src/{routes, api, hooks, components/{ui, <shell>.tsx, modules/<feature>/}}`; loaders own reads, components never call the API                                                                  | one tree mixing React and server code (`src/web/**` beside `src/server/**`): the front/API boundary was unreadable (user, 2026-10-28) |
+| DTO files                    | `<module>.dto.ts` = TypeBox request/response DTOs + pure row → DTO mappers, isomorphic                                                                                                          | `*.schemas.ts` + `*-view.ts`: two names for one role (user, 2026-10-28)                                                               |
+| Test placement               | unit `*.test.ts` co-located; `test/integration/<module>/*.int.test.ts` with `test/integration/setup/`; `test/e2e/*.spec.ts`                                                                     | co-located `*.int.test.ts`: integration and E2E suites get one top-level home (user, 2026-10-28)                                      |
+| Integration DB isolation     | per-run template DB + per-file clone (`CREATE DATABASE … TEMPLATE`)                                                                                                                             | one DB per run: breaker windows, kill switches and rate limits leak between files                                                     |
+| E2E runner (RFC O4)          | Playwright Test standalone, `test/e2e/*.spec.ts`, `vp run e2e`, Chromium, against a running stack                                                                                               | Vitest browser mode: runs inside a page iframe and can't drive full reloads of the real app (RF-207, RF-406 need them)                |
+| Queue + transactional outbox | pg-boss 12.38 own pool (max 3) + `send({ db: fromDrizzle(tx, sql) })`                                                                                                                           | one pool + hand-written `listen()`: we'd own LISTEN reconnect (user chose, discovery Q2)                                              |
+| Realtime                     | one LISTEN client per app process + in-memory fan-out; SSE `sse()` envelopes; client-owned reconnect                                                                                            | LISTEN per SSE stream: one pinned connection per open tab                                                                             |
+| Validation stack             | TypeBox everywhere + `lib/validation/standard-schema.ts` adapter + pt-BR locale                                                                                                                 | zod: user chose TypeBox (D23)                                                                                                         |
+| New dependencies             | elysia, @elysia/eden, typebox, pg-boss, drizzle 1.0 RC, @base-ui/react, shadcn deps, recharts, sonner, @playwright/test                                                                         | none forced                                                                                                                           |
 
 ## Slices
 
-Defined at Stage 4 (`/ef:implement`).
+| Slice | Outcome                                                                        | Wave | Status  | File                                                                     | Checks        |
+| ----- | ------------------------------------------------------------------------------ | ---- | ------- | ------------------------------------------------------------------------ | ------------- |
+| S0    | toolchain, env, validation bridge and an empty `/api` serve and pass the gates | 0    | pending | [slices/S0-foundation.md](slices/S0-foundation.md)                       | C1–C8         |
+| S1    | schema, migrations, queue and integration harness run against real Postgres    | 0    | pending | [slices/S1-schema-infra.md](slices/S1-schema-infra.md)                   | C9–C11        |
+| S2    | CPF validation, CPF/IP protection and exact Price are correct in isolation     | 1    | pending | [slices/S2-cpf-pii-price.md](slices/S2-cpf-pii-price.md)                 | C12–C23       |
+| S3    | simulated lenders, adapters and breaker derivation                             | 1    | pending | [slices/S3-lender-integration.md](slices/S3-lender-integration.md)       | C24–C40       |
+| S4    | fan-out, deadline, live stream, one choice                                     | 2    | pending | [slices/S4-orchestration.md](slices/S4-orchestration.md)                 | C41–C76, C158 |
+| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor             | 2    | pending | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88       |
+| S6    | requote, per-patient and per-IP caps, no PII in public payloads                | 3    | pending | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100      |
+| S7    | backoffice auth, metrics, lists, kill switch API                               | 4    | pending | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117     |
+| S8    | public journey UI + UI kit                                                     | 4    | pending | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144     |
+| S9    | backoffice UI                                                                  | 5    | pending | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154     |
+| S10   | E2E suite + browser smoke                                                      | 6    | pending | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157     |

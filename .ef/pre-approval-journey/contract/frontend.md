@@ -30,18 +30,18 @@ Moving between steps never resets values: the form lives in the `cadastro` layou
 
 ## Data access
 
-- `src/web/api/eden.ts`: `export const api = treaty<App>(location.origin).api` (import type `App` only). Browser-only module. Loaders call it client-side (`defaultSsr: false`).
+- `src/api/eden.ts`: `export const api = treaty<App>(location.origin).api` (import type `App` only). Browser-only module. `src/api/consultations.ts` and `src/api/backoffice.ts` wrap it in typed fetchers/mutations. Only route loaders/`beforeLoad`, the stream hook and mutation event handlers call `src/api/*` (layout.md § Data boundaries); components never import it.
 - TanStack Query isn't installed; loaders + Eden + router invalidation are the data layer. Don't add Query without amending the contract.
-- `use-consultation-stream.ts`: `AbortController` per connection, aborted on unmount and before reconnect. `for await (const ev of res.data)` reads the **envelope** (`ev.event`, `ev.data`). On stream error or end while `quoteStatus !== "SETTLED"`, reconnect with backoff (500 ms → 1 s → 2 s → 4 s cap). The first message of every connection is a full snapshot that **replaces** state.
-- Table state (page, pageSize, sort, q, filters) lives in **typed search params** (`validateSearch` with the shared `ListQuery` TypeBox via the Standard Schema adapter). The CPF is never in the URL.
-- Offer sorting ("menor parcela" / "menor custo total") reorders API values in the browser. No money arithmetic in the browser: format only (`shared/domain/money.ts`).
+- `src/hooks/use-consultation-stream.ts`: `AbortController` per connection, aborted on unmount and before reconnect. `for await (const ev of res.data)` reads the **envelope** (`ev.event`, `ev.data`). On stream error or end while `quoteStatus !== "SETTLED"`, reconnect with backoff (500 ms → 1 s → 2 s → 4 s cap). The first message of every connection is a full snapshot that **replaces** state.
+- Table state (page, pageSize, sort, q, filters) lives in **typed search params** (`validateSearch` with the `ListQuery` TypeBox from `lib/list/list-contract.ts` via the Standard Schema adapter). The CPF is never in the URL.
+- Offer sorting ("menor parcela" / "menor custo total") reorders API values in the browser (`components/modules/consultation/sort-offers.ts`, pure). No money arithmetic in the browser: format only (`lib/money/money.ts`).
 
 ## Forms and validation
 
-- TanStack Form via `createFormHook` (pattern from `src/hooks/demo.form.ts`, moved to `src/web/features/signup/`).
+- TanStack Form via `createFormHook` in `src/components/modules/signup/signup-form.ts` (pattern from the template's `src/hooks/demo.form.ts`, which is deleted).
 - The form-level validator is `toStandardSchema(SignupFormSchema)` on `onChange` + `onSubmit`. Field errors land on fields via issue paths (proven).
-- Schemas come from `consultation.schemas.ts` (drizzle-derived and refined; `Cpf` refine from `shared/domain/cpf.ts`). Inputs keep raw strings; the schema works on normalised digits. Masking is display-only via zero-dependency formatters.
-- Messages: `shared/schema/locale.ts` sets `System.Locale.Set(System.Locale.pt_BR)` once (imported by both the server app and the browser entry), plus `error` annotations for domain messages ("CPF inválido"). The adapter honours both. Don't render `form.state.errors` raw: it contains a path → issues map.
+- DTO schemas come from `server/modules/consultation/consultation.dto.ts` (drizzle-derived and refined; `CpfSchema` from `lib/cpf/cpf.ts`). Inputs keep raw strings; the schema works on normalised digits. Masking is display-only via zero-dependency formatters.
+- Messages: `lib/validation/locale.ts` sets `System.Locale.Set(System.Locale.pt_BR)` once (imported by both the server app and the browser entry), plus `error` annotations for domain messages ("CPF inválido"). The adapter honours both. Don't render `form.state.errors` raw: it contains a path → issues map.
 - Server 422 `fields[]` is mapped back onto form fields by path after submit.
 - Keep TypeBox's default `maxErrors` (8): the form has 6 fields.
 
@@ -49,6 +49,6 @@ Moving between steps never resets values: the form lives in the `cadastro` layou
 
 - shadcn with **Base UI** primitives, style `base-nova`, CSS variables on. Components are vendored in `src/components/ui/` via the shadcn CLI run in a temp copy, then committed. `components.json` aliases use `@/` (CLI requirement; see `bindings.md`).
 - Tokens: shadcn semantic variables live **only** in `src/theme.css`, imported by `src/styles.css`. Swapping the theme = replacing that one file. The template's `--sea-ink…` tokens are removed with the demo shell. Dark mode keeps the existing `.dark` class mechanism.
-- Data tables: `@tanstack/react-table@9.3.1` (v9 API: `useTable`, `tableFeatures`) in **manual** pagination/sorting/filtering mode, wired to the list contract (`api.md`). One shared `DataTable` component.
+- Data tables: `@tanstack/react-table@9.3.1` (v9 API: `useTable`, `tableFeatures`) in **manual** pagination/sorting/filtering mode, wired to the list contract (`api.md`). One `DataTable` component in `components/modules/backoffice/DataTable.tsx`.
 - Charts: shadcn `chart` (recharts). Toasts: `sonner`.
 - Accessibility: Base UI `Field` wires `aria-invalid`/`aria-describedby`; focus the first invalid field on submit; each lender card is a `role="status" aria-live="polite"` region; every action is keyboard-reachable with visible focus.

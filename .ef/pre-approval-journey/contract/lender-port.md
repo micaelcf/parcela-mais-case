@@ -1,6 +1,6 @@
 # Lender port
 
-`src/server/modules/lender/lender.port.ts`, the only interface the core knows. Adapters translate a lender's HTTP contract (`api.md` § Lender simulator) into these types. They never decide business outcomes beyond mapping.
+`src/server/integrations/lenders/lender.port.ts`, the only interface the core knows. Adapters translate a lender's HTTP contract (`api.md` § Lender simulator) into these types. They never decide business outcomes beyond mapping.
 
 ```ts
 export type LenderCode = "ALFA" | "BETA" | "GAMA" | "DELTA"; // from pgEnum lender_code

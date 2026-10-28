@@ -31,23 +31,26 @@ UI: `@base-ui/react`, shadcn base style deps (`class-variance-authority`, `clsx`
 
 - Canonical alias: **`#/*` → `./src/*`** (`package.json:5-7` imports + `tsconfig.json` paths). It resolves under Vite, Vitest, Node and Bun without tsconfig help.
 - Exception: vendored shadcn files under `src/components/ui/**` keep the CLI's `@/` imports. Don't hand-edit them except to change tokens. No other file imports with `@/`.
-- Files: `kebab-case` with a role suffix that says what the file is: `*.table.ts`, `*.relations.ts`, `*.repository.ts`, `*.service.ts`, `*.routes.ts`, `*.schemas.ts`, `*.adapter.ts`, `*.port.ts`, `*.job.ts`, `*.plugin.ts`, `*.test.ts`, `*.int.test.ts`. React components are `PascalCase.tsx`. Full layout in [layout.md](layout.md).
+- Files: `kebab-case` with a role suffix that says what the file is: `*.table.ts`, `*.relations.ts`, `*.repository.ts`, `*.service.ts`, `*.routes.ts`, `*.dto.ts`, `*.adapter.ts`, `*.port.ts`, `*.job.ts`, `*.plugin.ts`, `*.test.ts`, `*.int.test.ts`. React components are `PascalCase.tsx`. Full layout in [layout.md](layout.md).
 - Formatting: oxfmt defaults (double quotes, semicolons, 2 spaces). `src/routeTree.gen.ts` is excluded from fmt and lint.
 
 ## Test conventions
 
 - Import from **`vite-plus/test`** (`describe`, `it`, `expect`, `vi`). Importing from `vitest` fails the `vite-plus/prefer-vite-plus-imports` lint rule.
 - **Unit tests** (`*.test.ts`, co-located): pure logic with no DB and no network. CPF, Price, breaker derivation, adapter mapping, TypeBox→Standard Schema adapter, list-query parsing.
-- **Integration tests** (`*.int.test.ts`): real Postgres from the compose `postgres` service.
-  - A global setup creates `test_<random>` per run, applies the real drizzle migrations and the pg-boss schema, and drops it at teardown.
-  - Setup data **only through real code**: repositories, services, the Elysia app via `app.handle(new Request("http://localhost/api/..."))` or Eden `treaty(app)`. No test may import the DB client or a table object to _write_ rows. Reading for assertions goes through repositories too.
-  - Lender HTTP adapters get `fetch = (req) => simulator.handle(req)`. Timing comes from env (`SIMULATOR_TIME_SCALE`, `CONSULTATION_DEADLINE_MS`), never from mocks of the clock in integration tests.
-- **E2E**: final phase only (runner = RFC O4, still open).
+- **Integration tests** (`*.int.test.ts`): real Postgres from the compose `postgres` service (`localhost:5432`).
+  - The `integration` Vitest project's global setup (`test/integration/setup/global-setup.ts`) creates `test_<run>_tpl` per run, applies the real drizzle migrations, the pg-boss schema and the queues with `#/server/infra/db/migrate.ts` (portable; `scripts/ops/migrate.ts` is a thin Bun entry over it), and drops every `test_<run>_*` database at teardown.
+  - A setup file (`test/integration/setup/file-db.setup.ts`) clones that template into `test_<run>_<n>` for **each test file** and points `DATABASE_URL` at it before the file imports app code. Files are isolated, so global state (breaker windows, kill switches, rate limits) never leaks between files.
+  - Integration env defaults (set by the project, overridable per file before a dynamic import): `NODE_ENV=test`, `SIMULATION_CONTROLS=true`, `SIMULATOR_TIME_SCALE=0.2`, `CONSULTATION_DEADLINE_MS=2000`, `SIMULATOR_DELTA_FAILURE_RATE=0.3`, test-only PII keys and backoffice credentials. Timing claims use a fixed 1000 ms grace (the finalizer's pg-boss polling bound), not a scaled one.
+  - Setup data **only through real code**: repositories, services, the Elysia app via `app.handle(new Request("http://localhost/api/..."))`, the worker via `createWorker({ lenderRegistry: testLenderRegistry })` (`signatures.md`). No test may import the DB client or a table object; a lint override on `**/*.int.test.ts` enforces it. Reading for assertions goes through repositories, except the RF-503 plaintext scan, which reads `information_schema` with a raw `pg` client.
+  - Lender HTTP adapters get `fetch = appFetch` (the simulator behind the real app). Timing comes from env, never from mocks of the clock in integration tests.
+  - Unique inputs per test (CPF from `cpfCheckDigits`, a distinct `X-Forwarded-For`) instead of cleanup.
+- **E2E** (final phase): Playwright Test, `test/e2e/*.spec.ts`, run by `vp run e2e` (`playwright test`) against a running stack at `E2E_BASE_URL` (default `http://localhost:3000`, dev stack with `SIMULATION_CONTROLS=true`). Chromium only.
 - A test proves a behaviour named in a PRD id; name it after the behaviour, not the function.
 
 ## Environment variables
 
-Server env is validated at boot by `src/server/shared/env/server-env.ts`: `createEnv({ isServer: true, server: {...}, runtimeEnv: process.env })`, TypeBox through the shared Standard Schema adapter with `coerce: true`. Client env (`src/shared/env/client-env.ts`) reads `import.meta.env` and has **no** keys today.
+Server env is validated at boot by `src/server/infra/env/server-env.ts`: `createEnv({ isServer: true, server: {...}, runtimeEnv: process.env })`, TypeBox through the shared Standard Schema adapter with `coerce: true`. Client env (`src/lib/env/client-env.ts`) reads `import.meta.env` and has **no** keys today.
 
 | Var                                                          | Type / default                                             | Used by                                |
 | ------------------------------------------------------------ | ---------------------------------------------------------- | -------------------------------------- |

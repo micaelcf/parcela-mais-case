@@ -27,7 +27,7 @@ type SignupRequest = {
 
 type ConsultationPublicView = {
   id: string;
-  journeyStatus: "QUOTING" | "OFFERS" | "NO_OFFER" | "CHOSEN"; // derived (consultation-view.ts)
+  journeyStatus: "QUOTING" | "OFFERS" | "NO_OFFER" | "CHOSEN"; // derived (consultation.dto.ts)
   quoteStatus: "QUOTING" | "SETTLED";
   createdAt: string;
   deadlineAt: string;

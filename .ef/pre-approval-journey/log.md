@@ -107,3 +107,20 @@ Full reports: `agent://<name>` (session transcripts).
 ### Step 5: contract
 
 Written to `contract/` (8 files) and the requirement list to `checks.md`. RFC amended in place: header status, D3, D9, D19, D24, D25, AD11, pre-existing defects table. INDEX status updated.
+
+## Stage 4 — implement (2026-10-28)
+
+### Extract
+
+- Checklist written: 11 slices (`slices/S0…S10`), 158 checks (C1–C158), every one of the 89 PRD ids cited (scripted check: 0 missing, 0 duplicate ids, 0 checks without a proof). Swept + Coverage in `verification.md`. Feature base `fa5b38d`.
+- Contract additions: `contract/signatures.md` (cross-slice exports, written by the lead); `bindings.md` test conventions made concrete (per-run template DB + per-file clone, integration env defaults, E2E runner).
+- Price reference table computed independently (exact rationals, half-up) and frozen into S2 before any code.
+
+### Settled by the user mid-stage (not otherwise recorded outside Landing)
+
+- Layout: no `shared` folders. `src/lib` = isomorphic cross-repo code; `src/server/infra` = infrastructure (env, db, http, queue, worker runtime, realtime); `src/server/lib` = in-process server code that's neither infra nor business (crypto, log, domain errors); `src/server/integrations/<system>` = external systems (lenders, with the simulator beside the adapters).
+- DDD applies to the API tree only. The frontend follows TanStack Start + shadcn defaults at the `src/` root; feature components under `components/modules/<feature>/`, root `components/` = app shell/layout + `ui/`. Route loaders own reads; components never call the API (exceptions: SSE hook, mutation handlers). TanStack Query stays out.
+- DTO files are `<module>.dto.ts` (replaces `*.schemas.ts` and `consultation-view.ts`).
+- Worker: generic runtime in `infra/worker/run-worker.ts`, composition root `src/server/worker.ts`, entry `src/server/worker.main.ts`.
+- Tests: unit co-located; integration under `test/integration/<module>/` with `test/integration/setup/`; E2E under `test/e2e/`.
+- RFC O4 closed by the lead (vetoable): Playwright Test standalone (Landing row).
