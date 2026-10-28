@@ -49,7 +49,7 @@ export function priceInstallment(input: {
 
 ## Produced by S3 (lender integration)
 
-`#/server/integrations/lenders/lender.port.ts`: exactly as in [lender-port.md](lender-port.md), plus `export const LENDER_CODES = ["ALFA", "BETA", "GAMA", "DELTA"] as const` (the display/order source).
+`#/server/integrations/lenders/lender.port.ts`: exactly as in [lender-port.md](lender-port.md). `LenderCode`, `SimulationScenario`, `AttemptStatus`, `AttemptReason` and `LENDER_CODES` (display/order source) come from `#/lib/enums` (landed in S1); the port imports them, never redeclares them.
 
 `#/server/integrations/lenders/registry.ts`:
 

@@ -26,6 +26,7 @@ src/server/
   infra/
     env/server-env.ts                       # validated server env (process.env)
     db/client.ts                            # pg.Pool + drizzle({ client, relations }) singleton; Db/Tx types
+    db/enums.ts                             # every pgEnum, built from `lib/enums.ts` value lists
     db/schema.ts                            # barrel: re-exports every *.table.ts (tables only)
     db/relations.ts                         # { ...defineRelationsPart(schema), ...each *.relations.ts }
     db/uuid.ts                              # uuidv7() via node:crypto

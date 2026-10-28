@@ -1,6 +1,7 @@
 # S5 — one command brings the stack up on Podman or Docker, and deploy/prune/doctor are safe and local · ~16 files · est. ~8k
 
 Wave 2. Owns: `compose.yaml`, `Dockerfile`, `.dockerignore`, `Caddyfile`, `.env.example`, `scripts/ops/{doctor,up,prune,deploy,hash-password}.ts`, `scripts/ops/lib/**`, `src/server/modules/backoffice/auth/password.ts`, `src/server/modules/backoffice/auth/password.test.ts`, `package.json` (`scripts` block only, this wave)
+Except: `compose.yaml` already exists with the `postgres` service (lead, W0, so the integration harness had a database); this slice extends it and owns it from here.
 Reads: contract/bindings.md, contract/layout.md, contract/ops.md, contract/signatures.md
 
 Non-goals: no remote host, SSH, `git fetch/pull/push`, registry push, or TLS issuance flow beyond Caddy's own. `scripts/ops/lib/*.ts` is pure and Node-safe (no `bun` import) so `vp test` can import it; the entry scripts inject Bun Shell into it. `scripts/ops/migrate.ts` already exists (S1); reuse it. The worker entry is `src/server/worker.main.ts` (S4, landing in parallel: reference the path, don't create it).
