@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import type { SimulationScenario } from "#/lib/enums";
 
-import { LenderCallError, type PreApprovalRequest } from "./lender.port";
+import { type FetchLike, LenderCallError, type PreApprovalRequest } from "./lender.port";
 import { createLenderRegistry } from "./registry";
 import { createSimulatorPlugin } from "./simulator/simulator.plugin";
 
@@ -166,7 +166,7 @@ describe("lender adapters", () => {
   });
 
   it("maps unusable responses to INTEGRATION_ERROR", async () => {
-    const stubs: Record<string, typeof fetch> = {
+    const stubs: Record<string, FetchLike> = {
       "network failure": () => Promise.reject(new TypeError("fetch failed")),
       "non-JSON 200": () =>
         Promise.resolve(
