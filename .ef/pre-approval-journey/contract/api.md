@@ -19,7 +19,7 @@ type SignupRequest = {
   fullName: string; // trimmed, 3–120 chars, at least two words
   cpf: string; // 11 digits after normalize; check digits (shared Cpf refine)
   birthdate: string; // YYYY-MM-DD; age 18–80 on the server date
-  phone: string; // 10–11 digits
+  phone: string; // Brazilian mobile: DDD + 9 + 8 digits; +55/55/0 prefixes dropped (src/lib/phone, amended 2026-10-28)
   monthlyIncomeCents: number; // integer ≥ 0
   treatmentAmountCents: number; // integer 100000–5000000
   simulationScenario?: SimulationScenario; // ≠ NORMAL only if SIMULATION_CONTROLS

@@ -8,6 +8,9 @@ Non-goals: requote, per-patient cap, per-IP throttle and the privacy scans are S
 **C41** · RF-103 — POST with CPF `529.982.247-24` → 422 `VALIDATION` with `fields[0].path = "cpf"`, and no consultation exists for that `Idempotency-Key`
 Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t "rejects an invalid CPF at the cpf path"`
 
+**C175** · RF-101 — POST with a landline, an unknown DDD, an 11-digit non-9 number or a `+1` number → 422 with exactly one field error at `phone` and its pt-BR message; `+55 21 97654-3210` → 202 (added 2026-10-28)
+Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t "accepts only a Brazilian mobile number at the phone path"`
+
 **C42** · RF-104 — birthdates giving age 17 and 81 → 422 at `birthdate`; ages 18 and 80 → 202 (4 members)
 Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t "enforces the 18–80 age bounds"`
 
