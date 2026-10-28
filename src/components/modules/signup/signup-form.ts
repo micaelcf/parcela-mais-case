@@ -4,13 +4,13 @@ import { Compile } from "typebox/compile";
 
 import { normalizeCpf } from "#/lib/cpf/cpf";
 import { parseCentsInput } from "#/lib/money/money";
+import { normalizePhone } from "#/lib/phone/phone";
 import {
   collectIssues,
   type StandardSchemaV1,
   toStandardSchema,
 } from "#/lib/validation/standard-schema";
 import {
-  normalizePhone,
   ScenarioSchema,
   type SignupRequest,
   SignupRequestSchema,

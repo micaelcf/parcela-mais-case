@@ -19,4 +19,12 @@ describe("signup masks", () => {
     expect(maskPhone("11987654321")).toBe("(11) 98765-4321");
     expect(maskPhone("(11) 98765-4321")).toBe("(11) 98765-4321");
   });
+
+  it("drops a pasted country code or trunk prefix", () => {
+    expect(maskPhone("+55 11 98765-4321")).toBe("(11) 98765-4321");
+    expect(maskPhone("5511987654321")).toBe("(11) 98765-4321");
+    expect(maskPhone("011 98765-4321")).toBe("(11) 98765-4321");
+    // Typing past 11 digits that start with 55 re-reads them as country code + number.
+    expect(maskPhone("(55) 11987-654321")).toBe("(11) 98765-4321");
+  });
 });

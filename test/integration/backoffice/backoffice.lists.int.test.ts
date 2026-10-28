@@ -94,7 +94,8 @@ describe("backoffice consultation explorer", () => {
     const body = signupBody({
       cpf: formatCpf(cpf),
       fullName: "Beatriz Souza Lima",
-      phone: "(11) 98765-4321",
+      // Typed with the country code: stored as the 11 national digits.
+      phone: "+55 (11) 98765-4321",
       monthlyIncomeCents: 812_345,
       treatmentAmountCents: 1_500_000,
       simulationScenario: "ALL_APPROVE",

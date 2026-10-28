@@ -5,6 +5,7 @@ import { fromDrizzle } from "pg-boss";
 
 import { normalizeCpf } from "#/lib/cpf/cpf";
 import type { SimulationScenario } from "#/lib/enums";
+import { normalizePhone } from "#/lib/phone/phone";
 import { db, type Tx } from "#/server/infra/db/client";
 import { env } from "#/server/infra/env/server-env";
 import { boss, startBoss } from "#/server/infra/queue/boss";
@@ -19,7 +20,6 @@ import {
   ageOn,
   type ConsultationPublicView,
   isUuid,
-  normalizePhone,
   type RequoteRequest,
   type SignupRequest,
   toConsultationPublicView,

@@ -40,6 +40,20 @@ describe("POST /consultations", () => {
     expect(created.status).toBe(202);
   });
 
+  it("accepts only a Brazilian mobile number at the phone path", async () => {
+    for (const [phone, message] of [
+      ["(11) 3456-7890", "Informe um celular; telefone fixo não é aceito"],
+      ["(20) 98765-4321", "DDD inválido"],
+      ["(11) 88765-4321", "O celular deve ter 9 dígitos começando com 9 depois do DDD"],
+      ["+1 415 555 0100", "Informe o celular com DDD, ex.: (11) 98765-4321"],
+    ] as const) {
+      const response = await postConsultation(signupBody({ phone }));
+      expect([phone, response.status]).toEqual([phone, 422]);
+      expect((await readProblem(response)).fields).toEqual([{ path: "phone", message }]);
+    }
+    expect((await postConsultation(signupBody({ phone: "+55 21 97654-3210" }))).status).toBe(202);
+  });
+
   it("enforces the 18–80 age bounds", async () => {
     const seventeen = await postConsultation(
       signupBody({ birthdate: birthdateTurningTomorrow(18) }),

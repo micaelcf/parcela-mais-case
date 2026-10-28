@@ -1,6 +1,7 @@
 import Type, { type Static, type TSchema } from "typebox";
 
 import { CpfSchema } from "#/lib/cpf/cpf";
+import { PhoneSchema } from "#/lib/phone/phone";
 import {
   ATTEMPT_REASONS,
   ATTEMPT_STATUSES,
@@ -69,15 +70,6 @@ function isFullName(value: string): boolean {
   return trimmed.length >= 3 && trimmed.length <= 120 && trimmed.split(/\s+/).length >= 2;
 }
 
-/** Strips every non-digit from a phone number. */
-export function normalizePhone(value: string): string {
-  return value.replace(/\D/g, "");
-}
-
-function isPhone(value: string): boolean {
-  return /^[\d\s()+.-]+$/.test(value) && /^\d{10,11}$/.test(normalizePhone(value));
-}
-
 export const ScenarioSchema = Type.Enum(SIMULATION_SCENARIOS);
 
 const TreatmentAmountCentsSchema = Type.Integer({
@@ -94,7 +86,7 @@ export const SignupRequestSchema = Type.Object({
     isAdultUpTo80,
     () => "A idade deve estar entre 18 e 80 anos",
   ),
-  phone: Type.Refine(Type.String(), isPhone, () => "Informe um celular com DDD"),
+  phone: PhoneSchema,
   monthlyIncomeCents: Type.Integer({
     minimum: 0,
     maximum: Number.MAX_SAFE_INTEGER,

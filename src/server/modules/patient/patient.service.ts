@@ -1,4 +1,5 @@
 import { normalizeCpf } from "#/lib/cpf/cpf";
+import { normalizePhone } from "#/lib/phone/phone";
 import type { Tx } from "#/server/infra/db/client";
 import { cpfCrypto } from "#/server/lib/crypto/cpf-crypto";
 
@@ -20,7 +21,7 @@ export const patientService = {
       cpfKeyVersion: cpfCrypto.keyVersion,
       fullName: input.fullName.trim(),
       birthdate: input.birthdate,
-      phone: input.phone.replace(/\D/g, ""),
+      phone: normalizePhone(input.phone),
     });
     await patientRepository.lockById(tx, id);
     return id;
