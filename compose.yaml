@@ -99,7 +99,8 @@ services:
       app:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:2019/config/"]
+      # In-container check: Caddy's admin API binds IPv4 loopback only, and busybox wget tries ::1 for "localhost".
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
       interval: 5s
       timeout: 3s
       retries: 10

@@ -33,7 +33,9 @@ WORKDIR /app
 ARG GIT_SHA=dev
 ENV GIT_SHA=$GIT_SHA NODE_ENV=production
 COPY --from=prod-deps /app/node_modules ./node_modules
-COPY package.json ./
+# tsconfig.json: Bun resolves the extensionless `#/…` imports of the TS it runs (worker, migrate)
+# through its `paths`; package.json `imports` alone maps `#/x` to `./src/x` with no extension.
+COPY package.json tsconfig.json ./
 COPY --from=build /app/.output ./.output
 COPY src ./src
 COPY drizzle ./drizzle
