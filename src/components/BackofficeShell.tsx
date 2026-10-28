@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { cn } from "cn";
 import { ArrowLeftIcon, LogOutIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { ThemeToggle } from "#/components/ThemeToggle";
 import { Button, buttonVariants } from "#/components/ui/button";
 import { Toaster } from "#/components/ui/sonner";
+import { useThemeMode } from "#/hooks/use-theme-mode";
 
 const NAV = [
   { to: "/backoffice", label: "Painel", exact: true },
@@ -26,6 +27,7 @@ export function BackofficeShell({
   onLogout: () => void;
   children: ReactNode;
 }) {
+  const { mode } = useThemeMode();
   return (
     <div className="flex min-h-dvh flex-col bg-muted/30">
       <a
@@ -67,11 +69,12 @@ export function BackofficeShell({
           ) : null}
           <Link
             to="/cadastro/paciente"
-            className={cn(buttonVariants({ variant: "ghost", size: "sm", className: "ml-auto" }))}
+            className={buttonVariants({ variant: "ghost", size: "sm", className: "ml-auto" })}
           >
             <ArrowLeftIcon aria-hidden data-icon="inline-start" />
             Ir para o cadastro
           </Link>
+          <ThemeToggle />
         </div>
       </header>
       <main
@@ -81,7 +84,7 @@ export function BackofficeShell({
       >
         {children}
       </main>
-      <Toaster position="top-center" richColors />
+      <Toaster position="top-center" richColors theme={mode} />
     </div>
   );
 }

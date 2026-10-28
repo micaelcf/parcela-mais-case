@@ -1,13 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { cn } from "cn";
 import { LockKeyholeIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { ThemeToggle } from "#/components/ThemeToggle";
 import { buttonVariants } from "#/components/ui/button";
 import { Toaster } from "#/components/ui/sonner";
+import { useThemeMode } from "#/hooks/use-theme-mode";
 
 /** Public frame: brand header, centred content column, footer, toasts. */
 export function AppShell({ children }: { children: ReactNode }) {
+  const { mode } = useThemeMode();
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -24,18 +26,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             Parcela <span className="text-primary">Mais</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <span className="hidden text-sm text-muted-foreground sm:inline">
               Pré-aprovação para tratamentos
             </span>
             {/* The backoffice redirects to its login when there's no session. */}
-            <Link
-              to="/backoffice"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            >
+            <Link to="/backoffice" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <LockKeyholeIcon aria-hidden data-icon="inline-start" />
               Área da clínica
             </Link>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           Simulação de crédito com financeiras parceiras. Nenhuma oferta é um contrato.
         </p>
       </footer>
-      <Toaster position="top-center" richColors />
+      <Toaster position="top-center" richColors theme={mode} />
     </div>
   );
 }
