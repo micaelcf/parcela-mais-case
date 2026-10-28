@@ -35,10 +35,11 @@ Column conventions: ids `uuid().primaryKey().$defaultFn(uuidv7)`; money `bigint(
 | `full_name`                     | text not null                                                                                   | trimmed                                                                                                                   |
 | `birthdate`                     | date not null                                                                                   |                                                                                                                           |
 | `phone`                         | text not null                                                                                   | the 11 national digits of a Brazilian mobile (`DDD` + `9` + 8), country/trunk prefix dropped (amended 2026-10-28)         |
+| `email`                         | text null                                                                                       | trimmed, lower-cased (RFC D30, 2026-10-28); null when none was given; last write wins (a submission without it clears it) |
 | `address_cep` … `address_state` | text null (7 columns: `cep`, `street`, `number`, `complement`, `neighborhood`, `city`, `state`) | normalised address (RFC D27, 2026-10-28); null for patients saved before addresses existed; `complement` null when absent |
 | `created_at` / `updated_at`     | timestamptz not null default now()                                                              |                                                                                                                           |
 
-Upsert: `ON CONFLICT (cpf_hmac) DO UPDATE SET full_name, birthdate, phone, address_*, updated_at`; never touches the ciphertext.
+Upsert: `ON CONFLICT (cpf_hmac) DO UPDATE SET full_name, birthdate, phone, email, address_*, updated_at`; never touches the ciphertext.
 
 ### `consultation` (`modules/consultation/db/consultation.table.ts`)
 
