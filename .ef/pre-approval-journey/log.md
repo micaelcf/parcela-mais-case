@@ -192,3 +192,17 @@ Written to `contract/` (8 files) and the requirement list to `checks.md`. RFC am
 - Proof wording: `vp run e2e -- <file>` forwards a literal `--` and Playwright then ignores the filters; every E2E proof now reads `vp run e2e <file> -g "<title>"`.
 - Known non-requirement nit: `HEAD /api/*` answers 404 (the Start server route maps GET/POST/PUT/PATCH/DELETE only).
 - Prod-parity app/worker/caddy stopped after the C155 run (they share the dev database).
+
+## Stage 5 — audit round 1 (2026-10-28, reviewer agent, range `fa5b38d..d56f475`)
+
+Verdict **FAIL**: 0 blockers · 2 major · 4 minor · 2 nits · 7 questions. Full report: `agent://Stage5AuditRound1` (copy at `local://audit-round-1.md`).
+
+- A1 major (RF-502): public view exposes `attempts[].maxApprovableCents` = income × 10 on a NORMAL Alfa refusal; C99 only compares literals in forced scenarios.
+- A2 major (PII): prod stack publishes Postgres 5432 on all interfaces with literal `parcela:parcela`.
+- A3 minor (RF-217/218, D11): a forced-scenario attempt can claim the half-open probe.
+- A4 minor (RF-108/614): same-key replay is checked before the patient lock, so a double submit at cap − 1 answers 429.
+- A5 minor (RF-615): CPF-search results can page but not sort/filter; endpoint missing from Coverage.
+- A6 minor (D2b): compose `environment` hard-codes `DATABASE_URL`, so a managed Postgres needs a compose edit.
+- A7 nit (D5/RF-709): `docker builder prune -f` is not project-scoped. A8 nit: `NOT_FOUND`/`INTERNAL` missing from `api.md`.
+- Questions: Q-1 real client IP under rootless Podman; Q-2 SSE through Caddy never exercised; Q-3 `Secure` cookie on plain-HTTP deploys; Q-4 RF-408 "identical body" while quoting; Q-5 CPF typed in the explorer's free-text search lands in the URL; Q-6 queue backlog up to 60 s stale; Q-7 lender-health rates include forced attempts.
+- Remediation (orchestrator triage): fix A1–A8, Q-2 (prove through Caddy), Q-3 (`Secure` only when served over HTTPS), Q-5 (refuse CPF-shaped free text); record Q-1, Q-4, Q-6, Q-7 as owner questions in the RFC.
