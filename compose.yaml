@@ -1,5 +1,27 @@
 name: parcela-mais-case
 
+# Every container and built image of this repo carries this label (ops scripts filter on it).
+x-project-labels: &project-labels
+  com.parcela.project: parcela-mais-case
+
+# app, migrate and worker run the same image; identical builds hit the layer cache.
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      GIT_SHA: ${GIT_SHA:-dev}
+    labels: *project-labels
+  profiles: [prod]
+  init: true
+  env_file: .env
+  environment:
+    DATABASE_URL: postgres://parcela:parcela@postgres:5432/parcela
+    LENDER_BASE_URL: http://app:3000/api/simulator/lenders
+    GIT_SHA: ${GIT_SHA:-dev}
+    NODE_ENV: production
+  labels: *project-labels
+
 services:
   postgres:
     image: docker.io/library/postgres:18-alpine
@@ -16,6 +38,73 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+    labels: *project-labels
+
+  migrate:
+    <<: *app
+    command: ["bun", "scripts/ops/migrate.ts"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    <<: *app
+    command: ["bun", ".output/server/index.mjs"]
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - bun
+        - -e
+        - "fetch('http://localhost:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  worker:
+    <<: *app
+    command: ["bun", "src/server/worker.main.ts"]
+    restart: unless-stopped
+    # boss.stop({ graceful: true, timeout: 15000 }) needs time after SIGTERM.
+    stop_grace_period: 20s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # The worker serves no HTTP: healthy while its process runs ([.] keeps pgrep off this shell).
+      test: ["CMD-SHELL", "pgrep -f 'src/server/worker[.]main' > /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  caddy:
+    image: docker.io/library/caddy:2-alpine
+    profiles: [prod]
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:2019/config/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    labels: *project-labels
 
 volumes:
   pgdata:
+  caddy_data:

@@ -1,0 +1,25 @@
+# Build context = what the image needs: package.json, bun.lock, configs, src/, public/, drizzle/, scripts/ops/.
+.git
+.ef
+.env
+.env.*
+!.env.example
+*.local
+node_modules
+.output
+.nitro
+.tanstack
+.vinxi
+.wrangler
+.vite-hooks
+.vscode
+dist
+dist-ssr
+docs
+knowledge
+test
+**/*.test.ts
+Dockerfile
+.dockerignore
+compose.yaml
+Caddyfile

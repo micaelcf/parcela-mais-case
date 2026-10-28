@@ -13,6 +13,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun --env-file=.env.local scripts/ops/migrate.ts",
     "db:studio": "drizzle-kit studio",
+    "doctor": "bun scripts/ops/doctor.ts",
+    "up": "bun scripts/ops/up.ts",
+    "prune": "bun scripts/ops/prune.ts",
+    "deploy": "bun scripts/ops/deploy.ts",
+    "backoffice:hash-password": "bun scripts/ops/hash-password.ts",
     "prepare": "vp config"
   },
   "dependencies": {
@@ -40,6 +45,7 @@
   "devDependencies": {
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/devtools-vite": "0.8.5",
+    "@types/bun": "1.4.4",
     "@types/node": "^22.10.2",
     "@types/pg": "^8.15.6",
     "@types/react": "^19.2.0",
