@@ -337,8 +337,8 @@ export function DataTable<TData extends RowData>({
 
 /**
  * The search box: applies after a pause in typing, or at once on Enter. Its text becomes the `q`
- * URL param, so a CPF is never applied (RF-617) and bare digits wait for Enter (see
- * `classifySearchText`).
+ * URL param, so a CPF is never applied (RF-617) and text ending in digits that may still become a
+ * CPF, after a name or alone, waits for Enter (see `classifySearchText`).
  */
 function SearchBox({
   label,

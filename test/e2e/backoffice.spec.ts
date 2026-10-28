@@ -329,9 +329,39 @@ test.describe("backoffice", () => {
     await page.getByRole("button", { name: "Limpar busca por CPF" }).click();
     await page.reload();
     await expect(explorerTable(page)).toBeVisible();
+
+    // The explorer's own search box (RF-617): a CPF typed there, alone or after a name, is refused
+    // with a pointer to "Buscar por CPF", even on Enter.
+    const search = page.getByRole("searchbox", { name: "Buscar", exact: true });
+    const hint = page.getByRole("status").filter({ hasText: "O CPF não entra nesta busca." });
+    for (const typed of [
+      patient.cpf,
+      patient.cpfFormatted,
+      `${patient.token} ${patient.cpf}`,
+      `${patient.token} ${patient.cpfFormatted}`,
+    ]) {
+      await search.fill(typed);
+      await expect(hint).toBeVisible();
+      await search.press("Enter");
+      await expect(hint).toBeVisible();
+    }
+    // A name followed by the first digits of a CPF waits for Enter: a typing pause longer than the
+    // 400 ms debounce applies nothing. Nothing can signal that a search didn't run, so wait it out.
+    const partials = [patient.cpf.slice(0, 7), patient.cpfFormatted.slice(0, 7)];
+    for (const partial of partials) {
+      await search.fill(`${patient.token} ${partial}`);
+      await expect(hint).toBeHidden();
+      await page.waitForTimeout(1_000);
+    }
     visited.push(page.url());
 
-    const cpfForms = [patient.cpf, patient.cpfFormatted, encodeURIComponent(patient.cpfFormatted)];
+    const cpfForms = [
+      patient.cpf,
+      patient.cpfFormatted,
+      encodeURIComponent(patient.cpfFormatted),
+      ...partials,
+      ...partials.map((partial) => encodeURIComponent(partial)),
+    ];
     for (const url of visited) {
       for (const cpf of cpfForms) expect(url, `visited ${url}`).not.toContain(cpf);
     }

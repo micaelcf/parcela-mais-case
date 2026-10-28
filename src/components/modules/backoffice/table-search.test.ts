@@ -92,12 +92,27 @@ describe("backoffice table search params (RF-617)", () => {
     ]) {
       expect([text, classifySearchText(text)]).toEqual([text, "cpf"]);
     }
-    // Digits that may still become a CPF: applied on Enter only, never by the typing pause.
-    for (const text of ["5", "529.982", "529982247", "0193"]) {
+    // Text ending in digits that may still become a CPF, whatever words come before them: applied
+    // on Enter only, never by the typing pause, so "Ana 5299822" never reaches the URL on its own.
+    for (const text of [
+      "5",
+      "529.982",
+      "529982247",
+      "0193",
+      "Ana 5299822",
+      "Ana 529.982",
+      "Ana 1234",
+    ]) {
       expect([text, classifySearchText(text)]).toEqual([text, "digits"]);
     }
-    // Names, ids and anything else with a letter search as usual (a UUID never holds a CPF run).
-    for (const text of ["Maria", "019a2b3c-0000-7000-8000-000000000000", "Ana 1234"]) {
+    // Names, ids and anything else not ending in digits search as usual (a consultation id is a
+    // UUID: plain text, though its last group may be all digits).
+    for (const text of [
+      "Maria",
+      "019a2b3c-0000-7000-8000-000000000000",
+      "019A2B3C-0000-7000-8000-000000000000",
+      "1234 Ana",
+    ]) {
       expect([text, classifySearchText(text)]).toEqual([text, "text"]);
     }
     expect(classifySearchText("   ")).toBe("empty");

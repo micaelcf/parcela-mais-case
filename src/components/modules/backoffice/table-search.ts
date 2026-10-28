@@ -117,21 +117,29 @@ export function sortOf(sorting: ReadonlyArray<{ id: string; desc: boolean }>): s
 /**
  * What a table's search box may do with the typed text (RF-617): `q` is a URL param, so a CPF must
  * never become one. `cpf`: holds a CPF (formatted or not, alone or next to other words): never
- * applied. `digits`: only digits and CPF punctuation, still short of a CPF: applied on Enter only,
- * so a pause while typing a CPF never puts its first digits in the URL. `text`: applied as usual.
+ * applied. `digits`: ends in a run of digits (CPF punctuation and spaces allowed) still short of a
+ * CPF, whatever words come before it: applied on Enter only, so a pause while typing a CPF, alone
+ * or after a name, never puts its first digits in the URL. `text`: applied as usual, and so is a
+ * whole UUID without a CPF run (the explorer searches consultation ids), though its last group may
+ * be all digits.
  */
 export type SearchTextKind = "empty" | "text" | "digits" | "cpf";
 
 /** A CPF-shaped run: 11 digits, optionally punctuated as `000.000.000-00`, not inside a longer run. */
 const CPF_RUN = /(^|\D)\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}(?!\d)/;
-const DIGITS_AND_PUNCTUATION = /^[\d.\-\s]+$/;
+/** The text's trailing run of digits, CPF punctuation and spaces (empty when it ends otherwise). */
+const TRAILING_DIGITS = /[\d.\-\s]*$/;
+const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
 
 export function classifySearchText(text: string): SearchTextKind {
   const trimmed = text.trim();
   if (trimmed === "") return "empty";
   if (CPF_RUN.test(trimmed)) return "cpf";
-  if (!DIGITS_AND_PUNCTUATION.test(trimmed)) return "text";
-  return trimmed.replace(/\D/g, "").length >= 11 ? "cpf" : "digits";
+  if (UUID.test(trimmed)) return "text";
+  const trailing = TRAILING_DIGITS.exec(trimmed)?.[0] ?? "";
+  const digits = trailing.replace(/\D/g, "").length;
+  if (digits === 0) return "text";
+  return digits >= 11 ? "cpf" : "digits";
 }
 
 // ── Per-table schemas (allow-lists of `backoffice.repository.ts`) ──────────────────────────────
