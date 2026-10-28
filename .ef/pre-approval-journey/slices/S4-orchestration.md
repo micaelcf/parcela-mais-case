@@ -113,6 +113,9 @@ Proof: `vp test test/integration/consultation/consultation.choice.int.test.ts -t
 **C171** · RF-406, RF-408 — an upper-case `offerId` chooses that offer, and the same id in lower case afterwards is the same choice (200, not a conflict) (added 2026-10-28, handoff fact-check F2)
 Proof: `vp test test/integration/consultation/consultation.choice.int.test.ts -t "accepts an offer id in either letter case"`
 
+**C173** · RF-204, RF-406 — a choice reaches an open stream within 1 s (pushed, not the 2 s re-read) with the stream lower case and the choice upper case, and the other way round (added 2026-10-28, handoff fact-check R2-2)
+Proof: `vp test test/integration/consultation/consultation.events.int.test.ts -t "pushes a choice at once whatever letter case the stream and the choice use"`
+
 **C74** · RF-409 — choosing a different offer after a choice → 409 `CHOICE_CONFLICT`; the stored choice is unchanged; an offer of another consultation → 404 `OFFER_NOT_FOUND`
 Proof: `vp test test/integration/consultation/consultation.choice.int.test.ts -t "rejects a different offer after a choice"`
 

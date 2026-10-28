@@ -2,26 +2,26 @@
 
 A clinic enters a patient's data once, four simulated lenders are queried in parallel under a 10-second deadline, offers arrive live with Tabela Price installments, and the patient's choice is persisted. A protected backoffice tracks money volume, lender health, consultations and abuse. It deliberately stops at the choice: no proposal submission, analysis, signing, disbursement or ledger.
 
-| Field            | Value                                                                                  |
-| ---------------- | -------------------------------------------------------------------------------------- |
-| **Status**       | `parcela-mais-case`: Stage 4: implementation complete; Stage 5 audit next (2026-10-28) |
-| **Driver**       | Micael                                                                                 |
-| **Target repos** | `parcela-mais-case`                                                                    |
-| **Ticket**       | none                                                                                   |
-| **Scale**        | `standard`                                                                             |
+| Field            | Value                                                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**       | `parcela-mais-case`: Stage 5 complete: audit PASS after 3 rounds, handoff fact-checked (2026-10-28); open owner questions RFC O1–O3, O5–O10 |
+| **Driver**       | Micael                                                                                                                                      |
+| **Target repos** | `parcela-mais-case`                                                                                                                         |
+| **Ticket**       | none                                                                                                                                        |
+| **Scale**        | `standard`                                                                                                                                  |
 
 ---
 
 ## Root documents
 
-| Doc                                                                     | Purpose                                                                                                                  | When to update                                                    |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| [knowledge/stack-baseline.md](../../../knowledge/stack-baseline.md)     | Verified ground truth about the template and toolchain, with citations. **Common knowledge base.**                       | When the underlying system or dependency versions change          |
-| [grill-decisions](./grill-decisions-2026-10-27-pre-approval-journey.md) | The decisions and rationale. **Source of truth for rationale.**                                                          | When a decision is revisited                                      |
-| [RFC](./RFC-pre-approval-journey.md)                                    | Decisions D1–D26 with options considered and rejected, criteria, assumptions, risks; **the only cross-repo status home** | When a decision or assumption changes (Stages 3–5 amend in place) |
-| [PRD](./PRD-pre-approval-journey.md)                                    | Requirements RF-101…RF-811 with acceptance criteria, metrics, non-goals: **the identifier registry**                     | When scope or a requirement changes                               |
-| [cpf-protection-explainer.html](./cpf-protection-explainer.html)        | Interactive explanation of CPF encryption + HMAC blind index (D16, AD8)                                                  | When D16 or AD8 changes                                           |
-| handoff doc                                                             | What actually shipped, written from the code                                                                             | Stage 5 (not yet written)                                         |
+| Doc                                                                     | Purpose                                                                                                                                 | When to update                                                    |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [knowledge/stack-baseline.md](../../../knowledge/stack-baseline.md)     | Verified ground truth about the template and toolchain, with citations. **Common knowledge base.**                                      | When the underlying system or dependency versions change          |
+| [grill-decisions](./grill-decisions-2026-10-27-pre-approval-journey.md) | The decisions and rationale. **Source of truth for rationale.**                                                                         | When a decision is revisited                                      |
+| [RFC](./RFC-pre-approval-journey.md)                                    | Decisions D1–D26 with options considered and rejected, criteria, assumptions, risks; **the only cross-repo status home**                | When a decision or assumption changes (Stages 3–5 amend in place) |
+| [PRD](./PRD-pre-approval-journey.md)                                    | Requirements RF-101…RF-811 with acceptance criteria, metrics, non-goals: **the identifier registry**                                    | When scope or a requirement changes                               |
+| [cpf-protection-explainer.html](./cpf-protection-explainer.html)        | Interactive explanation of CPF encryption + HMAC blind index (D16, AD8)                                                                 | When D16 or AD8 changes                                           |
+| [API_HANDOFF.md](./API_HANDOFF.md)                                      | **Start here for downstream work.** What actually shipped, written from the code; **supersedes the design docs wherever they disagree** | When the API, its errors or its behaviour change                  |
 
 ---
 
@@ -32,7 +32,7 @@ A clinic enters a patient's data once, four simulated lenders are queried in par
 3. **RFC**: resolved decisions with rejected options, assumptions and risks
 4. **PRD**: requirements and acceptance criteria
 5. **cpf-protection-explainer.html**: before touching anything that stores or shows a CPF
-6. **handoff doc**: once Stage 5 writes it
+6. **[API_HANDOFF.md](./API_HANDOFF.md)**: what shipped; supersedes the RFC, PRD and contracts wherever they disagree
 
 ---
 

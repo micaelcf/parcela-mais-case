@@ -247,3 +247,13 @@ Verdict **PASS** (`local://audit-round-3.md`): N1–N5 fixed, QN1 recorded (O10)
 
 - Closed after the verdict: N6 — `classifySearchText` treats a UUID prefix past its first group holding a hex letter as text (CPF runs still checked first: `529-982-247-25` and an id prefix hiding 11 digits stay refused); C168 cases added, red on the old classifier per the reviewer's reproduction; `backoffice.spec.ts` 9 passed on the dev stack. N7 — docs corrected.
 - Next: contract mode (`API_HANDOFF.md`, fact-checked by a fresh reviewer).
+
+## Stage 5 — contract mode (2026-10-28)
+
+- `docs/features/pre-approval-journey/API_HANDOFF.md` drafted from the code (agent `DraftApiHandoff`, payloads captured from the dev stack), linked from INDEX as superseding the design docs; RFC/PRD/INDEX statuses updated.
+- Fact-check round 1 (`HandoffFactCheck1`, `local://handoff-factcheck-1.md`): NOT CLEAN — F1 blocking. Code defects found by the draft/fact-check were fixed in code with red-first tests, not just documented:
+  - F1/F2 `9472e86`: a schema `pattern` keeps no regex flags (`UUID.source` dropped `/i`), so upper-case `Idempotency-Key`/`offerId` got 422. Now either case; lower-cased in the service (C170, C171; red: 422).
+  - F6 `6d07833`: Elysia 2 throws an `ElysiaStatus` 415 for a body content type without a JSON parser; the errors plugin answered 500. Now 422 `VALIDATION` (C172; red: 500). Routes with a `parse` hook (throttle, backoffice guard) never reach Elysia's 415 and answer the generic `path: ""` 422; documented.
+  - Draft D12 `1aac550`: throttle recorded malformed JSON as `INTERNAL`; now `VALIDATION` (C169; red: `[422,'INTERNAL']`).
+- Fact-check round 2 (`HandoffFactCheck2`, `local://handoff-factcheck-2.md`): **CLEAN** (2 minor, 5 nits, all applied). R2-2 fixed in code: the SSE channel matched the raw path id, so an upper-case stream or choice fell back to the 2 s re-read; routes now lower-case `:id` (C173; red: `['lower','upper',false]`).
+- Remaining documented divergences (no code change, owner/design): stateless logout (cookie replay works until expiry), undeclared extra fields in the backoffice detail, `patientFirstName` follows the patient's latest name, TypeBox English messages on string-vs-integer failures, form/multipart bodies accepted, no CORS/`Retry-After`, public simulator routes.

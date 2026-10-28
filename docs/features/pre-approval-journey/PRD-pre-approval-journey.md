@@ -3,6 +3,7 @@
 > Written from the [RFC](./RFC-pre-approval-journey.md), which is written from the [grill decisions](./grill-decisions-2026-10-27-pre-approval-journey.md). Where they disagree, grill-decisions wins, then the RFC.
 > **This document is the requirement identifier registry.** Ids are permanent and never renumbered. A cut requirement is struck through and kept.
 > Every requirement belongs to the single target repo `parcela-mais-case`.
+> **Status (2026-10-28):** implemented and audited (Stage 5 PASS). What shipped is in [API_HANDOFF.md](./API_HANDOFF.md), which supersedes this PRD wherever they disagree. Amended rows say so inline.
 
 ## Summary
 
