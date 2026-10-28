@@ -38,5 +38,5 @@ Proof: `log.md` § S5 "RF-702 up --prod run (podman)"
 **C87** · RF-703 — the RF-702 run also passes with `CONTAINER_ENGINE=docker`
 Proof: `log.md` § S5 "RF-703 up --prod run (docker)"
 
-**C88** · RF-601 — `hashPassword` output matches `scrypt$16384$8$1$<saltB64>$<hashB64>`; `verifyPassword` accepts the password, rejects another, and returns false on a malformed value
+**C88** · RF-601 — `hashPassword` output matches `scrypt:16384:8:1:<saltB64>:<hashB64>`; `verifyPassword` accepts the password, rejects another, and returns false on a malformed value
 Proof: `vp test src/server/modules/backoffice/auth/password.test.ts -t "hashes and verifies scrypt passwords"`

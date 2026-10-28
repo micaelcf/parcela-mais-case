@@ -4,7 +4,7 @@ pt-BR UI, no SSR, every datum from the API over HTTP.
 
 ## Shell
 
-- `src/router.tsx`: `createRouter({ routeTree, defaultSsr: false, scrollRestoration: true, … })`. Route content renders client-only (`ClientOnly`). The root `shellComponent` still emits the static document (`__root.tsx`: `<html lang="pt-BR">`, `HeadContent`, `Scripts`, theme init script). It must not read data.
+- `src/start.ts`: `export const startInstance = createStart(() => ({ defaultSsr: false }))` (the Start entry the plugin discovers; `defaultSsr` is not a `createRouter` option in 1.169: amended 2026-10-28, implementation). `src/router.tsx` keeps `createRouter({ routeTree, scrollRestoration: true, … })`. The root `shellComponent` still emits the static document (`__root.tsx`: `<html lang="pt-BR">`, `HeadContent`, `Scripts`, theme init script). It must not read data.
 - `src/routes/api.$.ts`: `createFileRoute("/api/$")({ server: { handlers: { GET: handle, POST: handle, PUT: handle, DELETE: handle } } })` with `handle = ({ request }) => app.fetch(request)`. Server routes resolve before rendering, independent of `defaultSsr`.
 - Remove the template's demo files: `routes/about.tsx`, `components/{Header,Footer,ThemeToggle,demo.FormComponents}.tsx`, `hooks/demo.*`, `data/demo-table-data.ts`.
 

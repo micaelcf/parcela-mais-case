@@ -121,7 +121,7 @@ export const lenderSettingService: {
 `#/server/modules/backoffice/auth/password.ts` (`node:crypto` scrypt, no env):
 
 ```ts
-export function hashPassword(password: string): Promise<string>; // "scrypt$<N>$<r>$<p>$<saltB64>$<hashB64>", N=16384 r=8 p=1, 16-byte salt, 64-byte key
+export function hashPassword(password: string): Promise<string>; // "scrypt:<N>:<r>:<p>:<saltB64>:<hashB64>", N=16384 r=8 p=1, 16-byte salt, 64-byte key
 export function verifyPassword(password: string, encoded: string): Promise<boolean>; // timingSafeEqual; false on a malformed value
 ```
 

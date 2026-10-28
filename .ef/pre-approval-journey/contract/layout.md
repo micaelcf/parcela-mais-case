@@ -124,7 +124,6 @@ src/lib/
   validation/locale.ts                      # System.Locale pt_BR + keyword messages
   list/list-contract.ts                     # ListQuery / ListResponse TypeBox (API ↔ web format)
   enums.ts                                  # TS unions mirrored from the pgEnums
-  env/client-env.ts                         # import.meta.env (no keys today)
 ```
 
 ## Outside `src/`

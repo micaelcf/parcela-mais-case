@@ -50,26 +50,26 @@ UI: `@base-ui/react`, shadcn base style deps (`class-variance-authority`, `clsx`
 
 ## Environment variables
 
-Server env is validated at boot by `src/server/infra/env/server-env.ts`: `createEnv({ isServer: true, server: {...}, runtimeEnv: process.env })`, TypeBox through the shared Standard Schema adapter with `coerce: true`. Client env (`src/lib/env/client-env.ts`) reads `import.meta.env` and has **no** keys today.
+Server env is validated at boot by `src/server/infra/env/server-env.ts`: `createEnv({ isServer: true, server: {...}, runtimeEnv: process.env })`, TypeBox through the Standard Schema adapter with `coerce: true`. No client env module exists: the browser has no env keys (the UI reads runtime flags from `GET /api/config`); add `src/lib/env/client-env.ts` on `import.meta.env` when the first `VITE_*` key appears (2026-10-28, implementation).
 
-| Var                                                          | Type / default                                             | Used by                                |
-| ------------------------------------------------------------ | ---------------------------------------------------------- | -------------------------------------- |
-| `DATABASE_URL`                                               | postgres URL, required                                     | app, worker, migrate, tests            |
-| `PII_HMAC_KEY`                                               | base64, 32 bytes, required                                 | CPF blind index, IP hash               |
-| `PII_ENCRYPTION_KEY`                                         | base64, 32 bytes, required                                 | CPF AES-256-GCM                        |
-| `PII_KEY_VERSION`                                            | int ≥ 1, default 1                                         | `cpf_key_version` written              |
-| `BACKOFFICE_USERNAME`                                        | string, required                                           | login                                  |
-| `BACKOFFICE_PASSWORD_HASH`                                   | `scrypt$<N>$<r>$<p>$<saltB64>$<hashB64>`, required         | login                                  |
-| `BACKOFFICE_SESSION_SECRET`                                  | ≥ 32 chars, required                                       | Elysia cookie signing                  |
-| `SIMULATION_CONTROLS`                                        | boolean, default `false`                                   | scenario picker + API gate             |
-| `LENDER_BASE_URL`                                            | URL, default `http://localhost:3000/api/simulator/lenders` | worker adapters                        |
-| `CONSULTATION_DEADLINE_MS`                                   | int, default `10000`                                       | deadline                               |
-| `SIMULATOR_TIME_SCALE`                                       | number in (0,1], default `1`                               | simulator latency multiplier           |
-| `SIMULATOR_DELTA_FAILURE_RATE`                               | number in [0,1], default `0.3`                             | Delta 500 rate in NORMAL               |
-| `RATE_LIMIT_PATIENT_MAX` / `RATE_LIMIT_PATIENT_WINDOW_HOURS` | int, default `5` / `24`                                    | D22 (thresholds = RFC O2, provisional) |
-| `RATE_LIMIT_IP_MAX` / `RATE_LIMIT_IP_WINDOW_MINUTES`         | int, default `30` / `60`                                   | D22 (RFC O2)                           |
-| `GIT_SHA`                                                    | string, default `"dev"`                                    | `/api/health`                          |
-| `APP_DOMAIN`                                                 | host, optional                                             | Caddy site address (RFC O1)            |
-| `NODE_ENV`                                                   | `development \| production \| test`                        | Elysia production error shape          |
+| Var                                                          | Type / default                                                                                                    | Used by                                |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `DATABASE_URL`                                               | postgres URL, required                                                                                            | app, worker, migrate, tests            |
+| `PII_HMAC_KEY`                                               | base64, 32 bytes, required                                                                                        | CPF blind index, IP hash               |
+| `PII_ENCRYPTION_KEY`                                         | base64, 32 bytes, required                                                                                        | CPF AES-256-GCM                        |
+| `PII_KEY_VERSION`                                            | int ≥ 1, default 1                                                                                                | `cpf_key_version` written              |
+| `BACKOFFICE_USERNAME`                                        | string, required                                                                                                  | login                                  |
+| `BACKOFFICE_PASSWORD_HASH`                                   | `scrypt:<N>:<r>:<p>:<saltB64>:<hashB64>`, required (`:` not `$`: Bun's and Compose's env-file loaders expand `$`) | login                                  |
+| `BACKOFFICE_SESSION_SECRET`                                  | ≥ 32 chars, required                                                                                              | Elysia cookie signing                  |
+| `SIMULATION_CONTROLS`                                        | boolean, default `false`                                                                                          | scenario picker + API gate             |
+| `LENDER_BASE_URL`                                            | URL, default `http://localhost:3000/api/simulator/lenders`                                                        | worker adapters                        |
+| `CONSULTATION_DEADLINE_MS`                                   | int, default `10000`                                                                                              | deadline                               |
+| `SIMULATOR_TIME_SCALE`                                       | number in (0,1], default `1`                                                                                      | simulator latency multiplier           |
+| `SIMULATOR_DELTA_FAILURE_RATE`                               | number in [0,1], default `0.3`                                                                                    | Delta 500 rate in NORMAL               |
+| `RATE_LIMIT_PATIENT_MAX` / `RATE_LIMIT_PATIENT_WINDOW_HOURS` | int, default `5` / `24`                                                                                           | D22 (thresholds = RFC O2, provisional) |
+| `RATE_LIMIT_IP_MAX` / `RATE_LIMIT_IP_WINDOW_MINUTES`         | int, default `30` / `60`                                                                                          | D22 (RFC O2)                           |
+| `GIT_SHA`                                                    | string, default `"dev"`                                                                                           | `/api/health`                          |
+| `APP_DOMAIN`                                                 | host, optional                                                                                                    | Caddy site address (RFC O1)            |
+| `NODE_ENV`                                                   | `development \| production \| test`                                                                               | Elysia production error shape          |
 
 `.env.example` lists every var with a dev-safe value. `.env.local` is gitignored and holds real local values.
