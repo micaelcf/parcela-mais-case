@@ -7,8 +7,8 @@ import { logger } from "#/server/lib/log/logger";
 import type { ThrottleRoute } from "./throttle.repository";
 import { throttleService } from "./throttle.service";
 
-/** The `request_throttle` row of each counted request, until its outcome is written. */
-const counted = new WeakMap<Request, string>();
+/** Each counted request's `request_throttle` row and verdict, until its outcome is written. */
+const counted = new WeakMap<Request, { requestId: string; rejection: DomainError | null }>();
 
 /** The `code` the errors plugin answers with for `error` (null when the request succeeded). */
 function errorCodeOf(error: unknown): ErrorCode | null {
@@ -26,21 +26,24 @@ function statusCodeOf(status: number | keyof typeof StatusMap | undefined): numb
 
 /**
  * Per-IP guard (`boundaries.md` § Throttle), applied per route with `{ throttle: "<route>" }`.
- * `transform` runs before body validation, so invalid requests are counted too; over the cap the
- * request fails with 429 `IP_LIMIT`. After the response, the row gets its status and error code.
+ * `parse` runs before the body is read, so malformed and invalid requests are counted too. Elysia
+ * wraps anything thrown in `parse` as a ParseError, so over the cap `parse` skips reading the
+ * body (an empty one) and `transform`, still before validation, fails with 429 `IP_LIMIT`.
+ * After the response, the row gets its status and error code.
  */
 export const throttlePlugin = new Elysia({ name: "throttle" }).macro({
   throttle: (route: ThrottleRoute) => ({
-    async transform({ request }) {
-      const { requestId, rejection } = await throttleService.admit(
-        clientIp(request.headers),
-        route,
-      );
-      counted.set(request, requestId);
+    async parse({ request }) {
+      const admission = await throttleService.admit(clientIp(request.headers), route);
+      counted.set(request, admission);
+      if (admission.rejection) return {};
+    },
+    transform({ request }) {
+      const rejection = counted.get(request)?.rejection;
       if (rejection) throw rejection;
     },
     async afterResponse(context) {
-      const requestId = counted.get(context.request);
+      const requestId = counted.get(context.request)?.requestId;
       if (!requestId) return;
       counted.delete(context.request);
       const error: unknown = "error" in context ? context.error : undefined;

@@ -12,7 +12,7 @@ const { hashIp } = await import("#/server/lib/crypto/ip-hash");
 const { throttlePurgeJob } = await import("#/server/modules/throttle/throttle-purge.job");
 const { throttleRepository } = await import("#/server/modules/throttle/throttle.repository");
 const { throttleService } = await import("#/server/modules/throttle/throttle.service");
-const { closeTestApp } = await import("../setup/app-fetch");
+const { appFetch, closeTestApp } = await import("../setup/app-fetch");
 const {
   postConsultation,
   postRequote,
@@ -31,6 +31,19 @@ const RETENTION_MS = 60 * 60_000 + 24 * 60 * 60_000;
 
 const invalidBody = () => ({ ...signupBody(), cpf: "123" });
 
+/** A create POST whose body isn't JSON at all. */
+function postMalformed(ip: string) {
+  return appFetch("http://localhost/api/consultations", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "idempotency-key": randomUUID(),
+      "x-forwarded-for": ip,
+    },
+    body: '{"fullName": "Maria',
+  });
+}
+
 /** The IP's throttle rows once `count` of them have their outcome written. */
 function settledRows(ip: string, count: number) {
   return waitFor(
@@ -42,13 +55,20 @@ function settledRows(ip: string, count: number) {
 describe("per-IP throttle", () => {
   it("refuses an IP over the cap counting invalid requests", async () => {
     const ip = uniqueIp();
+    const malformed = await postMalformed(ip);
+    expect(malformed.status).toBeGreaterThanOrEqual(400);
+    expect(malformed.status).not.toBe(429);
     expect((await postConsultation(invalidBody(), { ip })).status).toBe(422);
-    expect((await postConsultation(signupBody(), { ip })).status).toBe(202);
     expect((await postConsultation(signupBody(), { ip })).status).toBe(202);
 
     const fourth = await postConsultation(signupBody(), { ip });
     expect(fourth.status).toBe(429);
     expect((await readProblem(fourth)).code).toBe("IP_LIMIT");
+
+    // Over the cap even a malformed body is refused as IP_LIMIT, before it is read.
+    const malformedOver = await postMalformed(ip);
+    expect(malformedOver.status).toBe(429);
+    expect((await readProblem(malformedOver)).code).toBe("IP_LIMIT");
 
     expect((await postConsultation(signupBody(), { ip: uniqueIp() })).status).toBe(202);
 
