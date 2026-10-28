@@ -154,3 +154,8 @@ Written to `contract/` (8 files) and the requirement list to `checks.md`. RFC am
 - RF-703 (C87): no `docker` CLI on this workstation (`where docker` empty) → Unproven here; the compose file uses only features docker-compose v5 (the provider Podman delegates to) already exercised.
 - RF-704 run (C83, by S5): `vp run doctor` exit 0, 12 ✓ lines; `git status --porcelain`, project containers and volumes identical before/after.
 - Safe real runs (S5): dirty-tree `vp run deploy` → exit 1 before build; `vp run prune --host ssh://box` → exit 2; `DOCKER_HOST=… deploy` → `RemoteCommandError`.
+
+### W3 (S6) — landed `2503942`
+
+- C89–C100 green on their own; backend integration folders (consultation, throttle, lender) 14 files / 48 tests green after capping integration `maxWorkers` at 4 (`d851028`): with unbounded parallel files, C76's 1.6 s Delta answer occasionally finalized as TIMEOUT against the 2 s deadline.
+- S6 choices: throttle is a macro (`transform` before validation + `afterResponse`), contract amended; malformed-JSON bodies aren't counted (fail in the parser first); requote locks the patient with `consultationRepository.lockPatient` inside the shared create TX and lazily finalizes an overdue source before checking preconditions; IP cap counts per (ip, route); purge uses an injectable `now` for its retention proof; the privacy test uses a fixed CPF (`58637184553`) whose 3-digit windows don't collide with rate strings.

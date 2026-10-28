@@ -69,6 +69,8 @@ Amended 2026-10-28 (implementation): a forced outcome must reach the worker befo
 
 `onBeforeHandle` on the two POST routes: insert a `request_throttle` row (`ip_hmac` from `client-ip.ts`, `route`), **before** body validation, then count rows for `(ip_hmac, route)` in the window. Over the limit → 429 `IP_LIMIT`. `onAfterResponse` writes `status_code`/`error_code` on that row. With no `X-Forwarded-For` (dev without Caddy) the IP is the literal `"local"`.
 
+Amended 2026-10-28 (implementation): in Elysia 2 `onBeforeHandle` runs **after** validation, so it can't count invalid requests. The guard is a `throttle` macro whose `transform` (pre-validation) inserts and counts, plus `afterResponse` for the outcome. A body that isn't valid JSON fails in the parser, before `transform`, and is not counted (accepted gap: RF-505 covers schema-invalid requests).
+
 ## Realtime (`realtime/consultation-events.ts`)
 
 One dedicated `pg.Client` per app process: `LISTEN consultation_updated`, reconnect with backoff, and after a reconnect it emits a synthetic "refresh all" to subscribers. SSE handler order: subscribe → read snapshot (lazily finalizes) → yield `sse({ event: "snapshot", data })` → loop: `race(nextNotification(id), sleep(2000), sleep-until-ping, abort(request.signal))` → re-read + yield. Stop after yielding a `SETTLED` snapshot. `finally` → unsubscribe.
