@@ -151,6 +151,8 @@ Persistent processes make pg-boss workers, `SKIP LOCKED`, LISTEN/NOTIFY and unbo
 
 **Amendment (2026-10-27, discovery).** pg-boss **owns a small pool of its own**: `new PgBoss({ connectionString, max: 3, useListenNotify: true, migrate: false })`. It's still the same `pg` driver. Jobs still join drizzle transactions via `boss.send(q, data, { db: fromDrizzle(tx, sql) })`, proven live: a rollback dropped both the row and the job. Why: with a shared pool, pg-boss's LISTEN wake-up needs a hand-written `listen()` adapter with heartbeat and reconnect, which pg-boss's built-in client already does (`pg-boss@12.38.0 dist/db.js:158-290`). Supersedes D3's "one pool" clause (user decision, discovery Q2). The single-driver goal is unchanged.
 
+**Amendment (2026-10-28, implementation).** Bun running the TS sources directly (worker, migrate, ops scripts) resolves the extensionless `#/…` alias only through `tsconfig.json` `paths`, so the runtime image ships `tsconfig.json`; `package.json` `imports` alone made migrate fail with "Cannot find module" in the container. A lint override now forbids the `Bun` global and `bun`/`bun:*` imports under `src/`, keeping the D3 portability rule enforced rather than conventional.
+
 **Amendment (2026-10-27, discovery).** On this workstation, rootless Podman (WSL) publishes container ports on IPv6 loopback only: `localhost`/`::1` connect, literal `127.0.0.1` is refused (reproduced). Every local URL uses the hostname `localhost`, never `127.0.0.1`, and `doctor` flags a `127.0.0.1` host in `DATABASE_URL`.
 
 ### D4. `deploy` builds on the box; rollback = deploy an earlier ref (grill Q4)
@@ -289,6 +291,8 @@ Representative, not a user-management feature, but enforced server-side on every
 **Decision.** `BACKOFFICE_USERNAME` + `BACKOFFICE_PASSWORD_HASH` (scrypt via `node:crypto`, AD7). Login issues an HMAC-signed cookie (httpOnly, Secure, SameSite=Lax, 8 h). An Elysia guard protects `/api/backoffice/*`, plus a route guard on `/backoffice/*`. Kill-switch changes are appended to an immutable log with `actor = username`.
 
 **Amendment (2026-10-28, implementation).** `BACKOFFICE_PASSWORD_HASH` is encoded `scrypt:N:r:p:saltB64:hashB64`, colon-separated. A `$`-separated value doesn't survive env files: Bun's `--env-file` expands `$…` even inside single quotes, and Compose interpolates `$` in `env_file`. Supersedes the `$`-separated format in the Stage 3 contract.
+
+**Amendment (2026-10-28, implementation).** The session is verified **before** validation, so an unauthenticated request with an invalid body gets 401, never a 422 that would reveal the schema (RF-602). Elysia 2 builds the cookie jar only after validation, so the guard runs Elysia's own signed-cookie check on the raw `Cookie` header in the route's `parse`/`transform` stages. Login deletes any incoming `bo_session` before signing the new one: Elysia re-verifies incoming signed cookies when serialising the response, so a stale cookie (e.g. after a secret change) turned login into a 500 until it expired.
 
 ### D13. Public access through a capability URL; public responses carry no PII and no CPF (grill Q13)
 
@@ -432,6 +436,8 @@ The harm is per patient, so the binding limit lives in the domain and is counted
 **Evidence.** A/B.
 
 **Decision.** At most _N_ consultations per patient per rolling window, checked inside the creation transaction, else 429. It covers create and requote. A native `onBeforeHandle` guard on both POST routes counts rows in `request_throttle` (`ip_hmac`, `route`, `created_at`), recorded **before** validation, purged by a pg-boss scheduled job. The client IP is read only from the header the proxy overwrites. IPs are stored only as `HMAC("ip:v1:" + ip)` (AD9). Thresholds: Open question O2.
+
+**Amendment (2026-10-28, implementation) — CHANGED: not `onBeforeHandle`.** In Elysia 2 `onBeforeHandle` runs after validation and can't count invalid requests. The per-IP guard is a route macro whose `parse` hook records and counts the request before the body is read (so malformed JSON counts too) and whose `transform` raises `IP_LIMIT` before validation; `afterResponse` stores the outcome. The cap is counted per (IP, route). Malformed JSON answers 422 `VALIDATION` (it was a 500).
 
 ### D23. drizzle v1 RC + TypeBox everywhere, with one in-house Standard Schema adapter (grill Q23)
 
