@@ -214,6 +214,8 @@
 
 **Decision.** A single operator from env: `BACKOFFICE_USERNAME` + `BACKOFFICE_PASSWORD_HASH` (scrypt via `node:crypto`). A login form issues an HMAC-signed session cookie (httpOnly, Secure, SameSite=Lax, 8 h). An Elysia guard enforces it on `/api/backoffice/*` and a route guard on `/backoffice/*`. Every kill-switch change is appended to an immutable table with `actor = username`.
 
+_Amended 2026-10-28 (Stage 5 verification): `Secure` only when `APP_DOMAIN` is set, see RFC D12._
+
 **Why.**
 
 1. The user wants auth to be representative, not a user-management feature.

@@ -267,6 +267,8 @@ Delta's latency leaves no room in the 10 s budget for a retry, and a duplicate p
 
 During an outage, the breaker shows "indisponível" immediately. 16/20 keeps false trips on Delta's normal noise negligible (P = 5.6×10⁻⁶). The manual switch covers announced maintenance.
 
+**Correction (2026-10-28, verification, audit QN1).** The 5.6×10⁻⁶ figure counts only Delta's 30 % HTTP 500s. Timeouts count as failures too, and Delta answers in 4–15 s (uniform) against a 10 s deadline, so ≈ 45 % of the calls that don't 500 time out: per-call failure ≈ 0.62 and P(≥ 16 of 20) ≈ 7.0 %. Real patients therefore lose Delta for 30 s at a time. Grill Q11's reopen condition has fired; the remedy is an owner decision (O10).
+
 | Option                        | Verdict                                                                        |
 | ----------------------------- | ------------------------------------------------------------------------------ |
 | Both, manual takes precedence | **Chosen** (user)                                                              |
@@ -295,6 +297,8 @@ Representative, not a user-management feature, but enforced server-side on every
 **Decision.** `BACKOFFICE_USERNAME` + `BACKOFFICE_PASSWORD_HASH` (scrypt via `node:crypto`, AD7). Login issues an HMAC-signed cookie (httpOnly, Secure, SameSite=Lax, 8 h). An Elysia guard protects `/api/backoffice/*`, plus a route guard on `/backoffice/*`. Kill-switch changes are appended to an immutable log with `actor = username`.
 
 **Amendment (2026-10-28, implementation).** `BACKOFFICE_PASSWORD_HASH` is encoded `scrypt:N:r:p:saltB64:hashB64`, colon-separated. A `$`-separated value doesn't survive env files: Bun's `--env-file` expands `$…` even inside single quotes, and Compose interpolates `$` in `env_file`. Supersedes the `$`-separated format in the Stage 3 contract.
+
+**Amendment (2026-10-28, verification, audit Q-3).** `Secure` is set only when `APP_DOMAIN` is set (Caddy serves TLS). Over plain `http://localhost` a `Secure` cookie isn't stored by the browser, so the local and `up --prod` stacks (no TLS) send it without `Secure`. httpOnly, SameSite=Lax and the 8 h max-age are unchanged.
 
 **Amendment (2026-10-28, implementation).** The session is verified **before** validation, so an unauthenticated request with an invalid body gets 401, never a 422 that would reveal the schema (RF-602). Elysia 2 builds the cookie jar only after validation, so the guard runs Elysia's own signed-cookie check on the raw `Cookie` header in the route's `parse`/`transform` stages. Login deletes any incoming `bo_session` before signing the new one: Elysia re-verifies incoming signed cookies when serialising the response, so a stale cookie (e.g. after a secret change) turned login into a 500 until it expired.
 
@@ -581,6 +585,7 @@ Found in discovery (2026-10-27). Each is fixed by the feature because the featur
 | O7  | (audit Q-6) The lender-health queue backlog comes from pg-boss stats that can lag up to 60 s. Acceptable for RF-610?                                                                                                                                                                                                                                                                                                    | Next PRD revision                       | Micael |
 | O8  | (audit Q-7) Lender-health rates (RF-606) include forced-scenario attempts, so demo runs inflate Delta's error rate while the breaker ignores them. Exclude forced attempts, or show them separately?                                                                                                                                                                                                                    | Next PRD revision                       | Micael |
 | O9  | (audit A1 residue) RF-302 vs RF-502: the public view no longer carries lender hints, but the suggested amount itself equals income × 10 in NORMAL when Alfa's is the best usable hint (Beta/Delta/Gama all without an offer). Keep suggesting it (useful, reveals income to a link holder) or round it/hide it?                                                                                                         | Next PRD revision                       | Micael |
+| O10 | (audit QN1) Delta trips its breaker on ordinary `NORMAL` traffic ≈ 7 % of 20-call windows (see the D11 correction). Raise the threshold, stop counting timeouts, or bring Delta's simulated latency inside the deadline?                                                                                                                                                                                                | Next PRD revision                       | Micael |
 
 **Discovery inputs for Stage 3** (research, not decisions): the exact TanStack Start switch that disables SSR app-wide; `app.handle`/`treaty(app)` under `vp test` specifically (verified on plain Node only); the adapter's error mapping under TanStack Form; whether `defineRelationsPart` merges parts built from table subsets (AD13).
 

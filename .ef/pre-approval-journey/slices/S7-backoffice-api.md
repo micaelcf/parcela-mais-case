@@ -56,8 +56,11 @@ Proof: `vp test test/integration/backoffice/backoffice.lists.int.test.ts -t "fin
 **C115** · RF-614 — abuse metrics over the last 24 h: limit hits per code (`IP_LIMIT`, `PATIENT_LIMIT`), the 429 count, top patients (id + first name, no CPF) and top IP hashes (8 hex chars) match the requests made in the test
 Proof: `vp test test/integration/backoffice/backoffice.metrics.int.test.ts -t "summarises abuse in the last 24 h"`
 
-**C116** · RF-615 — each list endpoint (consultations, switch log, throttle events: 3 members) honours `page`/`pageSize`, `sort` asc and desc with an `id` tiebreaker, an allow-listed filter and `q`, computed in SQL
+**C116** · RF-615 — each list endpoint (consultations, CPF search, switch log, throttle events: 4 members; CPF search added 2026-10-28, audit A5) honours `page`/`pageSize`, `sort` asc and desc with an `id` tiebreaker, an allow-listed filter and `q`, computed in SQL
 Proof: `vp test test/integration/backoffice/backoffice.lists.int.test.ts -t "pages, sorts, filters and searches on the server"`
 
-**C117** · RF-616 — each of those 3 list endpoints → 422 `VALIDATION` for an unknown `sort` field and for an unknown filter param (6 members)
+**C117** · RF-616 — each of those 4 list endpoints → 422 `VALIDATION` for an unknown `sort` field and for an unknown filter param (8 members)
 Proof: `vp test test/integration/backoffice/backoffice.lists.int.test.ts -t "rejects unknown sort and filter fields"`
+
+**C159** · RF-601 — `bo_session` carries `Secure` when `APP_DOMAIN` is set and not when it's unset, also under `NODE_ENV=production` (added 2026-10-28, audit Q-3)
+Proof: `vp test test/integration/backoffice/backoffice.auth.int.test.ts -t "marks the session cookie Secure exactly when Caddy terminates TLS"`

@@ -15,8 +15,17 @@ Proof: `vp test scripts/ops/lib/deploy-plan.test.ts -t "refuses a dirty working 
 **C79** · RF-708 — the deploy plan fails when `/api/health` returns a `sha` different from `git rev-parse HEAD`, and passes `GIT_SHA` to the build
 Proof: `vp test scripts/ops/lib/deploy-plan.test.ts -t "fails when the health sha differs"`
 
-**C80** · RF-709 — after a healthy deploy the plan removes images labelled `com.parcela.project=parcela-mais-case` that no current service uses, then the build cache; after an unhealthy one it removes nothing
+**C80** · RF-709 — after a healthy deploy the plan removes images labelled `com.parcela.project=parcela-mais-case` that no current service uses, then (Podman only; skipped and reported on Docker, amended 2026-10-28, audit A7) the build cache; after an unhealthy one it removes nothing
 Proof: `vp test scripts/ops/lib/deploy-plan.test.ts -t "cleans superseded images only after a healthy deploy"`
+
+**C165** · RF-702 — the prod and deploy plans load only compose files in which Caddy is the one service publishing host ports and no environment value holds a literal credential (added 2026-10-28, audit A2)
+Proof: `vp test scripts/ops/lib/compose-stack.test.ts -t "publishes only caddy and holds no literal credential in the prod stack"`
+
+**C166** · RF-701 — the dev flow's compose files publish Postgres with the credentials `.env.example` connects with (added 2026-10-28, audit A2)
+Proof: `vp test scripts/ops/lib/compose-stack.test.ts -t "publishes Postgres for the dev flow with the credentials .env.example connects with"`
+
+**C167** · RF-702, RF-703 — no compose file loaded by `up`, `up --prod`, `deploy` or `prune` nests a `${…}` inside a default value (podman-compose ≤ 1.5 mis-parses it) (added 2026-10-28, audit N1)
+Proof: `vp test scripts/ops/lib/compose-stack.test.ts -t "never nests an interpolation inside a default"`
 
 **C81** · RF-707 — with a deliberately failing migration committed in a scratch clone, `vp run deploy` exits non-zero and the `app` and `worker` containers are never started (`<engine> ps -a` shows them absent or `Created`)
 Proof: `log.md` § S5 "RF-707 failed-migration deploy run"

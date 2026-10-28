@@ -230,3 +230,13 @@ Verdict **FAIL**. Report: `agent://Stage5VerifyRound2` (copy `local://audit-roun
 - N5 nit: docs say a managed Postgres needs only `STACK_DATABASE_URL`; `POSTGRES_PASSWORD` is still required.
 - QN1: grill Q11's reopen condition fired (Delta trips its breaker on NORMAL traffic; real failure rate ≈ 0.62, P(≥16/20) ≈ 7 %, not 5.6×10⁻⁶). QN2: the proxy streaming proof doesn't record the content encoding.
 - Round 3 plan: fix N1, N2 (+ an E2E guard for Q-5), docs for N3/N4/N5, record QN1 as O10 and correct D11's number, answer QN2 with an observed encoding.
+
+### Stage 5 remediation, round 2 findings (2026-10-28)
+
+- N1: `compose.yaml` app/worker/migrate take `DATABASE_URL: ${STACK_DATABASE_URL:-postgres://postgres:5432}` plus `PGUSER`/`PGPASSWORD`/`PGDATABASE`; node-postgres fills missing URL parts from `PG*` (`pg/lib/connection-parameters.js`), pg-boss/drizzle go through it. Verified by a throwaway `ConnectionParameters` script (bundled URL + PG* → parcela/s3cret/parcela@postgres; managed URL wins), `compose config` under docker-compose 5.1.3, and podman-compose 1.4.0's own `rec_subs` (old file reproduced the mis-parse). Guard C167 "never nests an interpolation inside a default": red against the old file (migrate/app/worker DATABASE_URL), green after.
+- N2: `classifySearchText` looks at the trailing digit run whatever words precede it (1–10 → Enter only, 11+ → refused). Unit C168 red on "Ana 5299822" before; E2E C153 extended to the explorer "Buscar" box and confirmed to fail when the debounce guard is removed (`visited …?q=npdgnqprlp+4788624`), green restored.
+- N3: checks C159–C168 added for every remediation test; Coverage rows refreshed (error codes 13 with `NOT_FOUND` C110 and `INTERNAL` C163 — new unit test; list endpoints 4; breaker × attempt kind; compose providers; startup configurations 5; proxy-crossing rows; A4 gap closed by C161).
+- N4: RFC D12 + grill Q12 amended (Secure iff `APP_DOMAIN`); `api.md` cookie row; PRD RF-216/705/709 amended.
+- N5: `compose.yaml`/`.env.example`/`ops.md`/`bindings.md` say `POSTGRES_PASSWORD` stays required with `STACK_DATABASE_URL`.
+- QN1: RFC D11 correction (per-call failure ≈ 0.62, P(≥16/20) ≈ 7.0 %, computed) and owner question O10.
+- QN2: C164 now runs per `Accept-Encoding` (Chromium's `zstd, br, gzip, deflate`, `gzip`, `identity`) and records the `Content-Encoding` Caddy chose.

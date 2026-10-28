@@ -39,5 +39,11 @@ Proof: `vp test test/integration/consultation/consultation.privacy.int.test.ts -
 **C99** · RF-502 — the same payloads contain neither the birthdate, the phone digits, the income value nor the surname; `patientFirstName` is the first name
 Proof: `vp test test/integration/consultation/consultation.privacy.int.test.ts -t "public payloads carry only the first name"`
 
+**C161** · RF-504 — at cap − 1, five concurrent creates with one `Idempotency-Key` and body all → 202 with one consultation id, and no `PATIENT_LIMIT` event is recorded (added 2026-10-28, audit A4)
+Proof: `vp test test/integration/consultation/consultation.limits.int.test.ts -t "answers a same-key double submit at cap minus one as a replay"`
+
+**C162** · RF-502 — the public attempt view of a NORMAL Alfa income refusal carries no `maxApprovableCents` and no income-derived value (added 2026-10-28, audit A1; C99 also runs NORMAL journeys with an Alfa income refusal)
+Proof: `vp test src/server/modules/consultation/consultation.dto.test.ts -t "keeps lender refusal limits out of the attempts"`
+
 **C100** · RF-503 — after a submission, a read-only scan of every text, varchar and bytea column of every table (raw `pg` over `information_schema`) finds the 11 CPF digits neither as text nor as bytes
 Proof: `vp test test/integration/consultation/consultation.privacy.int.test.ts -t "never stores the CPF in plaintext"`

@@ -59,6 +59,9 @@ Proof: `vp test test/integration/lender/lender-attempt.breaker.int.test.ts -t "l
 **C58** · RF-218 — after 20 `DELTA_FAILS` consultations, a `NORMAL` consultation's Delta attempt has a `calledAt` (not `CIRCUIT_OPEN`)
 Proof: `vp test test/integration/lender/lender-attempt.breaker-forced.int.test.ts -t "ignores forced-scenario failures"`
 
+**C160** · RF-214, RF-217, RF-218 — with Delta's circuit OPEN an `ALL_APPROVE` Delta attempt is `APPROVED`; under HALF_OPEN a `DELTA_FAILS` attempt is called (`LENDER_ERROR`) with `breakerProbe = false` and the state stays HALF_OPEN; the next `NORMAL` attempt is the probe (added 2026-10-28, audit A3 as amended by RFC D11)
+Proof: `vp test test/integration/lender/lender-attempt.breaker-probe.int.test.ts -t "never hands the probe to a forced-scenario attempt"`
+
 **C59** · RF-219 — with Delta disabled through `lenderSettingService.setEnabled`, the next Delta attempt is `UNAVAILABLE`/`DISABLED` with `calledAt` null; re-enabled, the next one is called
 Proof: `vp test test/integration/lender/lender-setting.int.test.ts -t "skips a disabled lender without calling it"`
 

@@ -33,8 +33,11 @@ Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "drives the table from the ser
 **C152** · RF-617 — reloading a consultations URL with page, sort, filter and search restores the same table state
 Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "keeps table state in the URL"`
 
-**C153** · RF-613, RF-617 — an exact CPF search lists that patient's consultations, and no URL visited during or after it contains the CPF digits
+**C153** · RF-613, RF-617 — an exact CPF search lists that patient's consultations, and no URL visited during or after it contains the CPF digits; the explorer's "Buscar" box refuses a CPF (raw, formatted, after a name) with the hint, and a name followed by a partial CPF isn't applied after the debounce (extended 2026-10-28, audit Q-5/N2)
 Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "searches by CPF without putting it in the URL"`
+
+**C168** · RF-617 — the search-box classifier: text whose trailing digit run (ignoring `.`, `-`, spaces) has 1–10 digits applies only on Enter, 11+ is refused as a CPF, whatever words precede it; a complete UUID and plain words are text (added 2026-10-28, audit Q-5/N2)
+Proof: `vp test src/components/modules/backoffice/table-search.test.ts -t "keeps a CPF typed in the search box out of the URL"`
 
 **C154** · RF-611, RF-612 — the explorer lists consultations, and the detail page shows the formatted decrypted CPF
 Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "shows the decrypted CPF on the detail"`
