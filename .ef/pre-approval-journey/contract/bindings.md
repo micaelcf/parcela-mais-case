@@ -4,13 +4,13 @@ The house rules every slice codes against. Feature-specific delta on top of `AGE
 
 ## Gate commands
 
-| Gate                      | Command                                                                               | Notes                                                                                                                                         |
-| ------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Format + lint + typecheck | `vp check` · `vp run typecheck`                                                       | oxfmt + oxlint (type-aware, `typeCheck: true` via tsgolint); `typecheck` = `tsc --noEmit` on TypeScript 7 (native `tsgo` compiler)            |
-| Tests                     | `vp test`                                                                             | Bundled Vitest 5.0.5 on Node. First tests in the repo; no `test` block exists yet                                                             |
-| Build                     | `vp build`                                                                            | nitro `bun` preset → `.output/server/index.mjs` + `.output/public/`                                                                           |
-| Ops                       | `vp run doctor` · `vp run up` · `vp run up --prod` · `vp run prune` · `vp run deploy` | `package.json` scripts (uncached), running `bun scripts/ops/<name>.ts`                                                                        |
-| DB                        | `vp run db:generate` · `vp run db:migrate`                                            | drizzle-kit 1.0.0-rc.5 generates; `db:migrate` runs `scripts/ops/migrate.ts` (drizzle + pg-boss + queues), never `drizzle-kit migrate`/`push` |
+| Gate                      | Command                                                                                               | Notes                                                                                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format + lint + typecheck | `vp check` · `vp run typecheck`                                                                       | oxfmt + oxlint (type-aware, `typeCheck: true` via tsgolint); `typecheck` = `tsc --noEmit` on TypeScript 7 (native `tsgo` compiler)            |
+| Tests                     | `vp test`                                                                                             | Bundled Vitest 5.0.5 on Node. First tests in the repo; no `test` block exists yet                                                             |
+| Build                     | `vp build`                                                                                            | nitro `bun` preset → `.output/server/index.mjs` + `.output/public/`                                                                           |
+| Ops                       | `vp run doctor` · `vp run up` · `vp run up --prod` · `vp run down` · `vp run prune` · `vp run deploy` | `package.json` scripts (uncached), running `bun scripts/ops/<name>.ts`                                                                        |
+| DB                        | `vp run db:generate` · `vp run db:migrate`                                                            | drizzle-kit 1.0.0-rc.5 generates; `db:migrate` runs `scripts/ops/migrate.ts` (drizzle + pg-boss + queues), never `drizzle-kit migrate`/`push` |
 
 Never run `npm` in the repo (`devEngines` pins bun 1.4.4). Install with `vp install` / `bun add`.
 

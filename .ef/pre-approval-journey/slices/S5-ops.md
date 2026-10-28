@@ -27,6 +27,9 @@ Proof: `vp test scripts/ops/lib/compose-stack.test.ts -t "publishes Postgres for
 **C167** · RF-702, RF-703 — no compose file loaded by `up`, `up --prod`, `deploy` or `prune` nests a `${…}` inside a default value (podman-compose ≤ 1.5 mis-parses it) (added 2026-10-28, audit N1)
 Proof: `vp test scripts/ops/lib/compose-stack.test.ts -t "never nests an interpolation inside a default"`
 
+**C208** · RF-711 — `vp run down` runs exactly `compose -f compose.yaml -p parcela-mais-case --profile prod down --remove-orphans` (`--stop` → `… stop`); no plan argument ever deletes volumes or images or leaves the project; `-v`, `--volumes`, `--rmi`, a host or any other option exits 2 with nothing run; a compose failure exits 1 (added 2026-10-28, user request)
+Proof: `vp test scripts/ops/lib/down-plan.test.ts`
+
 **C81** · RF-707 — with a deliberately failing migration committed in a scratch clone, `vp run deploy` exits non-zero and the `app` and `worker` containers are never started (`<engine> ps -a` shows them absent or `Created`)
 Proof: `log.md` § S5 "RF-707 failed-migration deploy run"
 
