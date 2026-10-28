@@ -182,3 +182,13 @@ Written to `contract/` (8 files) and the requirement list to `checks.md`. RFC am
 - **Choice:** "Escolher Alfa em 12x de R$ 974,28" → "Oferta escolhida"; after reload the Alfa 12x card still shows "Escolhida"; Beta rows carry "valor aprovado menor que o solicitado".
 - **Requote (`NONE_APPROVE`, R$ 10.000):** cards "recusada · valor acima do limite" (Alfa) and "perfil não elegível" (others), suggestion "Simular com R$ 5.000,00"; clicking it → `POST …/requote` 202 → new `/consultas/<id>` with "valor solicitado R$ 5.000,00" settling live in NORMAL (Delta "indisponível" by deadline).
 - **Backoffice:** login `operador` → "Painel" with volumes (R$ 443.000,00 requested / 39 consultations); exact CPF search `111.444.777-35` lists "Rui Prado" and the URL stays `/backoffice/consultas`; detail shows "CPF 111.444.777-35". Found and fixed a real defect: a stale `bo_session` (signed with the previous secret) made login answer 500 `InvalidCookie` (`db91b97`, regression test "logs in over a stale or forged session cookie").
+
+### W6 (S10) — landed `1010fe2` (+ `0d96e1c`, `db91b97`, `32e0a26`, `d4…` proxy spec)
+
+- E2E (C156, RF-807): `vp run e2e` against `vp run up` → **35 passed, 1 skipped** (the proxy spec, off-proxy) in 46.3 s; the builder ran it green 3× in a row before handing over, and the lead re-ran it once after the fixes below.
+- Defects the E2E work and the browser smoke surfaced, all fixed with the failing check now green: blur errors shifting the "Voltar" button (C126, `0d96e1c`); login 500 with a stale `bo_session` (`db91b97` + integration regression); the table search debounce navigating back to the list after Enter + click (`32e0a26`).
+- RF-506 (C155): `vp run up --prod` (podman) → `E2E_BASE_URL=http://localhost:8080 vp run e2e test/e2e/proxy.spec.ts -g "ignores a forged X-Forwarded-For"` → **1 passed** (31 creates, each with a different forged `X-Forwarded-For`; the 31st got 429 `IP_LIMIT`). The spec first skipped behind Caddy because it looked for `Server: Caddy`; Caddy sends `Via: 1.1 Caddy` on proxied responses, fixed in the spec.
+- Final gates: `vp check` clean (220 files), `tsc --noEmit` clean, `vp test` 43 files / 134 tests green, `drizzle-kit generate` → "No schema changes" (C10).
+- Proof wording: `vp run e2e -- <file>` forwards a literal `--` and Playwright then ignores the filters; every E2E proof now reads `vp run e2e <file> -g "<title>"`.
+- Known non-requirement nit: `HEAD /api/*` answers 404 (the Start server route maps GET/POST/PUT/PATCH/DELETE only).
+- Prod-parity app/worker/caddy stopped after the C155 run (they share the dev database).
