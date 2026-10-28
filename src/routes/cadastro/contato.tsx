@@ -22,6 +22,17 @@ function ContactStep() {
           />
         )}
       </form.AppField>
+      <form.AppField name="email">
+        {(field) => (
+          <field.TextField
+            label="E-mail (opcional)"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="nome@exemplo.com"
+          />
+        )}
+      </form.AppField>
     </SignupStep>
   );
 }

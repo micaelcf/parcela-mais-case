@@ -8,12 +8,12 @@ import { CONSULTATION_URL, scenarioRadio, signUp } from "./support/signup";
 /**
  * Describes the focused element and whether it shows a visible focus indicator: an outline that
  * isn't `none`, or a ring (a box-shadow layer with a positive spread and a visible colour; plain
- * elevation shadows have no spread). Runs in the page.
+ * elevation shadows have no spread). A control inside an input group (the date picker's input and
+ * button) or a calendar dropdown shows it on that wrapper. Runs in the page.
  */
 function focusIndicator(): string {
   const element = document.activeElement;
   if (!element || element === document.body) return "nothing focused";
-  const style = getComputedStyle(element);
   const label = `<${element.tagName.toLowerCase()}> "${(element.textContent ?? "").trim().slice(0, 40)}"`;
   const visibleColour = (colour: string) => {
     if (colour === "" || colour === "transparent") return false;
@@ -23,23 +23,24 @@ function focusIndicator(): string {
       "1";
     return Number(alpha) > 0;
   };
-  if (
-    style.outlineStyle !== "none" &&
-    Number.parseFloat(style.outlineWidth) > 0 &&
-    visibleColour(style.outlineColor)
-  ) {
-    return "visible";
-  }
-  const ring = style.boxShadow
-    .split(/,(?![^(]*\))/)
-    .map((layer) => layer.trim())
-    .some((layer) => {
-      const colour =
-        /rgba?\([^)]*\)|#[0-9a-f]+|oklch\([^)]*\)|oklab\([^)]*\)/i.exec(layer)?.[0] ?? "";
-      const lengths = layer.replace(colour, "").match(/-?[\d.]+px/g) ?? [];
-      return lengths.length >= 4 && Number.parseFloat(lengths[3]) > 0 && visibleColour(colour);
-    });
-  return ring ? "visible" : `no focus indicator on ${label} (box-shadow: ${style.boxShadow})`;
+  const showsFocus = (style: CSSStyleDeclaration) =>
+    (style.outlineStyle !== "none" &&
+      Number.parseFloat(style.outlineWidth) > 0 &&
+      visibleColour(style.outlineColor)) ||
+    style.boxShadow
+      .split(/,(?![^(]*\))/)
+      .map((layer) => layer.trim())
+      .some((layer) => {
+        const colour =
+          /rgba?\([^)]*\)|#[0-9a-f]+|oklch\([^)]*\)|oklab\([^)]*\)/i.exec(layer)?.[0] ?? "";
+        const lengths = layer.replace(colour, "").match(/-?[\d.]+px/g) ?? [];
+        return lengths.length >= 4 && Number.parseFloat(lengths[3]) > 0 && visibleColour(colour);
+      });
+  const style = getComputedStyle(element);
+  if (showsFocus(style)) return "visible";
+  const wrapper = element.closest('[data-slot="input-group"], .rdp-dropdown_root');
+  if (wrapper && showsFocus(getComputedStyle(wrapper))) return "visible";
+  return `no focus indicator on ${label} (box-shadow: ${style.boxShadow})`;
 }
 
 async function expectVisibleFocus(page: Page) {
@@ -60,7 +61,7 @@ test.describe("accessibility", () => {
   test("picks the birthdate from the calendar by keyboard", async ({ page }) => {
     await page.goto("/cadastro/paciente");
     const birthdate = page.getByLabel("Data de nascimento");
-    const opener = page.getByRole("button", { name: "Abrir calendário" });
+    const opener = page.getByRole("button", { name: "Selecionar data" });
     const focusedDay = () =>
       page.evaluate(() => document.activeElement?.getAttribute("data-day") ?? null);
     await expect(birthdate).toBeVisible();
@@ -75,7 +76,8 @@ test.describe("accessibility", () => {
 
     await page.keyboard.press("Enter");
     await expect(calendar).toBeVisible();
-    // Tab past the month/year pickers and the arrows into the grid, then one day on.
+    // Opening focuses a day of the grid; else Tab past the month/year pickers and the arrows into
+    // it. Then one day on.
     for (let presses = 0; presses < 8 && (await focusedDay()) === null; presses++) {
       await page.keyboard.press("Tab");
       await expectVisibleFocus(page);

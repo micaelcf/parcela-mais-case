@@ -1,4 +1,4 @@
-import { createFormHook } from "@tanstack/react-form";
+import { createFormHook, formOptions } from "@tanstack/react-form";
 import Type, { type Static, type TSchema } from "typebox";
 import { Compile } from "typebox/compile";
 
@@ -10,6 +10,7 @@ import {
   normalizeAddress,
 } from "#/lib/address/address";
 import { normalizeCpf } from "#/lib/cpf/cpf";
+import { EmailSchema, normalizeEmail } from "#/lib/email/email";
 import { parseCentsInput } from "#/lib/money/money";
 import { normalizePhone } from "#/lib/phone/phone";
 import {
@@ -38,11 +39,18 @@ const address = AddressSchema.properties;
 
 /**
  * A text input checked by an API schema against what `parse` reads from it, with that schema's
- * message (a currency input against the cents schema, a UF against the state enum).
+ * message (a currency input against the cents schema, a UF against the state enum). An `optional`
+ * one passes while blank.
  */
-function checkedText(schema: TSchema, parse: (raw: string) => unknown = (raw) => raw) {
+function checkedText(
+  schema: TSchema,
+  { parse = (raw: string): unknown => raw, optional = false } = {},
+) {
   const validator = Compile(schema);
-  const issue = (raw: string) => collectIssues(schema, parse(raw), validator)[0]?.message;
+  const issue = (raw: string) =>
+    optional && raw.trim() === ""
+      ? undefined
+      : collectIssues(schema, parse(raw), validator)[0]?.message;
   return Type.Refine(
     Type.String(),
     (raw) => issue(raw) === undefined,
@@ -66,8 +74,9 @@ export const SignupFormSchema = Type.Object({
   city: address.city,
   state: checkedText(address.state),
   phone: request.phone,
-  monthlyIncome: checkedText(request.monthlyIncomeCents, parseCentsInput),
-  treatmentAmount: checkedText(request.treatmentAmountCents, parseCentsInput),
+  email: checkedText(EmailSchema, { optional: true }),
+  monthlyIncome: checkedText(request.monthlyIncomeCents, { parse: parseCentsInput }),
+  treatmentAmount: checkedText(request.treatmentAmountCents, { parse: parseCentsInput }),
   simulationScenario: ScenarioSchema,
 });
 export type SignupFormValues = Static<typeof SignupFormSchema>;
@@ -85,6 +94,7 @@ const DEFAULT_VALUES: SignupFormValues = {
   city: "",
   state: "",
   phone: "",
+  email: "",
   monthlyIncome: "",
   treatmentAmount: "",
   simulationScenario: "NORMAL",
@@ -117,7 +127,7 @@ export const SIGNUP_STEPS = [
       "state",
     ],
   },
-  { to: "/cadastro/contato", title: "Contato", fields: ["phone"] },
+  { to: "/cadastro/contato", title: "Contato", fields: ["phone", "email"] },
   {
     to: "/cadastro/financeiro",
     title: "Financeiro",
@@ -172,6 +182,7 @@ const REQUEST_FIELD: Record<RequestPath, SignupFieldName> = {
   "address.city": "city",
   "address.state": "state",
   phone: "phone",
+  email: "email",
   monthlyIncomeCents: "monthlyIncome",
   treatmentAmountCents: "treatmentAmount",
   simulationScenario: "simulationScenario",
@@ -193,11 +204,15 @@ function brState(raw: string): BrState {
   return state;
 }
 
-/** Validated form values → the API body. The scenario goes only when simulation controls are on. */
+/**
+ * Validated form values → the API body. A blank e-mail is left out; the scenario goes only when
+ * simulation controls are on.
+ */
 export function toSignupRequest(
   values: SignupFormValues,
   simulationControls: boolean,
 ): SignupRequest {
+  const email = normalizeEmail(values.email);
   return {
     fullName: values.fullName.trim(),
     cpf: normalizeCpf(values.cpf),
@@ -212,6 +227,7 @@ export function toSignupRequest(
       state: brState(values.state),
     }),
     phone: normalizePhone(values.phone),
+    ...(email ? { email } : {}),
     monthlyIncomeCents: cents(values.monthlyIncome),
     treatmentAmountCents: cents(values.treatmentAmount),
     ...(simulationControls ? { simulationScenario: values.simulationScenario } : {}),
@@ -225,14 +241,24 @@ const { useAppForm } = createFormHook({
   formComponents: {},
 });
 
+/**
+ * The form's values and validation. The form-level validator runs on blur, and on submit too:
+ * TanStack's submit runs the `onBlur` validator, so the same error slot serves both (a separate
+ * `onSubmit` one would keep a stale second message after the next blur). Never on change: an error
+ * shows once a field is left or the step submitted, and stays until the next blur or submit.
+ */
+export const signupFormOptions = formOptions({
+  defaultValues: DEFAULT_VALUES,
+  validators: { onBlur: signupValidator },
+});
+
 /** The single signup form instance (owned by the `/cadastro` layout). */
 export function useSignupForm(handlers: {
   onSubmit: (values: SignupFormValues) => Promise<void>;
   onSubmitInvalid: () => void;
 }) {
   return useAppForm({
-    defaultValues: DEFAULT_VALUES,
-    validators: { onChange: signupValidator, onSubmit: signupValidator },
+    ...signupFormOptions,
     onSubmit: ({ value }) => handlers.onSubmit(value),
     onSubmitInvalid: () => handlers.onSubmitInvalid(),
   });

@@ -21,10 +21,12 @@ import {
   ChevronsLeftIcon,
   ChevronsRightIcon,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { useDebouncer } from "@tanstack/react-pacer";
+import { useRouter } from "@tanstack/react-router";
+import { type FormEvent, type ReactNode, useEffect, useId, useState } from "react";
 
-import { DatePicker } from "#/components/date-picker/DatePicker";
 import { Button } from "#/components/ui/button";
+import { DatePicker } from "#/components/ui/date-picker";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
@@ -165,13 +167,16 @@ export function DataTable<TData extends RowData>({
     },
     onColumnFiltersChange: (updater) => {
       const next = functionalUpdate(updater, columnFilters);
+      // Only the filters that changed: two quick changes in a row (before the URL catches up)
+      // must not write back the other one's stale value.
       const patch: DataTableQueryPatch = { page: undefined };
       for (const filter of filters) {
         const value = next.find((entry) => entry.id === filter.id)?.value;
-        patch[filter.id] =
+        const known =
           typeof value === "string" || typeof value === "number" || typeof value === "boolean"
             ? value
             : undefined;
+        if (known !== query[filter.id]) patch[filter.id] = known;
       }
       onQueryChange(patch);
     },
@@ -356,26 +361,38 @@ function SearchBox({
 }) {
   const id = useId();
   const hintId = useId();
+  const router = useRouter();
   const [draft, setDraft] = useState(value);
   const kind = classifySearchText(draft);
+  // Cancelled on unmount (the hook's default), on Enter, and by a value set from elsewhere.
+  const debouncer = useDebouncer(onSearch, { wait: SEARCH_DEBOUNCE_MS });
 
   // The URL is the source of truth: a back/forward or a reset elsewhere refills the box.
-  useEffect(() => setDraft(value), [value]);
-
-  // The pending debounced search, cancelled by Enter: TanStack keeps this route mounted while the
-  // next route's loader runs, so a timer left behind could navigate back to the list after the
-  // user already clicked through to a detail page.
-  const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
   useEffect(() => {
-    if (draft.trim() === value || kind === "cpf" || kind === "digits") return;
-    pending.current = setTimeout(() => onSearch(draft), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(pending.current);
-  }, [draft, kind, value, onSearch]);
+    debouncer.cancel();
+    setDraft(value);
+  }, [value, debouncer]);
+
+  // TanStack keeps this route mounted while the next route's loader runs, so a search left pending
+  // could navigate back to the list after the user already clicked through to a detail page.
+  useEffect(
+    () =>
+      router.subscribe("onBeforeNavigate", (event) => {
+        if (event.pathChanged) debouncer.cancel();
+      }),
+    [router, debouncer],
+  );
+
+  function change(text: string) {
+    setDraft(text);
+    const next = classifySearchText(text);
+    if (text.trim() === value || next === "cpf" || next === "digits") debouncer.cancel();
+    else debouncer.maybeExecute(text);
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    clearTimeout(pending.current);
+    debouncer.cancel();
     if (kind !== "cpf" && draft.trim() !== value) onSearch(draft);
   }
 
@@ -387,7 +404,7 @@ function SearchBox({
         type="search"
         value={draft}
         placeholder={placeholder}
-        onChange={(event) => setDraft(event.target.value)}
+        onChange={(event) => change(event.target.value)}
         autoComplete="off"
         aria-describedby={kind === "cpf" ? hintId : undefined}
         className="h-9"
@@ -422,9 +439,7 @@ function FilterControl({
           onValueChange={(iso) => onChange(iso || undefined)}
           startMonth={new Date(thisYear - DATE_FILTER_YEARS_BACK, 0, 1)}
           endMonth={new Date(thisYear, 11, 1)}
-          calendarLabel={`Abrir calendário: ${filter.label}`}
-          className="w-40"
-          inputClassName="h-9"
+          className="h-9 w-40"
         />
       </div>
     );

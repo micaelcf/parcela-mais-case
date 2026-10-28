@@ -109,10 +109,14 @@ test.describe("patient address", () => {
     await expect(page.getByText("Buscando endereço…")).toHaveCount(0);
   });
 
-  test("flags a CEP that doesn't exist", async ({ page }) => {
+  test("flags a CEP that doesn't exist once it's left", async ({ page }) => {
     await page.goto("/cadastro/paciente");
     await cepField(page).fill(formatCep(UNKNOWN_CEP));
 
+    // The lookup answers while the CEP is still focused: no verdict until it's left.
+    await expect(page.getByRole("status").filter({ hasText: "Buscando endereço…" })).toHaveCount(0);
+    await expect(cepField(page)).not.toHaveAttribute("aria-invalid", "true");
+    await cepField(page).blur();
     await expect(cepField(page)).toHaveAttribute("aria-invalid", "true");
     await expect(cepField(page)).toHaveAccessibleDescription("CEP não encontrado");
     await expectAddressHidden(page);
@@ -205,8 +209,8 @@ test.describe("patient address", () => {
 
     // Unknown CEP.
     await cepField(page).fill(formatCep(UNKNOWN_CEP));
-    await expect(cepField(page)).toHaveAccessibleDescription("CEP não encontrado");
     await page.getByLabel("Nome completo").focus();
+    await expect(cepField(page)).toHaveAccessibleDescription("CEP não encontrado");
     await next.click();
     await expect(cepField(page)).toBeFocused();
     await expect(page).toHaveURL(/\/cadastro\/paciente$/);

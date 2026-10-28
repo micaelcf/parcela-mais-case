@@ -42,8 +42,15 @@ export async function fillPatientStep(page: Page, patient: Patient) {
   }
 }
 
+/** Fills step 2: the phone, and the e-mail when the patient has one (it's optional). */
 export async function fillContactStep(page: Page, patient: Patient) {
   await page.getByLabel("Celular com DDD").fill(patient.phone);
+  if (patient.email) await page.getByLabel("E-mail (opcional)").fill(patient.email);
+}
+
+/** The signup stepper: "Etapa N de 3" over the three steps (`listitem`s, in order). */
+export function signupStepper(page: Page) {
+  return page.getByRole("navigation", { name: "Etapas do cadastro" });
 }
 
 export async function fillFinancialStep(page: Page, patient: Patient) {
@@ -79,6 +86,7 @@ export function signupBody(patient: Patient, scenario?: SimulationScenario) {
     birthdate: patient.birthdate,
     address: patient.address,
     phone: patient.phone,
+    ...(patient.email ? { email: patient.email } : {}),
     monthlyIncomeCents: patient.monthlyIncomeCents,
     treatmentAmountCents: patient.treatmentAmountCents,
     ...(scenario ? { simulationScenario: scenario } : {}),

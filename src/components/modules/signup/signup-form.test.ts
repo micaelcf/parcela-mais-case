@@ -1,11 +1,14 @@
+import { FieldApi, FormApi } from "@tanstack/react-form";
 import { describe, expect, it } from "vite-plus/test";
 
+import { EMAIL_MESSAGE } from "#/lib/email/email";
 import { collectIssues } from "#/lib/validation/standard-schema";
 
 import {
   formFieldForRequestPath,
   SIGNUP_STEPS,
   SignupFormSchema,
+  signupFormOptions,
   type SignupFormValues,
   signupValidator,
   toSignupRequest,
@@ -23,6 +26,7 @@ const VALUES: SignupFormValues = {
   city: "São Paulo",
   state: "SP",
   phone: "(11) 98765-4321",
+  email: "",
   monthlyIncome: "5.000,00",
   treatmentAmount: "10.000,00",
   simulationScenario: "ALL_APPROVE",
@@ -68,6 +72,31 @@ describe("signup form", () => {
     const body = toSignupRequest({ ...VALUES, complement: " apto 12 " }, false);
     expect(body.address.complement).toBe("apto 12");
     expect(body).not.toHaveProperty("simulationScenario");
+  });
+
+  it("puts the optional e-mail on the contact step, after the phone", () => {
+    expect(SIGNUP_STEPS[1].fields).toEqual(["phone", "email"]);
+  });
+
+  it("accepts a blank e-mail and checks a typed one with the shared message", () => {
+    expect(messagesFor({ ...VALUES, email: "" }, "email")).toEqual([]);
+    expect(messagesFor({ ...VALUES, email: "   " }, "email")).toEqual([]);
+    expect(messagesFor({ ...VALUES, email: " Ana@Clinica.com.br " }, "email")).toEqual([]);
+    expect(messagesFor({ ...VALUES, email: "ana@clinica" }, "email")).toEqual([EMAIL_MESSAGE]);
+  });
+
+  it("sends the e-mail normalised", () => {
+    const body = toSignupRequest({ ...VALUES, email: " Ana@Clinica.COM " }, false);
+    expect(body.email).toBe("ana@clinica.com");
+  });
+
+  it("omits a blank e-mail from the request", () => {
+    expect(toSignupRequest({ ...VALUES, email: "" }, false)).not.toHaveProperty("email");
+    expect(toSignupRequest({ ...VALUES, email: "  " }, false)).not.toHaveProperty("email");
+  });
+
+  it("maps the API's e-mail error to the e-mail field", () => {
+    expect(formFieldForRequestPath("email")).toBe("email");
   });
 
   it("maps the API's address error paths to the flat form fields", () => {
@@ -116,6 +145,7 @@ describe("signup form", () => {
       city: "",
       state: "",
       phone: "",
+      email: "ana@",
       monthlyIncome: "",
       treatmentAmount: "999,99",
       simulationScenario: "NORMAL",
@@ -132,9 +162,59 @@ describe("signup form", () => {
       "city",
       "state",
       "phone",
+      "email",
       "monthlyIncome",
       "treatmentAmount",
     ]);
     expect(signupValidator["~standard"].validate(VALUES)).toEqual({ value: VALUES });
+  });
+});
+
+/** A mounted signup form (its real options) with `name` mounted as a field. */
+function mountedField(name: "cpf" | "fullName") {
+  const form = new FormApi(signupFormOptions);
+  form.mount();
+  const field = new FieldApi({ form, name });
+  field.mount();
+  return { form, field };
+}
+
+function errorMessages(field: { state: { meta: { errors: unknown[] } } }): string[] {
+  return field.state.meta.errors.flatMap((error) =>
+    typeof error === "object" && error !== null && "message" in error
+      ? [String(error.message)]
+      : [],
+  );
+}
+
+describe("signup form validation timing", () => {
+  it("doesn't validate while typing", () => {
+    const { field } = mountedField("cpf");
+    field.handleChange("529.982");
+    expect(field.state.meta.errors).toEqual([]);
+  });
+
+  it("validates when the field loses focus", () => {
+    const { field } = mountedField("cpf");
+    field.handleChange("529.982");
+    field.handleBlur();
+    expect(errorMessages(field)).toEqual(["CPF inválido"]);
+  });
+
+  it("keeps the error while typing until the next blur", () => {
+    const { field } = mountedField("cpf");
+    field.handleChange("529.982");
+    field.handleBlur();
+    field.handleChange("529.982.247-25");
+    expect(errorMessages(field)).toEqual(["CPF inválido"]);
+    field.handleBlur();
+    expect(field.state.meta.errors).toEqual([]);
+  });
+
+  it("validates every field on submit", async () => {
+    const { form, field } = mountedField("fullName");
+    await form.handleSubmit();
+    expect(errorMessages(field)).toEqual(["Informe nome e sobrenome"]);
+    expect(form.state.canSubmit).toBe(false);
   });
 });

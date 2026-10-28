@@ -24,9 +24,10 @@ type SignupStepProps = {
 export function SignupStep({ index, title, description, children }: SignupStepProps) {
   const { form, goNext, goBack } = useSignup();
   // A field drops its errors when its step unmounts. Once this step's fields are mounted, validate
-  // again so touched fields show theirs (after "Voltar", or when a submit routes back here).
+  // again (as a blur would) so the fields already left show theirs (after "Voltar", or when a
+  // submit routes back here).
   useEffect(() => {
-    void form.validate("change");
+    void form.validate("blur");
   }, [form]);
   const last = index === SIGNUP_STEPS.length - 1;
   return (

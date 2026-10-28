@@ -6,7 +6,7 @@ import { fillLogin, logIn, OPERATOR } from "./support/backoffice";
 import { expect, test } from "./support/fixtures";
 import { acquireExclusive } from "./support/lender-switch-lock";
 import { newPatient } from "./support/patient";
-import { createConsultation } from "./support/signup";
+import { createConsultation, signupBody } from "./support/signup";
 
 /** Waits for the explorer's list GET whose query satisfies `matches`. */
 function listRequest(page: Page, matches: (params: URLSearchParams) => boolean) {
@@ -372,7 +372,13 @@ test.describe("backoffice", () => {
     request,
     patient,
   }) => {
-    const id = await createConsultation(request, patient, "ALL_APPROVE");
+    const email = `paciente.${patient.token.toLowerCase()}@exemplo.com`;
+    const created = await request.post("/api/consultations", {
+      headers: { "Idempotency-Key": randomUUID() },
+      data: { ...signupBody(patient, "ALL_APPROVE"), email },
+    });
+    expect(created.status(), await created.text()).toBe(202);
+    const { id } = (await created.json()) as { id: string };
     await logIn(page);
     await page.goto("/backoffice/consultas");
     const rows = explorerTable(page).getByRole("row");
@@ -388,9 +394,91 @@ test.describe("backoffice", () => {
     await expect(page).toHaveURL(new RegExp(`/backoffice/consultas/${id}$`));
     await expect(page.getByText(patient.cpfFormatted, { exact: true })).toBeVisible();
     const patientFacts = page.locator("dl", { hasText: "Celular" });
+    await expect(patientFacts).toContainText(email);
     await expect(patientFacts).toContainText("01310-100");
     await expect(patientFacts).toContainText("Avenida Paulista, 1578");
     await expect(patientFacts).toContainText("Bela Vista");
     await expect(patientFacts).toContainText("São Paulo/SP");
+  });
+
+  test("filters by a creation date typed or picked from the calendar", async ({ page }) => {
+    await logIn(page);
+    await page.goto("/backoffice/consultas");
+    await expect(explorerTable(page)).toBeVisible();
+
+    // Typed: the text is masked as dd/mm/aaaa and applies once it is a complete real day; the URL
+    // keeps the calendar day, the API gets the instant it starts at (the browser runs in São Paulo).
+    const from = page.getByRole("textbox", { name: "Criada de" });
+    const typedRequest = listRequest(
+      page,
+      (params) => params.get("createdAtFrom") === "2026-03-01T03:00:00.000Z",
+    );
+    await from.pressSequentially("01032026");
+    await expect(from).toHaveValue("01/03/2026");
+    await typedRequest;
+    await expect(page).toHaveURL(/[?&]createdAtFrom=2026-03-01(&|$)/);
+
+    // Picked: the calendar button opens on the current month; a day click fills the text and the URL.
+    const to = page.getByRole("textbox", { name: "Criada até" });
+    const toGroup = page.getByRole("group").filter({ has: to });
+    await toGroup.getByRole("button", { name: "Selecionar data" }).click();
+    const calendar = page.getByRole("dialog");
+    await calendar.getByRole("button", { name: /, 15 de / }).click();
+    await expect(calendar).toBeHidden();
+    await expect(to).toHaveValue(/^15\/\d{2}\/\d{4}$/);
+    const [day, month, year] = (await to.inputValue()).split("/");
+    await expect(page).toHaveURL(new RegExp(`[?&]createdAtTo=${year}-${month}-${day}(&|$)`));
+
+    // Keyboard: ArrowDown opens on the selected day, arrows move, Enter picks, Escape closes.
+    await from.press("ArrowDown");
+    await expect(calendar.getByRole("button", { name: /, 1 de março de 2026/ })).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(calendar.getByRole("button", { name: /, 2 de março de 2026/ })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(calendar).toBeHidden();
+    await expect(from).toHaveValue("02/03/2026");
+    await expect(page).toHaveURL(/[?&]createdAtFrom=2026-03-02(&|$)/);
+    await from.press("ArrowDown");
+    await expect(calendar).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(calendar).toBeHidden();
+
+    // Clearing the text drops the filter.
+    await from.fill("");
+    await expect(page).not.toHaveURL(/createdAtFrom=/);
+  });
+
+  test("searches once typing pauses, never per keystroke nor after leaving", async ({
+    page,
+    request,
+    patient,
+  }) => {
+    await createConsultation(request, patient, "ALL_APPROVE");
+    await logIn(page);
+    await page.goto("/backoffice/consultas");
+    await expect(explorerTable(page).getByRole("link").first()).toBeVisible();
+    const searched: string[] = [];
+    page.on("request", (sent) => {
+      const url = new URL(sent.url());
+      if (sent.method() === "GET" && url.pathname === "/api/backoffice/consultations") {
+        searched.push(url.searchParams.get("q") ?? "");
+      }
+    });
+
+    // Keystrokes 50 ms apart stay inside the 400 ms debounce: one request, for the whole text.
+    const search = page.getByRole("searchbox", { name: "Buscar", exact: true });
+    await search.pressSequentially(patient.token, { delay: 50 });
+    await expect(page).toHaveURL(new RegExp(`[?&]q=${patient.token}(&|$)`));
+    await expect(explorerTable(page).getByRole("link", { name: patient.fullName })).toBeVisible();
+    await page.waitForTimeout(1_000);
+    expect(searched).toEqual([patient.token]);
+
+    // Text still pending when the user opens a consultation never pulls them back to the list.
+    await search.pressSequentially("x");
+    await explorerTable(page).getByRole("link", { name: patient.fullName }).click();
+    await expect(page).toHaveURL(/\/backoffice\/consultas\/[\da-f-]+$/);
+    await page.waitForTimeout(1_000);
+    await expect(page).toHaveURL(/\/backoffice\/consultas\/[\da-f-]+$/);
+    expect(searched).toEqual([patient.token]);
   });
 });

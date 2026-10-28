@@ -106,6 +106,7 @@ export function ConsultationDetailView({ detail }: { detail: ConsultationDetail 
               { label: "CPF", value: maskCpf(detail.patient.cpf) },
               { label: "Data de nascimento", value: formatCalendarDate(detail.patient.birthdate) },
               { label: "Celular", value: maskPhone(detail.patient.phone) },
+              { label: "E-mail", value: detail.patient.email ?? EMPTY },
               ...addressFacts(detail.patient.address),
               { label: "Paciente desde", value: formatDateTime(detail.patient.createdAt) },
               { label: "Atualizado em", value: formatDateTime(detail.patient.updatedAt) },

@@ -1,6 +1,6 @@
 import { type HTMLAttributes, type ReactNode, useEffect, useRef, useState } from "react";
 
-import { DatePicker } from "#/components/date-picker/DatePicker";
+import { DatePicker } from "#/components/ui/date-picker";
 import {
   Field,
   FieldDescription,
@@ -38,8 +38,10 @@ function messagesOf(value: unknown): string[] {
 }
 
 /**
- * Shared wiring of a field: ids, visible errors (once touched), focus requests, server-error reset.
- * `extraMessages` are shown whether touched or not (a CEP lookup's verdict).
+ * Shared wiring of a field: ids, visible errors, focus requests, server-error reset. Validation
+ * runs on blur and on submit only, so the errors show once the field was left (or touched by
+ * "Próximo"/submit) and stay until it's validated again: never as it's typed. `extraMessages` show
+ * regardless (a CEP lookup's verdict, which the CEP field itself holds back while it's typed).
  */
 function useTextField<E extends HTMLElement = HTMLInputElement>(extraMessages: string[] = []) {
   const field = useFieldContext<string>();
@@ -56,7 +58,7 @@ function useTextField<E extends HTMLElement = HTMLInputElement>(extraMessages: s
   const serverError = serverErrors[name];
   const messages = [
     ...new Set([
-      ...(field.state.meta.isTouched ? messagesOf(field.state.meta.errors) : []),
+      ...(field.state.meta.isBlurred ? messagesOf(field.state.meta.errors) : []),
       ...(serverError ? [serverError] : []),
       ...extraMessages,
     ]),
@@ -114,7 +116,7 @@ function FieldFrame({
 type TextFieldProps = {
   label: string;
   description?: string;
-  type?: "text" | "tel";
+  type?: "text" | "tel" | "email";
   inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
   autoComplete?: string;
   placeholder?: string;
@@ -184,19 +186,20 @@ export function DateField({
   return (
     <FieldFrame id={id} errorId={errorId} label={label} messages={messages}>
       <DatePicker
+        ref={ref}
         id={id}
         name={field.name}
         value={field.state.value}
         onValueChange={change}
         onBlur={field.handleBlur}
+        captionLayout="dropdown"
         startMonth={startMonth}
         endMonth={endMonth}
         defaultMonth={defaultMonth}
-        calendarLabel="Abrir calendário"
         autoComplete={autoComplete}
-        inputRef={ref}
         invalid={invalid}
-        describedBy={invalid ? errorId : undefined}
+        aria-describedby={invalid ? errorId : undefined}
+        className="h-10"
       />
     </FieldFrame>
   );
@@ -214,9 +217,14 @@ const CEP_STATUS_ERROR: Partial<Record<CepLookupStatus, string>> = {
   invalid: CEP_MESSAGE,
 };
 
-/** The CEP, masked as typed; the layout looks it up and reports the lookup's status here. */
+/**
+ * The CEP, masked as typed; the layout looks it up and reports the lookup's status here. Like the
+ * schema errors, the lookup's verdict shows only once the CEP was left (or "Próximo" pressed), not
+ * as the CEP is typed.
+ */
 export function CepField({ status }: { status: CepLookupStatus }) {
-  const lookupError = CEP_STATUS_ERROR[status];
+  const { cepVerdictShown, showCepVerdict } = useSignup();
+  const lookupError = cepVerdictShown ? CEP_STATUS_ERROR[status] : undefined;
   const { field, ref, id, errorId, messages, invalid, change } = useTextField(
     lookupError ? [lookupError] : [],
   );
@@ -232,8 +240,14 @@ export function CepField({ status }: { status: CepLookupStatus }) {
         autoComplete="postal-code"
         placeholder="00000-000"
         value={field.state.value}
-        onBlur={field.handleBlur}
-        onChange={(event) => change(maskCep(event.target.value))}
+        onBlur={() => {
+          showCepVerdict(true);
+          field.handleBlur();
+        }}
+        onChange={(event) => {
+          showCepVerdict(false);
+          change(maskCep(event.target.value));
+        }}
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         className="h-10 tabular-nums"

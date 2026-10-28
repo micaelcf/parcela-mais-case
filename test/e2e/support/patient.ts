@@ -21,6 +21,8 @@ export type Patient = {
   address: Address;
   /** 11 digits. */
   phone: string;
+  /** Optional: absent, the signup leaves the e-mail blank. */
+  email?: string;
   monthlyIncomeCents: number;
   treatmentAmountCents: number;
 };

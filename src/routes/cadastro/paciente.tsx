@@ -8,14 +8,16 @@ import { MAX_AGE_YEARS, MIN_AGE_YEARS } from "#/server/modules/consultation/cons
 export const Route = createFileRoute("/cadastro/paciente")({ component: PatientStep });
 
 /**
- * Birth years the calendar offers: the valid 18–80 range plus a few years each side, so a pick
- * just outside it still lands and shows the age message.
+ * Years the calendar reaches past the valid 18–80 ages on each side (today − 85 to today − 13), so
+ * a pick just outside still lands and shows the age message.
  */
 const BIRTH_YEAR_SLACK = 5;
 
 function PatientStep() {
   const { form, cepStatus } = useSignup();
-  const thisYear = new Date().getFullYear();
+  const today = new Date();
+  const thisYear = today.getFullYear();
+  const thisMonth = today.getMonth();
   // City and UF come with the CEP; typed by hand only when the lookup couldn't answer.
   const fromCep = cepStatus === "found";
   return (
@@ -39,8 +41,8 @@ function PatientStep() {
           <field.DateField
             label="Data de nascimento"
             autoComplete="bday"
-            startMonth={new Date(thisYear - MAX_AGE_YEARS - BIRTH_YEAR_SLACK, 0, 1)}
-            endMonth={new Date(thisYear - MIN_AGE_YEARS + BIRTH_YEAR_SLACK, 11, 1)}
+            startMonth={new Date(thisYear - MAX_AGE_YEARS - BIRTH_YEAR_SLACK, thisMonth, 1)}
+            endMonth={new Date(thisYear - MIN_AGE_YEARS + BIRTH_YEAR_SLACK, thisMonth, 1)}
             defaultMonth={new Date(thisYear - 40, 0, 1)}
           />
         )}

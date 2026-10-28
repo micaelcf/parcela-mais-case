@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { cn } from "cn";
 import { DayPicker, getDefaultClassNames, type DayButton, type Locale } from "react-day-picker";
@@ -158,6 +160,8 @@ function CalendarDayButton({
 
   return (
     <Button
+      // The registry version tracks the focused day but never attaches its ref, so arrow keys can't move focus.
+      ref={ref}
       variant="ghost"
       size="icon"
       data-day={day.date.toLocaleDateString(locale?.code)}

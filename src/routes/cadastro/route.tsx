@@ -3,8 +3,8 @@ import {
   createFileRoute,
   Outlet,
   redirect,
+  useChildMatches,
   useNavigate,
-  useRouterState,
 } from "@tanstack/react-router";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -25,7 +25,8 @@ import {
   toSignupRequest,
   useSignupForm,
 } from "#/components/modules/signup/signup-form";
-import { SignupProgress } from "#/components/modules/signup/SignupProgress";
+import { SignupStepper } from "#/components/modules/signup/SignupStepper";
+import { StepperContent } from "#/components/ui/stepper";
 import { useCepLookup } from "#/hooks/use-cep-lookup";
 
 /** "Próximo" with a valid CEP whose lookup hasn't answered yet. */
@@ -48,11 +49,14 @@ export const Route = createFileRoute("/cadastro")({
 function SignupLayout() {
   const { simulationControls } = Route.useLoaderData();
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const current = SIGNUP_STEPS.findIndex((step) => step.to === pathname);
+  // The step on screen (the rendered child route), not the location: during a navigation the
+  // location changes before the next step renders.
+  const shownRouteId = useChildMatches({ select: (matches) => matches[0]?.routeId });
+  const current = SIGNUP_STEPS.findIndex((step) => step.to === shownRouteId);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const focusTarget = useRef<string | null>(null);
   const [serverErrors, setServerErrors] = useState<Partial<Record<string, string>>>({});
+  const [cepVerdictShown, setCepVerdictShown] = useState(false);
 
   const clearServerError = useCallback((name: string) => {
     setServerErrors(({ [name]: _cleared, ...rest }) => rest);
@@ -84,8 +88,10 @@ function SignupLayout() {
     return hasErrors(name) || (name === "cep" && !addressShown);
   }
 
+  /** Shows `name`'s errors as if it had been left (validation runs on blur and submit). */
   function touch(name: SignupFieldName) {
-    form.setFieldMeta(name, (meta) => ({ ...meta, isTouched: true }));
+    form.setFieldMeta(name, (meta) => ({ ...meta, isTouched: true, isBlurred: true }));
+    if (name === "cep") setCepVerdictShown(true);
   }
 
   /** Touches what blocks among `fields` (the CEP's wait message too); focuses the first of them. */
@@ -113,7 +119,7 @@ function SignupLayout() {
     };
     for (const name of ADDRESS_DETAIL_FIELDS) {
       form.setFieldValue(name, values[name], { dontUpdateMeta: true });
-      form.setFieldMeta(name, (meta) => ({ ...meta, isTouched: false }));
+      form.setFieldMeta(name, (meta) => ({ ...meta, isTouched: false, isBlurred: false }));
     }
     setServerErrors(({ cep: _cep, ...errors }) =>
       Object.fromEntries(
@@ -165,14 +171,15 @@ function SignupLayout() {
   async function goNext(from: number) {
     const step = SIGNUP_STEPS[from];
     const next = SIGNUP_STEPS[from + 1];
-    await form.validate("change");
+    await form.validate("blur");
     if (stopAtFirstBlocking(step.fields)) return;
     focusTarget.current = next.fields[0];
     await navigate({ to: next.to });
   }
 
-  function goBack(from: number) {
-    const previous = SIGNUP_STEPS[from - 1];
+  /** Back to an earlier step (from "Voltar" or the stepper), focusing its first field. */
+  function goBackTo(index: number) {
+    const previous = SIGNUP_STEPS[index];
     focusTarget.current = previous.fields[0];
     void navigate({ to: previous.to });
   }
@@ -184,15 +191,17 @@ function SignupLayout() {
           form,
           simulationControls,
           goNext,
-          goBack,
+          goBack: (from) => goBackTo(from - 1),
           claimFocus,
           serverErrors,
           clearServerError,
           cepStatus,
+          cepVerdictShown,
+          showCepVerdict: setCepVerdictShown,
         }}
       >
         <div className="mx-auto flex max-w-xl flex-col gap-6">
-          {current >= 0 ? <SignupProgress current={current} /> : null}
+          {current >= 0 ? <SignupStepper current={current} onStepSelect={goBackTo} /> : null}
           <form
             noValidate
             onSubmit={(event) => {
@@ -201,7 +210,9 @@ function SignupLayout() {
               else void form.handleSubmit();
             }}
           >
-            <Outlet />
+            <StepperContent step={current}>
+              <Outlet />
+            </StepperContent>
           </form>
         </div>
       </SignupContext>
