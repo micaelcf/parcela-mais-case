@@ -26,7 +26,7 @@ async function deltaAttemptOf(consultationId: string) {
   return delta;
 }
 
-describe("Delta circuit breaker half-open probe", () => {
+describe("Delta circuit breaker and forced scenarios", () => {
   it(
     "never hands the probe to a forced-scenario attempt",
     // Waits out the 30 s open period on purpose (RF-217, RF-218).
@@ -39,17 +39,29 @@ describe("Delta circuit breaker half-open probe", () => {
       const failed = await Promise.all(ids.map(deltaAttemptOf));
       const openedAt = Math.max(...failed.map((delta) => delta.calledAt?.getTime() ?? 0));
       expect((await lenderAttemptService.breakerStates()).DELTA).toBe("OPEN");
+
+      // RF-214 under an open circuit: a forced scenario still gets its forced outcome.
+      const whileOpen = await createConsultation({}, "ALL_APPROVE");
+      await waitSettled(whileOpen);
+      expect(await deltaAttemptOf(whileOpen)).toMatchObject({
+        status: "APPROVED",
+        breakerProbe: false,
+      });
+      expect((await lenderAttemptService.breakerStates()).DELTA).toBe("OPEN");
+
       await sleep(Math.max(0, openedAt + BREAKER.openMs + 500 - Date.now()));
       expect((await lenderAttemptService.breakerStates()).DELTA).toBe("HALF_OPEN");
 
+      // Half-open: the forced attempt is called as a simulation, never as the probe.
       const forcedId = await createConsultation({}, "DELTA_FAILS");
       await waitSettled(forcedId);
-      expect(await deltaAttemptOf(forcedId)).toMatchObject({
+      const forced = await deltaAttemptOf(forcedId);
+      expect(forced).toMatchObject({
         status: "UNAVAILABLE",
-        reason: "CIRCUIT_OPEN",
-        calledAt: null,
+        reason: "LENDER_ERROR",
         breakerProbe: false,
       });
+      expect(forced.calledAt).not.toBeNull();
       expect((await lenderAttemptService.breakerStates()).DELTA).toBe("HALF_OPEN");
 
       const normalId = await createConsultation({}, "NORMAL");

@@ -37,16 +37,19 @@ async function breakerOf(executor: DbOrTx, lender: LenderCode, now: Date): Promi
 
 /**
  * Kill switch, then breaker (one half-open probe at a time). Runs under the advisory lock.
- * Forced-scenario attempts never probe: under half-open they are skipped like an open circuit.
+ * The breaker is derived from NORMAL traffic and governs NORMAL traffic only: forced-scenario
+ * attempts are never counted, never probe and are never blocked by it (RFC D11, 2026-10-28), so a
+ * forced scenario holds its outcome whatever real traffic did to the circuit. The kill switch
+ * still applies to them.
  */
 async function decideGate(tx: Tx, attempt: LenderAttemptRow, now: Date): Promise<Gate> {
   const { lender } = attempt;
   if (!(await lenderSettingService.isEnabled(tx, lender)))
     return { kind: "SKIP", reason: "DISABLED" };
+  if (attempt.simulationScenario !== "NORMAL") return { kind: "CALL", probe: false };
   const state = await breakerOf(tx, lender, now);
   if (state === "OPEN") return { kind: "SKIP", reason: "CIRCUIT_OPEN" };
   if (state === "HALF_OPEN") {
-    if (attempt.simulationScenario !== "NORMAL") return { kind: "SKIP", reason: "CIRCUIT_OPEN" };
     const since = new Date(now.getTime() - BREAKER.openMs);
     if (await lenderAttemptRepository.probeInFlight(tx, lender, since)) {
       return { kind: "SKIP", reason: "CIRCUIT_OPEN" };
