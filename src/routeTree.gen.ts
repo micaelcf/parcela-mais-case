@@ -10,31 +10,31 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as BackofficeRouteImport } from './routes/backoffice'
-import { Route as CadastroRouteImport } from './routes/cadastro'
-import { Route as ApiSplatRouteImport } from './routes/api.$'
-import { Route as BackofficeIndexRouteImport } from './routes/backoffice.index'
-import { Route as BackofficeAbusoRouteImport } from './routes/backoffice.abuso'
-import { Route as BackofficeFinanceirasRouteImport } from './routes/backoffice.financeiras'
-import { Route as BackofficeLoginRouteImport } from './routes/backoffice.login'
-import { Route as CadastroContatoRouteImport } from './routes/cadastro.contato'
-import { Route as CadastroFinanceiroRouteImport } from './routes/cadastro.financeiro'
-import { Route as CadastroPacienteRouteImport } from './routes/cadastro.paciente'
-import { Route as ConsultasConsultationIdRouteImport } from './routes/consultas.$consultationId'
-import { Route as BackofficeConsultasIndexRouteImport } from './routes/backoffice.consultas.index'
-import { Route as BackofficeConsultasConsultationIdRouteImport } from './routes/backoffice.consultas.$consultationId'
+import { Route as BackofficeRouteRouteImport } from './routes/backoffice/route'
+import { Route as CadastroRouteRouteImport } from './routes/cadastro/route'
+import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as BackofficeIndexRouteImport } from './routes/backoffice/index'
+import { Route as BackofficeAbusoRouteImport } from './routes/backoffice/abuso'
+import { Route as BackofficeFinanceirasRouteImport } from './routes/backoffice/financeiras'
+import { Route as BackofficeLoginRouteImport } from './routes/backoffice/login'
+import { Route as CadastroContatoRouteImport } from './routes/cadastro/contato'
+import { Route as CadastroFinanceiroRouteImport } from './routes/cadastro/financeiro'
+import { Route as CadastroPacienteRouteImport } from './routes/cadastro/paciente'
+import { Route as ConsultasConsultationIdRouteImport } from './routes/consultas/$consultationId'
+import { Route as BackofficeConsultasIndexRouteImport } from './routes/backoffice/consultas/index'
+import { Route as BackofficeConsultasConsultationIdRouteImport } from './routes/backoffice/consultas/$consultationId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BackofficeRoute = BackofficeRouteImport.update({
+const BackofficeRouteRoute = BackofficeRouteRouteImport.update({
   id: '/backoffice',
   path: '/backoffice',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CadastroRoute = CadastroRouteImport.update({
+const CadastroRouteRoute = CadastroRouteRouteImport.update({
   id: '/cadastro',
   path: '/cadastro',
   getParentRoute: () => rootRouteImport,
@@ -47,37 +47,37 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
 const BackofficeIndexRoute = BackofficeIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => BackofficeRoute,
+  getParentRoute: () => BackofficeRouteRoute,
 } as any)
 const BackofficeAbusoRoute = BackofficeAbusoRouteImport.update({
   id: '/abuso',
   path: '/abuso',
-  getParentRoute: () => BackofficeRoute,
+  getParentRoute: () => BackofficeRouteRoute,
 } as any)
 const BackofficeFinanceirasRoute = BackofficeFinanceirasRouteImport.update({
   id: '/financeiras',
   path: '/financeiras',
-  getParentRoute: () => BackofficeRoute,
+  getParentRoute: () => BackofficeRouteRoute,
 } as any)
 const BackofficeLoginRoute = BackofficeLoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => BackofficeRoute,
+  getParentRoute: () => BackofficeRouteRoute,
 } as any)
 const CadastroContatoRoute = CadastroContatoRouteImport.update({
   id: '/contato',
   path: '/contato',
-  getParentRoute: () => CadastroRoute,
+  getParentRoute: () => CadastroRouteRoute,
 } as any)
 const CadastroFinanceiroRoute = CadastroFinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
-  getParentRoute: () => CadastroRoute,
+  getParentRoute: () => CadastroRouteRoute,
 } as any)
 const CadastroPacienteRoute = CadastroPacienteRouteImport.update({
   id: '/paciente',
   path: '/paciente',
-  getParentRoute: () => CadastroRoute,
+  getParentRoute: () => CadastroRouteRoute,
 } as any)
 const ConsultasConsultationIdRoute = ConsultasConsultationIdRouteImport.update({
   id: '/consultas/$consultationId',
@@ -88,19 +88,19 @@ const BackofficeConsultasIndexRoute =
   BackofficeConsultasIndexRouteImport.update({
     id: '/consultas/',
     path: '/consultas/',
-    getParentRoute: () => BackofficeRoute,
+    getParentRoute: () => BackofficeRouteRoute,
   } as any)
 const BackofficeConsultasConsultationIdRoute =
   BackofficeConsultasConsultationIdRouteImport.update({
     id: '/consultas/$consultationId',
     path: '/consultas/$consultationId',
-    getParentRoute: () => BackofficeRoute,
+    getParentRoute: () => BackofficeRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/backoffice': typeof BackofficeRouteWithChildren
-  '/cadastro': typeof CadastroRouteWithChildren
+  '/backoffice': typeof BackofficeRouteRouteWithChildren
+  '/cadastro': typeof CadastroRouteRouteWithChildren
   '/api/$': typeof ApiSplatRoute
   '/backoffice/abuso': typeof BackofficeAbusoRoute
   '/backoffice/financeiras': typeof BackofficeFinanceirasRoute
@@ -115,7 +115,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/cadastro': typeof CadastroRouteWithChildren
+  '/cadastro': typeof CadastroRouteRouteWithChildren
   '/api/$': typeof ApiSplatRoute
   '/backoffice/abuso': typeof BackofficeAbusoRoute
   '/backoffice/financeiras': typeof BackofficeFinanceirasRoute
@@ -131,8 +131,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/backoffice': typeof BackofficeRouteWithChildren
-  '/cadastro': typeof CadastroRouteWithChildren
+  '/backoffice': typeof BackofficeRouteRouteWithChildren
+  '/cadastro': typeof CadastroRouteRouteWithChildren
   '/api/$': typeof ApiSplatRoute
   '/backoffice/abuso': typeof BackofficeAbusoRoute
   '/backoffice/financeiras': typeof BackofficeFinanceirasRoute
@@ -197,8 +197,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BackofficeRoute: typeof BackofficeRouteWithChildren
-  CadastroRoute: typeof CadastroRouteWithChildren
+  BackofficeRouteRoute: typeof BackofficeRouteRouteWithChildren
+  CadastroRouteRoute: typeof CadastroRouteRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
   ConsultasConsultationIdRoute: typeof ConsultasConsultationIdRoute
 }
@@ -216,14 +216,14 @@ declare module '@tanstack/react-router' {
       id: '/backoffice'
       path: '/backoffice'
       fullPath: '/backoffice'
-      preLoaderRoute: typeof BackofficeRouteImport
+      preLoaderRoute: typeof BackofficeRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastro': {
       id: '/cadastro'
       path: '/cadastro'
       fullPath: '/cadastro'
-      preLoaderRoute: typeof CadastroRouteImport
+      preLoaderRoute: typeof CadastroRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/$': {
@@ -238,49 +238,49 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/backoffice/'
       preLoaderRoute: typeof BackofficeIndexRouteImport
-      parentRoute: typeof BackofficeRoute
+      parentRoute: typeof BackofficeRouteRoute
     }
     '/backoffice/abuso': {
       id: '/backoffice/abuso'
       path: '/abuso'
       fullPath: '/backoffice/abuso'
       preLoaderRoute: typeof BackofficeAbusoRouteImport
-      parentRoute: typeof BackofficeRoute
+      parentRoute: typeof BackofficeRouteRoute
     }
     '/backoffice/financeiras': {
       id: '/backoffice/financeiras'
       path: '/financeiras'
       fullPath: '/backoffice/financeiras'
       preLoaderRoute: typeof BackofficeFinanceirasRouteImport
-      parentRoute: typeof BackofficeRoute
+      parentRoute: typeof BackofficeRouteRoute
     }
     '/backoffice/login': {
       id: '/backoffice/login'
       path: '/login'
       fullPath: '/backoffice/login'
       preLoaderRoute: typeof BackofficeLoginRouteImport
-      parentRoute: typeof BackofficeRoute
+      parentRoute: typeof BackofficeRouteRoute
     }
     '/cadastro/contato': {
       id: '/cadastro/contato'
       path: '/contato'
       fullPath: '/cadastro/contato'
       preLoaderRoute: typeof CadastroContatoRouteImport
-      parentRoute: typeof CadastroRoute
+      parentRoute: typeof CadastroRouteRoute
     }
     '/cadastro/financeiro': {
       id: '/cadastro/financeiro'
       path: '/financeiro'
       fullPath: '/cadastro/financeiro'
       preLoaderRoute: typeof CadastroFinanceiroRouteImport
-      parentRoute: typeof CadastroRoute
+      parentRoute: typeof CadastroRouteRoute
     }
     '/cadastro/paciente': {
       id: '/cadastro/paciente'
       path: '/paciente'
       fullPath: '/cadastro/paciente'
       preLoaderRoute: typeof CadastroPacienteRouteImport
-      parentRoute: typeof CadastroRoute
+      parentRoute: typeof CadastroRouteRoute
     }
     '/consultas/$consultationId': {
       id: '/consultas/$consultationId'
@@ -294,19 +294,19 @@ declare module '@tanstack/react-router' {
       path: '/consultas'
       fullPath: '/backoffice/consultas/'
       preLoaderRoute: typeof BackofficeConsultasIndexRouteImport
-      parentRoute: typeof BackofficeRoute
+      parentRoute: typeof BackofficeRouteRoute
     }
     '/backoffice/consultas/$consultationId': {
       id: '/backoffice/consultas/$consultationId'
       path: '/consultas/$consultationId'
       fullPath: '/backoffice/consultas/$consultationId'
       preLoaderRoute: typeof BackofficeConsultasConsultationIdRouteImport
-      parentRoute: typeof BackofficeRoute
+      parentRoute: typeof BackofficeRouteRoute
     }
   }
 }
 
-interface BackofficeRouteChildren {
+interface BackofficeRouteRouteChildren {
   BackofficeAbusoRoute: typeof BackofficeAbusoRoute
   BackofficeFinanceirasRoute: typeof BackofficeFinanceirasRoute
   BackofficeLoginRoute: typeof BackofficeLoginRoute
@@ -315,7 +315,7 @@ interface BackofficeRouteChildren {
   BackofficeConsultasIndexRoute: typeof BackofficeConsultasIndexRoute
 }
 
-const BackofficeRouteChildren: BackofficeRouteChildren = {
+const BackofficeRouteRouteChildren: BackofficeRouteRouteChildren = {
   BackofficeAbusoRoute: BackofficeAbusoRoute,
   BackofficeFinanceirasRoute: BackofficeFinanceirasRoute,
   BackofficeLoginRoute: BackofficeLoginRoute,
@@ -325,30 +325,30 @@ const BackofficeRouteChildren: BackofficeRouteChildren = {
   BackofficeConsultasIndexRoute: BackofficeConsultasIndexRoute,
 }
 
-const BackofficeRouteWithChildren = BackofficeRoute._addFileChildren(
-  BackofficeRouteChildren,
+const BackofficeRouteRouteWithChildren = BackofficeRouteRoute._addFileChildren(
+  BackofficeRouteRouteChildren,
 )
 
-interface CadastroRouteChildren {
+interface CadastroRouteRouteChildren {
   CadastroContatoRoute: typeof CadastroContatoRoute
   CadastroFinanceiroRoute: typeof CadastroFinanceiroRoute
   CadastroPacienteRoute: typeof CadastroPacienteRoute
 }
 
-const CadastroRouteChildren: CadastroRouteChildren = {
+const CadastroRouteRouteChildren: CadastroRouteRouteChildren = {
   CadastroContatoRoute: CadastroContatoRoute,
   CadastroFinanceiroRoute: CadastroFinanceiroRoute,
   CadastroPacienteRoute: CadastroPacienteRoute,
 }
 
-const CadastroRouteWithChildren = CadastroRoute._addFileChildren(
-  CadastroRouteChildren,
+const CadastroRouteRouteWithChildren = CadastroRouteRoute._addFileChildren(
+  CadastroRouteRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BackofficeRoute: BackofficeRouteWithChildren,
-  CadastroRoute: CadastroRouteWithChildren,
+  BackofficeRouteRoute: BackofficeRouteRouteWithChildren,
+  CadastroRouteRoute: CadastroRouteRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
   ConsultasConsultationIdRoute: ConsultasConsultationIdRoute,
 }
