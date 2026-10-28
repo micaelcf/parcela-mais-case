@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vite-plus/test";
 
 import { LENDER_CODES } from "#/lib/enums";
+import { EMAIL_MESSAGE } from "#/lib/email/email";
 import { boss } from "#/server/infra/queue/boss";
 import { FINALIZE_QUEUE, lenderQueue } from "#/server/infra/queue/queues";
 import { consultationRepository } from "#/server/modules/consultation/consultation.repository";
@@ -259,6 +260,37 @@ describe("POST /consultations", () => {
     );
     expect(moved.status).toBe(422);
     expect((await readProblem(moved)).code).toBe("IDEMPOTENCY_KEY_REUSED");
+  });
+
+  it("accepts an optional e-mail and rejects an invalid one at the email path", async () => {
+    expect((await postConsultation(signupBody())).status).toBe(202);
+    expect((await postConsultation(signupBody({ email: " Ana.Lima@Exemplo.COM " }))).status).toBe(
+      202,
+    );
+
+    for (const email of ["ana@exemplo", "", "ana.lima.exemplo.com"]) {
+      const response = await postConsultation(signupBody({ email }));
+      expect([email, response.status]).toEqual([email, 422]);
+      expect((await readProblem(response)).fields).toEqual([
+        { path: "email", message: EMAIL_MESSAGE },
+      ]);
+    }
+  });
+
+  it("treats the e-mail as part of the idempotent request", async () => {
+    const key = randomUUID();
+    const original = signupBody({ email: "ana.lima@exemplo.com" });
+    const id = await readCreatedId(await postConsultation(original, { key }));
+
+    // The same e-mail written differently is the same request.
+    const same = await postConsultation({ ...original, email: " Ana.Lima@Exemplo.COM " }, { key });
+    expect(await readCreatedId(same)).toBe(id);
+
+    for (const email of ["outra@exemplo.com", undefined]) {
+      const changed = await postConsultation({ ...original, email }, { key });
+      expect([email, changed.status]).toEqual([email, 422]);
+      expect((await readProblem(changed)).code).toBe("IDEMPOTENCY_KEY_REUSED");
+    }
   });
 
   it("reuses the patient for a known CPF", async () => {

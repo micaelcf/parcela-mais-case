@@ -2,6 +2,7 @@ import Type, { type Static, type TSchema } from "typebox";
 
 import { AddressSchema } from "#/lib/address/address";
 import { CpfSchema } from "#/lib/cpf/cpf";
+import { EmailSchema } from "#/lib/email/email";
 import { PhoneSchema } from "#/lib/phone/phone";
 import {
   ATTEMPT_REASONS,
@@ -88,6 +89,8 @@ export const SignupRequestSchema = Type.Object({
     () => "A idade deve estar entre 18 e 80 anos",
   ),
   phone: PhoneSchema,
+  /** Optional; stored on the patient, never in a public payload. */
+  email: Type.Optional(EmailSchema),
   /** The patient's address (stored on the patient, never in a public payload). */
   address: AddressSchema,
   monthlyIncomeCents: Type.Integer({

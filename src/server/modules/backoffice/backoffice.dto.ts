@@ -234,6 +234,8 @@ export const ConsultationDetailSchema = Type.Object({
     fullName: Type.String(),
     birthdate: Type.String(),
     phone: Type.String(),
+    /** The latest e-mail sent; null when the latest submission had none. */
+    email: Nullable(Type.String()),
     /** The latest address sent; null for patients saved before addresses existed. */
     address: Nullable(
       Type.Object({
@@ -374,6 +376,7 @@ export type ConsultationDetailRows = {
     fullName: string;
     birthdate: string;
     phone: string;
+    email: string | null;
     addressCep: string | null;
     addressStreet: string | null;
     addressNumber: string | null;
@@ -476,6 +479,7 @@ export function toConsultationDetail(
       fullName: rows.patient.fullName,
       birthdate: rows.patient.birthdate,
       phone: rows.patient.phone,
+      email: rows.patient.email,
       address: addressOf(rows.patient),
       createdAt: rows.patient.createdAt.toISOString(),
       updatedAt: rows.patient.updatedAt.toISOString(),

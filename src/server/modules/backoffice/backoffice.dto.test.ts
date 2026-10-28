@@ -33,6 +33,7 @@ function rows(patient: Partial<ConsultationDetailRows["patient"]>): Consultation
       fullName: "Maria da Silva",
       birthdate: "1986-01-01",
       phone: "11987654321",
+      email: null,
       ...NO_ADDRESS,
       createdAt: AT,
       updatedAt: AT,
@@ -70,5 +71,11 @@ describe("toConsultationDetail", () => {
       city: "São Paulo",
       state: "SP",
     });
+  });
+
+  it("maps the stored e-mail, null when the patient gave none", () => {
+    expect(toConsultationDetail(rows({}), "52998224725").patient.email).toBeNull();
+    const detail = toConsultationDetail(rows({ email: "ana.lima@exemplo.com" }), "52998224725");
+    expect(detail.patient.email).toBe("ana.lima@exemplo.com");
   });
 });

@@ -1,0 +1,37 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "c6bce272-8169-4c4c-bc07-188d51770287",
+  "prevIds": ["29e5c7fe-e272-4ca4-8ee6-d90674441b88"],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "patient", "email"],
+      "writes": [
+        "s|col|public.patient.email",
+        "n|col|public.patient.email",
+        "e|col|public.patient.email"
+      ],
+      "reads": ["n|tbl|public.patient", "n|sch|public"]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "patient",
+        "name": "email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

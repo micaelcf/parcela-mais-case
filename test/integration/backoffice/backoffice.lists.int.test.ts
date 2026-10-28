@@ -221,6 +221,23 @@ describe("backoffice consultation explorer", () => {
     }
   });
 
+  it("shows the patient e-mail normalised, a submission without one clearing it", async () => {
+    const cpf = uniqueCpf();
+    const emailOf = async (id: string) =>
+      (await getOk(`/consultations/${id}`, cookie, ConsultationDetailSchema)).patient.email;
+
+    const without = await createConsultation({ cpf });
+    expect(await emailOf(without)).toBeNull();
+
+    const withEmail = await createConsultation({ cpf, email: " Ana.Lima@Exemplo.COM " });
+    expect(await emailOf(withEmail)).toBe("ana.lima@exemplo.com");
+    expect(await emailOf(without)).toBe("ana.lima@exemplo.com");
+
+    // Last write wins, like the phone: the next submission without an e-mail clears it.
+    const cleared = await createConsultation({ cpf });
+    for (const id of [without, withEmail, cleared]) expect(await emailOf(id)).toBeNull();
+  });
+
   it("finds consultations by exact CPF only", async () => {
     const cpf = uniqueCpf();
     const first = await createConsultation({ cpf }, "NONE_APPROVE");

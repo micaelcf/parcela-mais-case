@@ -1,5 +1,6 @@
 import { type Address, normalizeAddress } from "#/lib/address/address";
 import { normalizeCpf } from "#/lib/cpf/cpf";
+import { normalizeEmail } from "#/lib/email/email";
 import { normalizePhone } from "#/lib/phone/phone";
 import type { Tx } from "#/server/infra/db/client";
 import { cpfCrypto } from "#/server/lib/crypto/cpf-crypto";
@@ -11,6 +12,8 @@ export type PatientInput = {
   fullName: string;
   birthdate: string;
   phone: string;
+  /** Absent means the patient gave none. */
+  email?: string;
   address: Address;
 };
 
@@ -43,6 +46,7 @@ export const patientService = {
       fullName: input.fullName.trim(),
       birthdate: input.birthdate,
       phone: normalizePhone(input.phone),
+      email: input.email === undefined ? null : normalizeEmail(input.email),
       ...addressColumns(input.address),
     });
     await patientRepository.lockById(tx, id);

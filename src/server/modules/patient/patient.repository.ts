@@ -22,12 +22,13 @@ export type PatientUpsert = PatientAddressColumns & {
   fullName: string;
   birthdate: string;
   phone: string;
+  email: string | null;
 };
 
 export const patientRepository = {
   /**
-   * Insert, or refresh name/birthdate/phone/address of the patient with this blind index (never
-   * the ciphertext): the latest submission wins.
+   * Insert, or refresh name/birthdate/phone/e-mail/address of the patient with this blind index
+   * (never the ciphertext): the latest submission wins, so one without an e-mail clears it.
    */
   async upsertByCpfHmac(tx: Tx, row: PatientUpsert): Promise<string> {
     const [saved] = await tx
@@ -39,6 +40,7 @@ export const patientRepository = {
           fullName: row.fullName,
           birthdate: row.birthdate,
           phone: row.phone,
+          email: row.email,
           addressCep: row.addressCep,
           addressStreet: row.addressStreet,
           addressNumber: row.addressNumber,

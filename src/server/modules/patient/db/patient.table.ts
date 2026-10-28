@@ -12,6 +12,8 @@ export const patient = pgTable("patient", {
   fullName: text("full_name").notNull(),
   birthdate: date("birthdate", { mode: "string" }).notNull(),
   phone: text("phone").notNull(),
+  /** The latest e-mail sent, normalised; null when the latest submission had none. */
+  email: text("email"),
   /** The latest address sent, normalised (all null for patients saved before addresses existed). */
   addressCep: text("address_cep"),
   addressStreet: text("address_street"),

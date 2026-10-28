@@ -5,6 +5,7 @@ import { fromDrizzle } from "pg-boss";
 
 import { normalizeAddress } from "#/lib/address/address";
 import { normalizeCpf } from "#/lib/cpf/cpf";
+import { normalizeEmail } from "#/lib/email/email";
 import type { SimulationScenario } from "#/lib/enums";
 import { normalizePhone } from "#/lib/phone/phone";
 import { db, type Tx } from "#/server/infra/db/client";
@@ -40,6 +41,7 @@ function requestHashOf(body: SignupRequest): string {
     normalizeCpf(body.cpf),
     body.birthdate,
     normalizePhone(body.phone),
+    body.email === undefined ? "" : normalizeEmail(body.email),
     body.monthlyIncomeCents,
     body.treatmentAmountCents,
     body.simulationScenario ?? "NORMAL",

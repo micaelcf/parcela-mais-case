@@ -44,11 +44,14 @@ const ADDRESS: Address = {
   city: "Campinas",
   state: "SP",
 };
+/** A distinctive e-mail: neither its local part nor its domain may surface publicly. */
+const EMAIL = "joana.castanheira.privacidade@quixabeira-azul.com.br";
 const PATIENT = {
   fullName: [FIRST_NAME, ...OTHER_NAMES].join(" "),
   cpf: formatCpf(CPF),
   birthdate: BIRTHDATE,
   phone: "(21) 97654-3210",
+  email: EMAIL,
   address: ADDRESS,
   monthlyIncomeCents: INCOME_CENTS,
   treatmentAmountCents: 1_200_000,
@@ -259,6 +262,28 @@ describe("public payload privacy", () => {
     expect(keys.filter((key) => /^(address|cep|street|number|neighborhood)$/i.test(key))).toEqual(
       [],
     );
+  });
+
+  it("public payloads carry no e-mail", async () => {
+    // Positive control: both patients' e-mail was accepted and stored.
+    const client = new Client({ connectionString: process.env.DATABASE_URL });
+    await client.connect();
+    try {
+      const { rows } = await client.query<{ email: string | null }>(
+        "select email from patient where full_name = $1",
+        [PATIENT.fullName],
+      );
+      expect(rows.map((row) => row.email)).toEqual([EMAIL, EMAIL]);
+    } finally {
+      await client.end();
+    }
+
+    const [localPart = "", domain = ""] = EMAIL.split("@");
+    const leaking = scannedStrings(payloads.all).filter((value) =>
+      [localPart, domain, "@"].some((needle) => value.toLowerCase().includes(needle)),
+    );
+    expect(leaking).toEqual([]);
+    expect(leaves(payloads.all).keys.filter((key) => /e-?mail/i.test(key))).toEqual([]);
   });
 
   it("never stores the CPF in plaintext", async () => {
