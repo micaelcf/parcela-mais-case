@@ -112,6 +112,16 @@ describe("per-IP throttle", () => {
     ]);
   });
 
+  it("records a malformed body with the code the client received", async () => {
+    const ip = uniqueIp();
+    const malformed = await postMalformed(ip);
+    expect(malformed.status).toBe(422);
+    expect((await readProblem(malformed)).code).toBe("VALIDATION");
+
+    const rows = await settledRows(ip, 1);
+    expect(rows.map((row) => [row.statusCode, row.errorCode])).toEqual([[422, "VALIDATION"]]);
+  });
+
   it("purges rows past retention", async () => {
     const ip = uniqueIp();
     await postConsultation(invalidBody(), { ip });

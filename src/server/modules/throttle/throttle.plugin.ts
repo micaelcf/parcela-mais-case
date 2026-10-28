@@ -1,4 +1,4 @@
-import { Elysia, NotFound, StatusMap, ValidationError } from "elysia";
+import { Elysia, NotFound, ParseError, StatusMap, ValidationError } from "elysia";
 
 import { clientIp } from "#/server/infra/http/client-ip";
 import { DomainError, type ErrorCode } from "#/server/lib/errors/domain-error";
@@ -14,7 +14,7 @@ const counted = new WeakMap<Request, { requestId: string; rejection: DomainError
 function errorCodeOf(error: unknown): ErrorCode | null {
   if (error === undefined) return null;
   if (error instanceof DomainError) return error.code;
-  if (error instanceof ValidationError) return "VALIDATION";
+  if (error instanceof ValidationError || error instanceof ParseError) return "VALIDATION";
   if (error instanceof NotFound) return "NOT_FOUND";
   return "INTERNAL";
 }
