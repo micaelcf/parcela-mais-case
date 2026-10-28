@@ -89,6 +89,10 @@ describe("backoffice table search params (RF-617)", () => {
       "Ana 529.982.247-25",
       // One digit too many is still a CPF on its way to the URL.
       "529982247251",
+      // Dash-separated digits are no consultation id without a hex letter.
+      "529-982-247-25",
+      // An id prefix hiding a CPF in its last group is still refused.
+      "019a2b3c-0000-7000-8000-52998224725",
     ]) {
       expect([text, classifySearchText(text)]).toEqual([text, "cpf"]);
     }
@@ -106,11 +110,14 @@ describe("backoffice table search params (RF-617)", () => {
       expect([text, classifySearchText(text)]).toEqual([text, "digits"]);
     }
     // Names, ids and anything else not ending in digits search as usual (a consultation id is a
-    // UUID: plain text, though its last group may be all digits).
+    // UUID: plain text whole or as a prefix past its first group, though later groups may be all
+    // digits).
     for (const text of [
       "Maria",
       "019a2b3c-0000-7000-8000-000000000000",
       "019A2B3C-0000-7000-8000-000000000000",
+      "019a2b3c-1234-7123-8123",
+      "019a2b3c-1234",
       "1234 Ana",
     ]) {
       expect([text, classifySearchText(text)]).toEqual([text, "text"]);

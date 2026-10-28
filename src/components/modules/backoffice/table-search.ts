@@ -120,8 +120,8 @@ export function sortOf(sorting: ReadonlyArray<{ id: string; desc: boolean }>): s
  * applied. `digits`: ends in a run of digits (CPF punctuation and spaces allowed) still short of a
  * CPF, whatever words come before it: applied on Enter only, so a pause while typing a CPF, alone
  * or after a name, never puts its first digits in the URL. `text`: applied as usual, and so is a
- * whole UUID without a CPF run (the explorer searches consultation ids), though its last group may
- * be all digits.
+ * consultation id (the explorer searches them), whole or a prefix past its first group that holds a
+ * hex letter, though its later groups may be all digits.
  */
 export type SearchTextKind = "empty" | "text" | "digits" | "cpf";
 
@@ -130,12 +130,25 @@ const CPF_RUN = /(^|\D)\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}(?!\d)/;
 /** The text's trailing run of digits, CPF punctuation and spaces (empty when it ends otherwise). */
 const TRAILING_DIGITS = /[\d.\-\s]*$/;
 const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
+/** Dash positions of the `8-4-4-4-12` UUID layout. */
+const UUID_DASHES = new Set([8, 13, 18, 23]);
+
+/** A UUID typed past its first group (`019a2b3c-12…`) that holds a hex letter, so it isn't a CPF. */
+function isIdPrefix(text: string): boolean {
+  if (text.length <= 8 || text.length > 36 || !/[a-f]/i.test(text)) return false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text.charAt(index);
+    const fits = UUID_DASHES.has(index) ? char === "-" : /[\da-f]/i.test(char);
+    if (!fits) return false;
+  }
+  return true;
+}
 
 export function classifySearchText(text: string): SearchTextKind {
   const trimmed = text.trim();
   if (trimmed === "") return "empty";
   if (CPF_RUN.test(trimmed)) return "cpf";
-  if (UUID.test(trimmed)) return "text";
+  if (UUID.test(trimmed) || isIdPrefix(trimmed)) return "text";
   const trailing = TRAILING_DIGITS.exec(trimmed)?.[0] ?? "";
   const digits = trailing.replace(/\D/g, "").length;
   if (digits === 0) return "text";
