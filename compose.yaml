@@ -16,8 +16,15 @@ x-app: &app
   init: true
   env_file: .env
   environment:
-    # A managed Postgres needs only STACK_DATABASE_URL in .env; the default is the bundled service.
-    DATABASE_URL: ${STACK_DATABASE_URL:-postgres://${POSTGRES_USER:-parcela}:${POSTGRES_PASSWORD:-}@postgres:5432/${POSTGRES_DB:-parcela}}
+    # Default: the bundled `postgres` service. Its URL carries no user, password or database;
+    # node-postgres (drizzle, pg-boss) reads them from the libpq PG* variables below. No `${…}` nests
+    # inside a default: podman-compose < 1.6 ends a default at its first `}`.
+    # A managed Postgres: set STACK_DATABASE_URL in .env to its full URL (what it carries wins over
+    # PG*). POSTGRES_PASSWORD stays required: the bundled `postgres` still starts and gates migrate.
+    DATABASE_URL: ${STACK_DATABASE_URL:-postgres://postgres:5432}
+    PGUSER: ${POSTGRES_USER:-parcela}
+    PGPASSWORD: ${POSTGRES_PASSWORD:-}
+    PGDATABASE: ${POSTGRES_DB:-parcela}
     LENDER_BASE_URL: http://app:3000/api/simulator/lenders
     GIT_SHA: ${GIT_SHA:-dev}
     NODE_ENV: production

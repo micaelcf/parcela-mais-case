@@ -8,6 +8,7 @@ import { parse as parseYaml } from "yaml";
 
 import { runDeploy } from "./deploy-plan";
 import type { Engine } from "./engine";
+import { prunePlan } from "./prune-plan";
 import { createRunner, type Exec } from "./run";
 import { devSetupPlan, runProdUp } from "./up-plan";
 
@@ -129,6 +130,27 @@ function prodStackViolations(stack: Map<string, Service>): string[] {
   ]);
 }
 
+/** `${NAME:-…${…` / `${NAME-…${…`: podman-compose < 1.6 ends the default at the first `}`. */
+const NESTED_DEFAULT = /\$\{[A-Za-z_]\w*:?-[^}]*\$\{/;
+
+/** Every string in a compose value, with the mapping key it sits under. */
+function* keyedStrings(value: unknown, key: string): Generator<[string, string]> {
+  if (typeof value === "string") yield [key, value];
+  else if (Array.isArray(value)) for (const item of value) yield* keyedStrings(item, key);
+  else if (typeof value === "object" && value !== null)
+    for (const [child, item] of Object.entries(value)) yield* keyedStrings(item, child);
+}
+
+function nestedDefaults(file: string): string[] {
+  const parsed: unknown = parseYaml(readFileSync(file, "utf8"), { merge: true });
+  if (!ComposeFile.Check(parsed)) throw new Error(`${file} is not a compose file`);
+  return Object.entries(parsed.services).flatMap(([name, raw]) =>
+    [...keyedStrings(raw, name)]
+      .filter(([, value]) => NESTED_DEFAULT.test(value))
+      .map(([key]) => `service ${name} nests an interpolation inside a default in ${key}`),
+  );
+}
+
 describe("compose stacks", () => {
   it("publishes only caddy and holds no literal credential in the prod stack", async () => {
     const calls = await prodComposeCalls();
@@ -165,5 +187,19 @@ describe("compose stacks", () => {
       url.password,
       url.pathname.slice(1),
     ]);
+  });
+
+  it("never nests an interpolation inside a default", async () => {
+    const calls = [
+      ...(await prodComposeCalls()),
+      ...devSetupPlan(podman),
+      ...prunePlan(podman).commands,
+    ];
+    const files = new Set(
+      calls.filter((argv) => argv[1] === "compose").flatMap((argv) => composeFiles(argv)),
+    );
+    expect([...files].sort()).toEqual(["compose.dev.yaml", "compose.yaml"]);
+
+    for (const file of files) expect(nestedDefaults(file), file).toEqual([]);
   });
 });
