@@ -106,3 +106,6 @@ Proof: `vp run e2e test/e2e/offers.spec.ts -g "cancels a choice without sending 
 
 **C228** · RF-809, RF-412, RF-122 — C142's keyboard journey now passes the review step and confirms the choice in the dialog by keyboard, with visible focus throughout
 Proof: `vp run e2e test/e2e/a11y.spec.ts -g "completes the journey by keyboard"`
+
+**C229** · RF-414 — "Novo cadastro" on the offers screen opens the first signup step with an empty form (added 2026-10-28, user request)
+Proof: `vp run e2e test/e2e/offers.spec.ts -g "starts a new signup from the offers screen"`

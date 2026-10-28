@@ -73,6 +73,7 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-411` — Offers are grouped by lender in collapsible groups
 - `RF-412` — Choosing an offer asks for confirmation with a summary
 - `RF-413` — Every lender reference shows the lender's logo with its name
+- `RF-414` — The offers screen leads back to a new signup
 - `RF-501` — Public consultation responses contain no CPF digits
 - `RF-502` — Public consultation responses contain no birthdate, phone or income
 - `RF-503` — The CPF is never stored in plaintext
@@ -188,7 +189,7 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 | S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor/down; local HTTPS               | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88, C165–C167, C208–C216               |
 | S6    | requote, per-patient and per-IP caps, no PII in public payloads                                    | 3    | done   | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100, C161, C162, C169                  |
 | S7    | backoffice auth, metrics, lists, kill switch API                                                   | 4    | done   | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117, C159                             |
-| S8    | public journey UI + UI kit; offers grouped by lender, choice dialog, lender logos                  | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144, C224–C228                        |
+| S8    | public journey UI + UI kit; offers grouped by lender, choice dialog, lender logos                  | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144, C224–C229                        |
 | S9    | backoffice UI                                                                                      | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168, C217                       |
 | S10   | E2E suite + browser smoke                                                                          | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157, C164                             |
 | S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs                      | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C195                                   |
