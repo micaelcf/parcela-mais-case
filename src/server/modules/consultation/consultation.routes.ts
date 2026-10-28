@@ -29,6 +29,12 @@ async function waitForUpdate(
   await subscription.next(signal);
 }
 
+/**
+ * Ids are stored lower case; a path id in any letter case names the same consultation, and the
+ * live-update channel matches ids exactly, so every route uses the lower-case form.
+ */
+const consultationIdOf = (params: { id: string }) => params.id.toLowerCase();
+
 /** Public consultation API: create, read, live events, choose, requote (`api.md` § Public). */
 export const consultationRoutes = new Elysia({ name: "consultation" })
   .use(throttlePlugin)
@@ -45,11 +51,12 @@ export const consultationRoutes = new Elysia({ name: "consultation" })
       return created;
     },
   )
-  .get("/consultations/:id", ({ params }) => consultationService.view(params.id))
+  .get("/consultations/:id", ({ params }) => consultationService.view(consultationIdOf(params)))
   .get("/consultations/:id/events", async function* ({ params, request }) {
-    const subscription = await consultationEvents.subscribe(params.id);
+    const id = consultationIdOf(params);
+    const subscription = await consultationEvents.subscribe(id);
     try {
-      let view: ConsultationPublicView = await consultationService.view(params.id);
+      let view: ConsultationPublicView = await consultationService.view(id);
       let sent = JSON.stringify(view);
       yield sse({ event: "snapshot", data: view });
       let nextPingAt = Date.now() + PING_MS;
@@ -60,7 +67,7 @@ export const consultationRoutes = new Elysia({ name: "consultation" })
           request.signal,
         );
         if (request.signal.aborted) return;
-        view = await consultationService.view(params.id);
+        view = await consultationService.view(id);
         const serialized = JSON.stringify(view);
         if (serialized !== sent) {
           nextPingAt = Date.now() + PING_MS;
@@ -78,7 +85,7 @@ export const consultationRoutes = new Elysia({ name: "consultation" })
     }
   })
   .post("/consultations/:id/choice", { body: ChooseRequestSchema }, ({ params, body }) =>
-    consultationService.choose(params.id, body.offerId),
+    consultationService.choose(consultationIdOf(params), body.offerId),
   )
   .post(
     "/consultations/:id/requote",
@@ -89,7 +96,7 @@ export const consultationRoutes = new Elysia({ name: "consultation" })
     },
     async ({ params, body, headers, set }) => {
       const created = await consultationService.requote(
-        params.id,
+        consultationIdOf(params),
         body,
         headers["idempotency-key"],
       );

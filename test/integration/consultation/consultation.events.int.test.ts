@@ -7,6 +7,7 @@ import { createWorker } from "#/server/worker";
 
 import { closeTestApp, testLenderRegistry } from "../setup/app-fetch";
 import {
+  choose,
   createConsultation,
   readEvents,
   readView,
@@ -56,6 +57,47 @@ describe("GET /consultations/:id/events", () => {
     const now = await readView(id);
     expect(now.quoteStatus).toBe("QUOTING");
     expect(reconnected?.data).toEqual(now);
+  });
+
+  it("pushes a choice at once whatever letter case the stream and the choice use", async () => {
+    // Without a notification the stream only re-reads every 2 s; a pushed update lands well before.
+    for (const [streamCase, chooseCase] of [
+      ["lower", "upper"],
+      ["upper", "lower"],
+    ] as const) {
+      const id = await createConsultation({}, "DELTA_TIMES_OUT");
+      const quoting = await waitFor(
+        () => readView(id),
+        (view) => view.attempts.filter((attempt) => attempt.status !== "PENDING").length === 3,
+      );
+      const offerId = quoting.offers[0]?.id ?? "";
+      const caseOf = (value: string, kind: "lower" | "upper") =>
+        kind === "upper" ? value.toUpperCase() : value;
+
+      const controller = new AbortController();
+      let choseAt = 0;
+      let landedAfterMs = Number.POSITIVE_INFINITY;
+      await readEvents(caseOf(id, streamCase), {
+        signal: controller.signal,
+        onEvent: (event) => {
+          if (event.event !== "snapshot") return;
+          const view = View.Parse(event.data);
+          if (choseAt === 0) {
+            choseAt = Date.now();
+            void choose(caseOf(id, chooseCase), offerId);
+          } else if (view.choice?.offerId === offerId) {
+            landedAfterMs = Date.now() - choseAt;
+            controller.abort();
+          }
+        },
+      });
+
+      expect([streamCase, chooseCase, landedAfterMs < 1_000]).toEqual([
+        streamCase,
+        chooseCase,
+        true,
+      ]);
+    }
   });
 
   it("streams per-lender updates", async () => {
