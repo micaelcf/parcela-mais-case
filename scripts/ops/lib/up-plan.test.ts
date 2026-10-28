@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { stripVTControlCharacters } from "node:util";
 
 import { parse as parseDotenv } from "dotenv";
 import { describe, expect, it } from "vite-plus/test";
@@ -20,7 +21,9 @@ import {
   backofficeLines,
   checkDevHealth,
   DEV_BACKOFFICE_PASSWORD,
+  devProcesses,
   devSetupPlan,
+  processPrefix,
   runDevSetup,
   runProdUp,
 } from "./up-plan";
@@ -62,6 +65,27 @@ describe("dev stack (vp run up)", () => {
           tls: { serverName: "parcela.localhost", ca: TEST_ROOT_PEM },
         },
       },
+    ]);
+  });
+});
+
+describe("dev process prefixes", () => {
+  it("give each process its own colour and keep every line starting in one column", () => {
+    const [app, worker] = devProcesses("192.168.0.1");
+
+    const colored = [processPrefix(app, true), processPrefix(worker, true)];
+    expect(colored.map((prefix) => stripVTControlCharacters(prefix))).toEqual([
+      "[app]    ",
+      "[worker] ",
+    ]);
+    // The escape sequence before each label: present, and different per process.
+    const colorOf = (prefix: string, name: string) => prefix.slice(0, prefix.indexOf(`[${name}]`));
+    expect(colorOf(colored[0], "app")).not.toBe("");
+    expect(colorOf(colored[0], "app")).not.toBe(colorOf(colored[1], "worker"));
+    // Not a terminal: plain text, same columns.
+    expect([processPrefix(app, false), processPrefix(worker, false)]).toEqual([
+      "[app]    ",
+      "[worker] ",
     ]);
   });
 });

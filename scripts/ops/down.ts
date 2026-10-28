@@ -7,6 +7,7 @@ import { $, which } from "bun";
 import { runDown } from "./lib/down-plan";
 import { detectEngine } from "./lib/engine";
 import { createRunner } from "./lib/run";
+import { scriptLog } from "./lib/script-log";
 import { createShellExec } from "./lib/shell-exec";
 
 const engine = detectEngine({
@@ -16,6 +17,4 @@ const engine = detectEngine({
 });
 const run = createRunner(createShellExec($), process.env);
 
-process.exit(
-  await runDown({ run, engine, log: (line) => console.log(line) }, process.argv.slice(2)),
-);
+process.exit(await runDown({ run, engine, log: scriptLog("down") }, process.argv.slice(2)));

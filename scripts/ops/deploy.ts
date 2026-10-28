@@ -8,13 +8,13 @@ import { runDeploy } from "./lib/deploy-plan";
 import { detectEngine } from "./lib/engine";
 import { sleep } from "./lib/health";
 import { createRunner } from "./lib/run";
+import { scriptLog } from "./lib/script-log";
 import { createShellExec } from "./lib/shell-exec";
 
+const log = scriptLog("deploy");
 const args = process.argv.slice(2);
 if (args.length > 0) {
-  console.error(
-    `✗ unknown option(s): ${args.join(" ")} (deploy takes none and only acts on this host)`,
-  );
+  log(`✗ unknown option(s): ${args.join(" ")} (deploy takes none and only acts on this host)`);
   process.exit(2);
 }
 
@@ -33,6 +33,6 @@ process.exit(
       fetch(url, init && { headers: { ...init.headers }, tls: init.tls && { ...init.tls } }),
     sleep,
     env: process.env,
-    log: (line) => console.log(line),
+    log,
   }),
 );

@@ -33,6 +33,7 @@ import { COMPOSE_PROJECT_LABEL, detectEngine, devCompose } from "./lib/engine";
 import { DEFAULT_APP_DOMAIN } from "./lib/health";
 import { DEV_CA_ROOT, describeCa, trustPlan, trustStatus } from "./lib/local-ca";
 import { createRunner, type RunCommand } from "./lib/run";
+import { scriptLog } from "./lib/script-log";
 import { createShellExec } from "./lib/shell-exec";
 import { gatherTrustFacts } from "./lib/trust-facts";
 
@@ -276,5 +277,6 @@ const facts: DoctorFacts = {
 };
 
 const checks = doctorChecks(facts);
-for (const check of checks) console.log(formatCheck(check));
+const log = scriptLog("doctor");
+for (const check of checks) log(formatCheck(check));
 process.exit(checks.every((check) => check.ok) ? 0 : 1);

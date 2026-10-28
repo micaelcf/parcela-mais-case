@@ -7,6 +7,7 @@ import { $, which } from "bun";
 import { detectEngine } from "./lib/engine";
 import { runPrune } from "./lib/prune-plan";
 import { createRunner } from "./lib/run";
+import { scriptLog } from "./lib/script-log";
 import { createShellExec } from "./lib/shell-exec";
 
 const engine = detectEngine({
@@ -16,6 +17,4 @@ const engine = detectEngine({
 });
 const run = createRunner(createShellExec($), process.env);
 
-process.exit(
-  await runPrune({ run, engine, log: (line) => console.log(line) }, process.argv.slice(2)),
-);
+process.exit(await runPrune({ run, engine, log: scriptLog("prune") }, process.argv.slice(2)));

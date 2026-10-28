@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 /**
  * `vp run up`: Postgres + caddy-dev + migrations, trust for caddy-dev's local CA, then the app
- * (`vp dev`) and the worker in the foreground with prefixed logs; Ctrl-C stops both, the
+ * (`vp dev`) and the worker in the foreground, each line prefixed with its process in its own colour
+ * (and both logging through tslog, coloured, when this runs in a terminal); Ctrl-C stops both, the
  * containers keep running (RF-701). Ready once https://parcela.localhost:8443/api/health answers.
  * `vp run up --prod`: the `prod` compose profile behind Caddy, checked through `/api/health` (RF-702).
  */
@@ -15,23 +16,28 @@ import { detectEngine } from "./lib/engine";
 import { type HealthFetch, sleep } from "./lib/health";
 import { DEV_CA_ROOT, DEV_CADDY_DATA, ensureTrusted, trustPlan, waitForCa } from "./lib/local-ca";
 import { assertLocalCommand, createRunner } from "./lib/run";
+import { scriptLog } from "./lib/script-log";
 import { createShellExec } from "./lib/shell-exec";
 import { gatherTrustFacts } from "./lib/trust-facts";
 import {
   backofficeLines,
   checkDevHealth,
   createLinePrefixer,
+  devChildEnv,
   devOrigin,
   devProcesses,
   parseUpArgs,
+  processPrefix,
   runDevSetup,
   runProdUp,
   type TrustCa,
 } from "./lib/up-plan";
 
+const log = scriptLog("up");
+
 const parsed = parseUpArgs(process.argv.slice(2));
 if (!parsed.ok) {
-  console.error(`✗ ${parsed.error}`);
+  log(`✗ ${parsed.error}`);
   process.exit(2);
 }
 
@@ -41,7 +47,7 @@ const engine = detectEngine({
   exists: existsSync,
 });
 const run = createRunner(createShellExec($), process.env);
-const log = (line: string) => console.log(line);
+
 const healthFetch: HealthFetch = (url, init) =>
   fetch(url, init && { headers: { ...init.headers }, tls: init.tls && { ...init.tls } });
 const trust: TrustCa = (ca, file) =>
@@ -76,7 +82,7 @@ if (parsed.mode === "prod") {
 
 const binding = devBinding(gatherDevNetworkFacts(engine));
 if (!binding.ok) {
-  console.error(`✗ no address for the dev server that caddy-dev can reach: ${binding.reason}`);
+  log(`✗ no address for the dev server that caddy-dev can reach: ${binding.reason}`);
   process.exit(1);
 }
 const setup = await runDevSetup({
@@ -107,15 +113,19 @@ async function forward(
 }
 
 const childEnv = { ...process.env, ...devProcessEnv(process.env, binding.listen) };
-const children = devProcesses(binding.listen).map(({ name, argv }) => {
-  assertLocalCommand(argv, childEnv);
+// Colours only for a terminal that wants them; the children's own output is piped through here.
+const colored = process.stdout.isTTY === true && !process.env.NO_COLOR;
+const children = devProcesses(binding.listen).map((processInfo) => {
+  const { name, argv } = processInfo;
+  const env = devChildEnv(childEnv, name, colored);
+  assertLocalCommand(argv, env);
   const child = spawn([...argv], {
     stdin: "inherit",
     stdout: "pipe",
     stderr: "pipe",
-    env: childEnv,
+    env,
   });
-  const prefix = `[${name}] `.padEnd(9);
+  const prefix = processPrefix(processInfo, colored);
   const output = Promise.all([
     forward(child.stdout, prefix, process.stdout),
     forward(child.stderr, prefix, process.stderr),
@@ -139,9 +149,9 @@ void (async () => {
   const origin = devOrigin(process.env);
   const health = await checkDevHealth({ fetch: healthFetch, sleep, env: process.env, ca });
   if (!health.ok) {
-    console.error(`✗ ${origin}/api/health through caddy-dev: ${health.reason}`);
-    console.error(
-      "  http://localhost:3000 still serves the app; `vp run doctor` checks caddy-dev's route to it",
+    log(`✗ ${origin}/api/health through caddy-dev: ${health.reason}`);
+    log(
+      `  the dev server listens on ${binding.listen}:3000; \`vp run doctor\` checks caddy-dev's route to it`,
     );
     return;
   }
@@ -154,9 +164,8 @@ void (async () => {
 const first = await Promise.race(
   children.map(({ name, child }) => child.exited.then((code) => ({ name, code }))),
 );
-if (!interrupted)
-  console.error(`✗ ${first.name} exited with code ${first.code}; stopping the other process`);
+if (!interrupted) log(`✗ ${first.name} exited with code ${first.code}; stopping the other process`);
 stopAll();
 await Promise.all(children.map(({ child, output }) => Promise.all([child.exited, output])));
-console.log("stopped app and worker (Postgres and caddy-dev keep running)");
+log("stopped app and worker (Postgres and caddy-dev keep running)");
 process.exit(interrupted ? 0 : first.code || 1);

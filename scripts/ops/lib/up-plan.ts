@@ -1,3 +1,5 @@
+import { styleText } from "node:util";
+
 import { verifyPassword } from "#/server/modules/backoffice/auth/password";
 
 import { compose, devCompose, type Engine } from "./engine";
@@ -36,14 +38,50 @@ export function devSetupPlan(engine: Engine): string[][] {
   ];
 }
 
-/** The dev foreground processes, each with its log prefix; `vp dev` listens only on `listen`. */
-export function devProcesses(
-  listen: string,
-): ReadonlyArray<{ readonly name: string; readonly argv: readonly string[] }> {
+/** A colour `node:util` `styleText` knows: each dev process's prefix gets its own. */
+export type ProcessColor = "cyanBright" | "magentaBright";
+
+/**
+ * The dev foreground processes, each with its log prefix, its colour and its tslog name;
+ * `vp dev` listens only on `listen`.
+ */
+export function devProcesses(listen: string): ReadonlyArray<{
+  readonly name: "app" | "worker";
+  readonly color: ProcessColor;
+  readonly argv: readonly string[];
+}> {
   return [
-    { name: "app", argv: ["vp", "dev", "--port", "3000", "--host", listen] },
-    { name: "worker", argv: ["bun", "--watch", "src/server/worker.main.ts"] },
+    { name: "app", color: "cyanBright", argv: ["vp", "dev", "--port", "3000", "--host", listen] },
+    {
+      name: "worker",
+      color: "magentaBright",
+      argv: ["bun", "--watch", "src/server/worker.main.ts"],
+    },
   ];
+}
+
+/** Wide enough for `[worker]` plus a space: every child's lines start in the same column. */
+const PREFIX_WIDTH = 9;
+
+/**
+ * A child's line prefix, `[name]` padded to a common width, in the process's colour when `colored`
+ * (padding counts only visible characters, so coloured prefixes stay aligned).
+ */
+export function processPrefix(
+  process: { readonly name: string; readonly color: ProcessColor },
+  colored: boolean,
+): string {
+  const label = `[${process.name}]`;
+  const padding = " ".repeat(Math.max(1, PREFIX_WIDTH - label.length));
+  return `${colored ? styleText(process.color, label, { validateStream: false }) : label}${padding}`;
+}
+
+/**
+ * A child's env: tslog names its lines after the process (`TSLOG_NAME`), and its piped output keeps
+ * colours (`FORCE_COLOR`) when `up` itself writes to a terminal.
+ */
+export function devChildEnv(base: Env, name: string, colored: boolean): Env {
+  return { ...base, TSLOG_NAME: name, ...(colored ? { FORCE_COLOR: "1" } : {}) };
 }
 
 export async function runDevSetup(deps: {

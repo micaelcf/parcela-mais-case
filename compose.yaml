@@ -15,7 +15,7 @@ x-app: &app
   profiles: [prod]
   init: true
   env_file: .env
-  environment:
+  environment: &app-env
     # Default: the bundled `postgres` service. Its URL carries no user, password or database;
     # node-postgres (drizzle, pg-boss) reads them from the libpq PG* variables below. No `${…}` nests
     # inside a default: podman-compose < 1.6 ends a default at its first `}`.
@@ -30,6 +30,8 @@ x-app: &app
     # Same default as Caddy's site: the app serves it over HTTPS, so `bo_session` is Secure.
     APP_DOMAIN: ${APP_DOMAIN:-parcela.localhost}
     NODE_ENV: production
+    # One JSON line per event for log pipelines (tslog; `TSLOG_TYPE=pretty` reads better by hand).
+    TSLOG_TYPE: ${TSLOG_TYPE:-json}
   labels: *project-labels
 
 services:
@@ -54,6 +56,10 @@ services:
   migrate:
     <<: *app
     command: ["bun", "scripts/ops/migrate.ts"]
+    # A service's own `environment` would replace the shared map (YAML merges are shallow): merge it.
+    environment:
+      <<: *app-env
+      TSLOG_NAME: migrate
     restart: "no"
     depends_on:
       postgres:
@@ -62,6 +68,9 @@ services:
   app:
     <<: *app
     command: ["bun", ".output/server/index.mjs"]
+    environment:
+      <<: *app-env
+      TSLOG_NAME: app
     restart: unless-stopped
     depends_on:
       migrate:
@@ -80,6 +89,9 @@ services:
   worker:
     <<: *app
     command: ["bun", "src/server/worker.main.ts"]
+    environment:
+      <<: *app-env
+      TSLOG_NAME: worker
     restart: unless-stopped
     # boss.stop({ graceful: true, timeout: 15000 }) needs time after SIGTERM.
     stop_grace_period: 20s
