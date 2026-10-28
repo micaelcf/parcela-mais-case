@@ -60,4 +60,19 @@ describe("errorsPlugin", () => {
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({ code: "CHOICE_CONFLICT", status: 409 });
   });
+
+  it("answers malformed JSON with 422 VALIDATION, not a 500", async () => {
+    const app = new Elysia().use(errorsPlugin).post("/x", { body: Body }, ({ body }) => body);
+
+    const response = await app.handle(
+      new Request("http://localhost/x", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{not json",
+      }),
+    );
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({ code: "VALIDATION" });
+  });
 });

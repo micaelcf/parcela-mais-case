@@ -1,4 +1,4 @@
-import { Elysia, NotFound, ValidationError } from "elysia";
+import { Elysia, NotFound, ParseError, ValidationError } from "elysia";
 import type { TSchema } from "typebox";
 
 import { collectIssues } from "#/lib/validation/standard-schema";
@@ -66,6 +66,9 @@ export const errorsPlugin = new Elysia({ name: "errors" }).onError("global", ({ 
     return problem(new DomainError("VALIDATION", "Verifique os campos destacados.", fields));
   }
   if (error instanceof NotFound) return problem(new DomainError("NOT_FOUND", ""));
+  if (error instanceof ParseError) {
+    return problem(new DomainError("VALIDATION", "O corpo da requisição não é um JSON válido."));
+  }
   logger.error("http.unhandled_error", {
     name: error instanceof Error ? error.name : typeof error,
     message: error instanceof Error ? error.message : String(error),
