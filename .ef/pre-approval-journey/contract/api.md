@@ -4,15 +4,15 @@ Root: `new Elysia({ prefix: "/api" })` in `src/server/app.ts`, mounted by `src/r
 
 ## Public
 
-| Method & path                     | Request                                                                   | Success                                                                                                                                                    |
-| --------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /consultations`             | header `Idempotency-Key` (uuid, required); body `SignupRequest`           | **202** `{ id }` (replay with the same key and body → 202, same id)                                                                                        |
-| `GET /consultations/:id`          |                                                                           | 200 `ConsultationPublicView` (lazily finalizes past the deadline)                                                                                          |
-| `GET /consultations/:id/events`   |                                                                           | 200 `text/event-stream`: `snapshot` events (`ConsultationPublicView`), `ping` every 15 s; closes after the first snapshot whose `quoteStatus` is `SETTLED` |
-| `POST /consultations/:id/choice`  | `{ offerId }`                                                             | 200 `ConsultationPublicView`                                                                                                                               |
-| `POST /consultations/:id/requote` | header `Idempotency-Key`; `{ treatmentAmountCents, simulationScenario? }` | **202** `{ id }` (new consultation)                                                                                                                        |
-| `GET /config`                     |                                                                           | 200 `{ simulationControls: boolean }`                                                                                                                      |
-| `GET /health`                     |                                                                           | 200 `{ status: "ok", sha: string }` (`GIT_SHA`)                                                                                                            |
+| Method & path                     | Request                                                                                                                                    | Success                                                                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /consultations`             | header `Idempotency-Key` (uuid in either letter case, required; one UUID in any case is one key, amended 2026-10-28); body `SignupRequest` | **202** `{ id }` (replay with the same key and body → 202, same id)                                                                                        |
+| `GET /consultations/:id`          |                                                                                                                                            | 200 `ConsultationPublicView` (lazily finalizes past the deadline)                                                                                          |
+| `GET /consultations/:id/events`   |                                                                                                                                            | 200 `text/event-stream`: `snapshot` events (`ConsultationPublicView`), `ping` every 15 s; closes after the first snapshot whose `quoteStatus` is `SETTLED` |
+| `POST /consultations/:id/choice`  | `{ offerId }` (uuid in either letter case)                                                                                                 | 200 `ConsultationPublicView`                                                                                                                               |
+| `POST /consultations/:id/requote` | header `Idempotency-Key`; `{ treatmentAmountCents, simulationScenario? }`                                                                  | **202** `{ id }` (new consultation)                                                                                                                        |
+| `GET /config`                     |                                                                                                                                            | 200 `{ simulationControls: boolean }`                                                                                                                      |
+| `GET /health`                     |                                                                                                                                            | 200 `{ status: "ok", sha: string }` (`GIT_SHA`)                                                                                                            |
 
 ```ts
 type SignupRequest = {
@@ -94,19 +94,19 @@ Unknown sort/filter field → 422 `VALIDATION`. Every sort appends `id` as the t
 
 `{ type, title, status, code, detail?, fields? }`. Validation is mapped by the root `onError(ValidationError)` in **every** `NODE_ENV`: `422 { code: "VALIDATION", fields: [{ path: "patient.cpf", message: "<pt-BR>" }] }`.
 
-| code                                         | status | when                                                       |
-| -------------------------------------------- | ------ | ---------------------------------------------------------- |
-| `VALIDATION`                                 | 422    | schema or refine failure; unknown list field               |
-| `IDEMPOTENCY_KEY_REUSED`                     | 422    | same key, different body hash                              |
-| `SIMULATION_DISABLED`                        | 422    | non-`NORMAL` scenario while `SIMULATION_CONTROLS=false`    |
-| `PATIENT_LIMIT`                              | 429    | per-patient cap (create and requote)                       |
-| `IP_LIMIT`                                   | 429    | per-IP guard                                               |
-| `CONSULTATION_NOT_FOUND` / `OFFER_NOT_FOUND` | 404    |                                                            |
-| `CHOICE_CONFLICT`                            | 409    | a different offer is already chosen                        |
-| `REQUOTE_NOT_ALLOWED`                        | 409    | source not `SETTLED`, has an approval, or amount not lower |
-| `UNAUTHENTICATED` / `INVALID_CREDENTIALS`    | 401    |                                                            |
-| `NOT_FOUND`                                  | 404    | no `/api` route matches (amended 2026-10-28, audit A8)     |
-| `INTERNAL`                                   | 500    | unexpected error; logged as `http.unhandled_error`         |
+| code                                         | status | when                                                                                                                                                            |
+| -------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VALIDATION`                                 | 422    | schema or refine failure; unknown list field; malformed JSON; a body content type without a JSON parser such as `text/plain` (Elysia's 415, amended 2026-10-28) |
+| `IDEMPOTENCY_KEY_REUSED`                     | 422    | same key, different body hash                                                                                                                                   |
+| `SIMULATION_DISABLED`                        | 422    | non-`NORMAL` scenario while `SIMULATION_CONTROLS=false`                                                                                                         |
+| `PATIENT_LIMIT`                              | 429    | per-patient cap (create and requote)                                                                                                                            |
+| `IP_LIMIT`                                   | 429    | per-IP guard                                                                                                                                                    |
+| `CONSULTATION_NOT_FOUND` / `OFFER_NOT_FOUND` | 404    |                                                                                                                                                                 |
+| `CHOICE_CONFLICT`                            | 409    | a different offer is already chosen                                                                                                                             |
+| `REQUOTE_NOT_ALLOWED`                        | 409    | source not `SETTLED`, has an approval, or amount not lower                                                                                                      |
+| `UNAUTHENTICATED` / `INVALID_CREDENTIALS`    | 401    |                                                                                                                                                                 |
+| `NOT_FOUND`                                  | 404    | no `/api` route matches (amended 2026-10-28, audit A8)                                                                                                          |
+| `INTERNAL`                                   | 500    | unexpected error; logged as `http.unhandled_error`                                                                                                              |
 
 ## Lender simulator (`/simulator/lenders/*`, deliberately heterogeneous contracts)
 

@@ -19,6 +19,9 @@ Proof: `vp test src/server/infra/http/errors.plugin.test.ts -t "keeps field deta
 **C163** · (no RF; error contract) — an unexpected error → 500 `application/problem+json` `{ code: "INTERNAL" }` whose body carries none of the error's message (added 2026-10-28, audit N3: error-code coverage)
 Proof: `vp test src/server/infra/http/errors.plugin.test.ts -t "answers an unexpected error with 500 INTERNAL and no internals"`
 
+**C172** · (no RF; error contract) — a body sent as `text/plain;charset=UTF-8` (Elysia's 415) → 422 `VALIDATION` with detail "Envie o corpo como JSON (Content-Type: application/json).", not a 500 (added 2026-10-28, handoff fact-check F6)
+Proof: `vp test src/server/infra/http/errors.plugin.test.ts -t "answers a body sent as text/plain with 422 VALIDATION, not a 500"`
+
 **C4** · RF-708 — `GET /api/health` returns 200 `{ status: "ok", sha }` with `sha` equal to `GIT_SHA`
 Proof: `vp test src/server/modules/system/system.routes.test.ts -t "reports the configured commit"`
 

@@ -26,6 +26,9 @@ Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t
 **C47** · RF-109 — the same key with a different body → 422 `IDEMPOTENCY_KEY_REUSED`; the original consultation is unchanged
 Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t "rejects a reused key with a different body"`
 
+**C170** · RF-108 — an upper-case `Idempotency-Key` → 202, and the same UUID in lower case with the same body replays that consultation (added 2026-10-28, handoff fact-check F1)
+Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t "treats the Idempotency-Key as one UUID whatever its letter case"`
+
 **C48** · RF-110 — two submissions with one CPF (formatted, then unformatted) and different income/amount → one patient id; each consultation keeps its own income and amount
 Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t "reuses the patient for a known CPF"`
 
@@ -106,6 +109,9 @@ Proof: `vp test test/integration/consultation/consultation.choice.int.test.ts -t
 
 **C73** · RF-408 — after settlement, choosing the same offer again → 200 with a body identical to the first
 Proof: `vp test test/integration/consultation/consultation.choice.int.test.ts -t "re-choosing the same offer is idempotent"`
+
+**C171** · RF-406, RF-408 — an upper-case `offerId` chooses that offer, and the same id in lower case afterwards is the same choice (200, not a conflict) (added 2026-10-28, handoff fact-check F2)
+Proof: `vp test test/integration/consultation/consultation.choice.int.test.ts -t "accepts an offer id in either letter case"`
 
 **C74** · RF-409 — choosing a different offer after a choice → 409 `CHOICE_CONFLICT`; the stored choice is unchanged; an offer of another consultation → 404 `OFFER_NOT_FOUND`
 Proof: `vp test test/integration/consultation/consultation.choice.int.test.ts -t "rejects a different offer after a choice"`

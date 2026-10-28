@@ -27,6 +27,9 @@ Proof: `vp test test/integration/throttle/throttle.int.test.ts -t "refuses an IP
 **C95** · RF-614 — each counted request's `request_throttle` row ends with its `status_code` and `error_code` (`202`/null, `422`/`VALIDATION`, `429`/`IP_LIMIT`, `429`/`PATIENT_LIMIT`)
 Proof: `vp test test/integration/throttle/throttle.int.test.ts -t "records the outcome of each counted request"`
 
+**C169** · RF-614 — a malformed JSON body is answered 422 `VALIDATION` and its throttle row records `422`/`VALIDATION`, the code the client got (added 2026-10-28, handoff draft D12)
+Proof: `vp test test/integration/throttle/throttle.int.test.ts -t "records a malformed body with the code the client received"`
+
 **C96** · (no RF; data lifecycle) the `throttle.purge` job deletes rows older than the IP window + 24 h and keeps newer ones
 Proof: `vp test test/integration/throttle/throttle.int.test.ts -t "purges rows past retention"`
 
