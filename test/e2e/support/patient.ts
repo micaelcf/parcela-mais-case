@@ -1,6 +1,9 @@
 import { randomInt } from "node:crypto";
 
+import type { Address } from "#/lib/address/address";
 import { cpfCheckDigits } from "#/lib/cpf/cpf";
+
+import { PAULISTA } from "./address-lookup";
 
 /** A signup applicant. Every one gets a fresh CPF, so the per-patient cap never trips across tests. */
 export type Patient = {
@@ -14,6 +17,8 @@ export type Patient = {
   cpfFormatted: string;
   /** `YYYY-MM-DD`. */
   birthdate: string;
+  /** What the signup sends (the CEP as digits): the lookup fills all but the number. */
+  address: Address;
   /** 11 digits. */
   phone: string;
   monthlyIncomeCents: number;
@@ -58,6 +63,12 @@ export function centsInput(cents: number): string {
   return CENTS_INPUT.format(cents / 100);
 }
 
+/** `YYYY-MM-DD` → `dd/mm/aaaa`, as typed into a date field. */
+export function dateText(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 /**
  * A 40-year-old earning R$ 5.000,00 who asks for R$ 10.000,00: every lender's own rule approves
  * (Alfa 10 × income ≥ amount, Gama ≥ 25 years and ≤ R$ 20.000), Beta at 60 %.
@@ -74,6 +85,7 @@ export function newPatient(overrides: Partial<Omit<Patient, "cpfFormatted">> = {
     token,
     birthdate: birthdateForAge(40),
     phone: "11987654321",
+    address: { ...PAULISTA, number: "1578" },
     monthlyIncomeCents: 500_000,
     treatmentAmountCents: 1_000_000,
     ...overrides,

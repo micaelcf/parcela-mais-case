@@ -3,7 +3,7 @@ import {
   REASON_TEXT,
   STATUS_LABEL,
 } from "#/components/modules/consultation/lender-copy";
-import { maskCpf, maskPhone } from "#/components/modules/signup/masks";
+import { maskCep, maskCpf, maskPhone } from "#/components/modules/signup/masks";
 import { Badge } from "#/components/ui/badge";
 import {
   Table,
@@ -37,6 +37,23 @@ const ATTEMPT_VARIANT: Record<AttemptStatus, "secondary" | "outline" | "destruct
     REFUSED: "secondary",
     UNAVAILABLE: "destructive",
   };
+
+type PatientAddress = ConsultationDetail["patient"]["address"];
+
+/** The patient's address as label/value pairs; `—` throughout for patients saved before addresses. */
+function addressFacts(address: PatientAddress): Array<{ label: string; value: string }> {
+  return [
+    { label: "CEP", value: address ? maskCep(address.cep) : EMPTY },
+    {
+      label: "Endereço",
+      value: address
+        ? `${address.street}, ${address.number}${address.complement ? ` – ${address.complement}` : ""}`
+        : EMPTY,
+    },
+    { label: "Bairro", value: address?.neighborhood ?? EMPTY },
+    { label: "Cidade/UF", value: address ? `${address.city}/${address.state}` : EMPTY },
+  ];
+}
 
 /** Label/value pairs as one description list. */
 function Facts({ items }: { items: ReadonlyArray<{ label: string; value: string }> }) {
@@ -89,6 +106,7 @@ export function ConsultationDetailView({ detail }: { detail: ConsultationDetail 
               { label: "CPF", value: maskCpf(detail.patient.cpf) },
               { label: "Data de nascimento", value: formatCalendarDate(detail.patient.birthdate) },
               { label: "Celular", value: maskPhone(detail.patient.phone) },
+              ...addressFacts(detail.patient.address),
               { label: "Paciente desde", value: formatDateTime(detail.patient.createdAt) },
               { label: "Atualizado em", value: formatDateTime(detail.patient.updatedAt) },
             ]}

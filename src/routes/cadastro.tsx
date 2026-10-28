@@ -1,3 +1,4 @@
+import { useStore } from "@tanstack/react-form";
 import {
   createFileRoute,
   Outlet,
@@ -8,11 +9,14 @@ import {
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import type { AddressLookupResult } from "#/api/addresses";
 import { createConsultation, getConfig } from "#/api/consultations";
 import { AppShell } from "#/components/AppShell";
 import { fieldId, SignupContext } from "#/components/modules/signup/signup-context";
 import {
+  ADDRESS_DETAIL_FIELDS,
   formFieldForRequestPath,
+  isAddressDetailField,
   SIGNUP_FIELD_ORDER,
   SIGNUP_STEPS,
   type SignupFieldName,
@@ -22,6 +26,10 @@ import {
   useSignupForm,
 } from "#/components/modules/signup/signup-form";
 import { SignupProgress } from "#/components/modules/signup/SignupProgress";
+import { useCepLookup } from "#/hooks/use-cep-lookup";
+
+/** "Próximo" with a valid CEP whose lookup hasn't answered yet. */
+const AWAIT_ADDRESS = "Informe o CEP e aguarde o endereço";
 
 export const Route = createFileRoute("/cadastro")({
   beforeLoad: ({ location }) => {
@@ -70,11 +78,57 @@ function SignupLayout() {
     return (form.getFieldMeta(name)?.errors.length ?? 0) > 0;
   }
 
+  /** Hidden address fields don't block, show errors or take focus; an unresolved CEP blocks. */
+  function blocks(name: SignupFieldName) {
+    if (isAddressDetailField(name)) return addressShown && hasErrors(name);
+    return hasErrors(name) || (name === "cep" && !addressShown);
+  }
+
   function touch(name: SignupFieldName) {
     form.setFieldMeta(name, (meta) => ({ ...meta, isTouched: true }));
   }
 
+  /** Touches what blocks among `fields` (the CEP's wait message too); focuses the first of them. */
+  function stopAtFirstBlocking(fields: readonly SignupFieldName[]): boolean {
+    const blocking = fields.filter(blocks);
+    for (const name of blocking) touch(name);
+    if (blocking.includes("cep") && !hasErrors("cep") && cepStatus === "loading") {
+      setServerErrors((errors) => ({ ...errors, cep: AWAIT_ADDRESS }));
+    }
+    if (blocking[0]) focusField(blocking[0]);
+    return blocking.length > 0;
+  }
+
+  /** A CEP answer: the address fields refilled from it (or emptied for typing), untouched again. */
+  function applyLookup(result: AddressLookupResult) {
+    if (result.kind !== "found" && result.kind !== "unavailable") return;
+    const found = result.kind === "found" ? result.address : null;
+    const values: Record<(typeof ADDRESS_DETAIL_FIELDS)[number], string> = {
+      street: found?.street ?? "",
+      addressNumber: "",
+      complement: "",
+      neighborhood: found?.neighborhood ?? "",
+      city: found?.city ?? "",
+      state: found?.state ?? "",
+    };
+    for (const name of ADDRESS_DETAIL_FIELDS) {
+      form.setFieldValue(name, values[name], { dontUpdateMeta: true });
+      form.setFieldMeta(name, (meta) => ({ ...meta, isTouched: false }));
+    }
+    setServerErrors(({ cep: _cep, ...errors }) =>
+      Object.fromEntries(
+        Object.entries(errors).filter(([name]) => !ADDRESS_DETAIL_FIELDS.some((f) => f === name)),
+      ),
+    );
+    if (found) focusTarget.current = "addressNumber";
+  }
+
   async function submit(values: SignupFormValues) {
+    // Browser history can reach the last step after the CEP changed: hold the stale address back.
+    if (!addressShown) {
+      submitInvalid();
+      return;
+    }
     const result = await createConsultation(
       toSignupRequest(values, simulationControls),
       idempotencyKey,
@@ -100,23 +154,19 @@ function SignupLayout() {
   }
 
   function submitInvalid() {
-    const invalid = SIGNUP_FIELD_ORDER.filter(hasErrors);
-    for (const name of invalid) touch(name);
-    if (invalid[0]) focusField(invalid[0]);
+    stopAtFirstBlocking(SIGNUP_FIELD_ORDER);
   }
 
   const form = useSignupForm({ onSubmit: submit, onSubmitInvalid: submitInvalid });
+  const cep = useStore(form.store, (state) => state.values.cep);
+  const cepStatus = useCepLookup(cep, applyLookup);
+  const addressShown = cepStatus === "found" || cepStatus === "unavailable";
 
   async function goNext(from: number) {
     const step = SIGNUP_STEPS[from];
     const next = SIGNUP_STEPS[from + 1];
     await form.validate("change");
-    for (const name of step.fields) touch(name);
-    const invalid = step.fields.find(hasErrors);
-    if (invalid) {
-      focusField(invalid);
-      return;
-    }
+    if (stopAtFirstBlocking(step.fields)) return;
     focusTarget.current = next.fields[0];
     await navigate({ to: next.to });
   }
@@ -138,6 +188,7 @@ function SignupLayout() {
           claimFocus,
           serverErrors,
           clearServerError,
+          cepStatus,
         }}
       >
         <div className="mx-auto flex max-w-xl flex-col gap-6">

@@ -25,3 +25,9 @@ export function maskPhone(raw: string): string {
     ? `(${area}) ${rest.slice(0, split)}-${rest.slice(split)}`
     : `(${area}) ${rest}`;
 }
+
+/** `01310100` → `01310-100`, progressively while typing. */
+export function maskCep(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+}

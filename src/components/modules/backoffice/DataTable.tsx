@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
+import { DatePicker } from "#/components/date-picker/DatePicker";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -76,6 +77,8 @@ export type DataTableQueryPatch = Record<string, FilterValue | undefined>;
 
 const PAGE_SIZES = [10, 20, 50, 100] as const;
 const SEARCH_DEBOUNCE_MS = 400;
+/** How many years back a date filter's calendar offers (the app keeps nothing older). */
+const DATE_FILTER_YEARS_BACK = 5;
 const CPF_HINT =
   "O CPF não entra nesta busca. Para encontrar um paciente pelo CPF, use “Buscar por CPF” em Consultas.";
 
@@ -409,15 +412,19 @@ function FilterControl({
 }) {
   const id = useId();
   if (filter.kind === "date") {
+    const thisYear = new Date().getFullYear();
     return (
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={id}>{filter.label}</Label>
-        <Input
+        <DatePicker
           id={id}
-          type="date"
           value={typeof value === "string" ? value : ""}
-          onChange={(event) => onChange(event.target.value || undefined)}
-          className="h-9 w-40"
+          onValueChange={(iso) => onChange(iso || undefined)}
+          startMonth={new Date(thisYear - DATE_FILTER_YEARS_BACK, 0, 1)}
+          endMonth={new Date(thisYear, 11, 1)}
+          calendarLabel={`Abrir calendário: ${filter.label}`}
+          className="w-40"
+          inputClassName="h-9"
         />
       </div>
     );

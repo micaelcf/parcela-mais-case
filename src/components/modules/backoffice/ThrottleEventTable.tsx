@@ -22,6 +22,7 @@ type ThrottleRoute = (typeof THROTTLE_ROUTES)[number];
 const ROUTE_LABEL: Record<ThrottleRoute, string> = {
   "consultation.create": "Nova consulta",
   "consultation.requote": "Nova cotação",
+  "address.lookup": "Busca de CEP",
 };
 
 const column = createColumnHelper<DataTableFeatures, ThrottleEventItem>();

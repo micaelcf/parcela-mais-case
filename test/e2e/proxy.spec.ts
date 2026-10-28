@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "./support/fixtures";
 import { newPatient } from "./support/patient";
+import { signupBody } from "./support/signup";
 
 /** The stack's per-IP cap on create requests (`RATE_LIMIT_IP_MAX`, default 30). */
 const IP_MAX = Number(process.env.RATE_LIMIT_IP_MAX ?? 30);
@@ -26,14 +27,7 @@ test.describe("behind Caddy", () => {
       const patient = newPatient();
       const created = await request.post("/api/consultations", {
         headers: { "Idempotency-Key": randomUUID() },
-        data: {
-          fullName: patient.fullName,
-          cpf: patient.cpf,
-          birthdate: patient.birthdate,
-          phone: patient.phone,
-          monthlyIncomeCents: patient.monthlyIncomeCents,
-          treatmentAmountCents: patient.treatmentAmountCents,
-        },
+        data: signupBody(patient),
       });
       expect(created.status()).toBe(202);
       const { id } = (await created.json()) as { id: string };
@@ -88,14 +82,7 @@ test.describe("behind Caddy", () => {
           // A different forged client address on every request: Caddy must replace it.
           "X-Forwarded-For": `203.0.${Math.floor(attempt / 250)}.${(attempt % 250) + 1}`,
         },
-        data: {
-          fullName: patient.fullName,
-          cpf: patient.cpf,
-          birthdate: patient.birthdate,
-          phone: patient.phone,
-          monthlyIncomeCents: patient.monthlyIncomeCents,
-          treatmentAmountCents: patient.treatmentAmountCents,
-        },
+        data: signupBody(patient),
       });
       last = { status: response.status(), body: await response.json() };
     }

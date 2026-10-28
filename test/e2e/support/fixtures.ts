@@ -2,6 +2,7 @@ import { randomInt } from "node:crypto";
 
 import { test as base } from "@playwright/test";
 
+import { fakeAddressLookup, type LookupLog } from "./address-lookup";
 import { acquireShared } from "./lender-switch-lock";
 import { newPatient, type Patient } from "./patient";
 
@@ -12,11 +13,14 @@ type Fixtures = {
   clientIp: string;
   /** A fresh applicant (unique CPF). */
   patient: Patient;
+  /** The CEPs this test's pages looked up (every page answers from the fake in `address-lookup`). */
+  addressLookups: LookupLog;
 };
 
 /**
  * Every test gets its own client IP and patient, so the live abuse limits (30 POSTs per IP per
- * route per hour, 5 consultations per CPF per day) never trip across tests or runs.
+ * route per hour, 5 consultations per CPF per day) never trip across tests or runs. CEP lookups
+ * never reach ViaCEP: every page gets the deterministic fake.
  */
 export const test = base.extend<Fixtures>({
   // oxlint-disable-next-line no-empty-pattern -- Playwright reads fixture dependencies from the pattern.
@@ -30,6 +34,12 @@ export const test = base.extend<Fixtures>({
   patient: async ({}, use) => {
     await use(newPatient());
   },
+  addressLookups: [
+    async ({ context }, use) => {
+      await use(await fakeAddressLookup(context));
+    },
+    { auto: true },
+  ],
 });
 
 /**

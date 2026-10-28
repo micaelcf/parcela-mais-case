@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { maskCpf, maskPhone } from "./masks";
+import { maskCep, maskCpf, maskPhone } from "./masks";
 
 describe("signup masks", () => {
   it("formats a CPF progressively and idempotently", () => {
@@ -26,5 +26,15 @@ describe("signup masks", () => {
     expect(maskPhone("011 98765-4321")).toBe("(11) 98765-4321");
     // Typing past 11 digits that start with 55 re-reads them as country code + number.
     expect(maskPhone("(55) 11987-654321")).toBe("(11) 98765-4321");
+  });
+
+  it("formats a CEP progressively and idempotently", () => {
+    expect(maskCep("")).toBe("");
+    expect(maskCep("01310")).toBe("01310");
+    expect(maskCep("013101")).toBe("01310-1");
+    expect(maskCep("01310100")).toBe("01310-100");
+    expect(maskCep("01310-100")).toBe("01310-100");
+    expect(maskCep("01310-1009")).toBe("01310-100");
+    expect(maskCep("01.310-100")).toBe("01310-100");
   });
 });

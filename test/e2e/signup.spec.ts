@@ -1,5 +1,5 @@
 import { expect, test } from "./support/fixtures";
-import { birthdateForAge, centsInput } from "./support/patient";
+import { birthdateForAge, centsInput, dateText } from "./support/patient";
 import {
   fillContactStep,
   fillFinancialStep,
@@ -7,22 +7,35 @@ import {
   scenarioRadio,
 } from "./support/signup";
 
+/** Every field's label by step; step 1's address fields show once the CEP is looked up. */
 const STEP_FIELDS = {
-  "/cadastro/paciente": ["Nome completo", "CPF", "Data de nascimento"],
+  "/cadastro/paciente": [
+    "Nome completo",
+    "CPF",
+    "Data de nascimento",
+    "CEP",
+    "Rua",
+    "Número",
+    "Complemento (opcional)",
+    "Bairro",
+    "Cidade",
+    "UF",
+  ],
   "/cadastro/contato": ["Celular com DDD"],
   "/cadastro/financeiro": ["Renda mensal", "Valor do tratamento"],
 } as const;
 const ALL_FIELDS = Object.values(STEP_FIELDS).flat();
 
 test.describe("signup", () => {
-  test("collects six fields across three steps", async ({ page, patient }) => {
-    expect(ALL_FIELDS).toHaveLength(6);
+  test("collects thirteen fields across three steps", async ({ page, patient }) => {
+    expect(ALL_FIELDS).toHaveLength(13);
     const submit = page.getByRole("button", { name: "Solicitar pré-aprovação" });
     const next = page.getByRole("button", { name: "Próximo" });
 
     await page.goto("/cadastro/paciente");
     for (const [path, fields] of Object.entries(STEP_FIELDS)) {
       await expect(page).toHaveURL(new RegExp(`${path}$`));
+      if (path === "/cadastro/paciente") await fillPatientStep(page, patient);
       for (const label of ALL_FIELDS) {
         const field = page.getByLabel(label, { exact: true });
         if ((fields as readonly string[]).includes(label)) await expect(field).toBeVisible();
@@ -33,8 +46,7 @@ test.describe("signup", () => {
         await expect(next).toHaveCount(0);
       } else {
         await expect(submit).toHaveCount(0);
-        if (path === "/cadastro/paciente") await fillPatientStep(page, patient);
-        else await fillContactStep(page, patient);
+        if (path === "/cadastro/contato") await fillContactStep(page, patient);
         await next.click();
       }
     }
@@ -63,13 +75,40 @@ test.describe("signup", () => {
     await page.goto("/cadastro/paciente");
     const birthdate = page.getByLabel("Data de nascimento");
     for (const age of [17, 81]) {
-      await birthdate.fill(birthdateForAge(age));
+      await birthdate.fill(dateText(birthdateForAge(age)));
       await birthdate.blur();
       await expect(birthdate, `age ${age}`).toHaveAttribute("aria-invalid", "true");
       await expect(birthdate, `age ${age}`).toHaveAccessibleDescription(
         /idade deve estar entre 18 e 80 anos/,
       );
     }
+  });
+
+  test("picks the birthdate from the calendar", async ({ page }) => {
+    await page.goto("/cadastro/paciente");
+    const birthdate = page.getByLabel("Data de nascimento");
+    const opener = page.getByRole("button", { name: "Abrir calendário" });
+    const year = new Date().getFullYear() - 40;
+
+    await opener.click();
+    const calendar = page.getByRole("dialog");
+    await calendar.getByRole("combobox", { name: "Escolha o ano" }).click();
+    await page.getByRole("option", { name: String(year), exact: true }).click();
+    await calendar.getByRole("combobox", { name: "Escolha o mês" }).click();
+    await page.getByRole("option", { name: /^mai/i }).click();
+    await calendar.locator(`button[data-day="17/05/${year}"]`).click();
+
+    await expect(calendar).toHaveCount(0);
+    await expect(birthdate).toHaveValue(`17/05/${year}`);
+    await expect(opener).toBeFocused();
+    await birthdate.blur();
+    await expect(birthdate).not.toHaveAttribute("aria-invalid", "true");
+
+    // Typing works the same way, and an impossible day stays invalid.
+    await birthdate.fill("31/02/1990");
+    await birthdate.blur();
+    await expect(birthdate).toHaveAttribute("aria-invalid", "true");
+    await expect(birthdate).toHaveAccessibleDescription(/idade deve estar entre 18 e 80 anos/);
   });
 
   test("flags amounts outside the bounds", async ({ page }) => {
@@ -110,7 +149,10 @@ test.describe("signup", () => {
     await expect(page).toHaveURL(/\/cadastro\/paciente$/);
     await expect(page.getByLabel("Nome completo")).toHaveValue(patient.fullName);
     await expect(page.getByLabel("CPF", { exact: true })).toHaveValue(patient.cpfFormatted);
-    await expect(page.getByLabel("Data de nascimento")).toHaveValue(patient.birthdate);
+    await expect(page.getByLabel("Data de nascimento")).toHaveValue(dateText(patient.birthdate));
+    await expect(page.getByLabel("CEP", { exact: true })).toHaveValue("01310-100");
+    await expect(page.getByLabel("Rua")).toHaveValue(patient.address.street);
+    await expect(page.getByLabel("Número")).toHaveValue(patient.address.number);
 
     await page.getByRole("button", { name: "Próximo" }).click();
     await expect(page).toHaveURL(/\/cadastro\/contato$/);
@@ -124,6 +166,10 @@ test.describe("signup", () => {
       patient.cpf,
       patient.cpfFormatted,
       patient.birthdate,
+      dateText(patient.birthdate),
+      patient.address.cep,
+      "01310-100",
+      patient.address.street,
       patient.phone,
       "(11) 98765-4321",
       centsInput(patient.monthlyIncomeCents),
@@ -163,6 +209,8 @@ test.describe("signup", () => {
     await expect(page.getByLabel("Nome completo")).toHaveValue("");
     await expect(page.getByLabel("CPF", { exact: true })).toHaveValue("");
     await expect(page.getByLabel("Data de nascimento")).toHaveValue("");
+    await expect(page.getByLabel("CEP", { exact: true })).toHaveValue("");
+    await expect(page.getByLabel("Rua")).toHaveCount(0);
   });
 
   test("hides the scenario picker when controls are off", async ({ page }) => {

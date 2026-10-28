@@ -367,7 +367,11 @@ test.describe("backoffice", () => {
     }
   });
 
-  test("shows the decrypted CPF on the detail", async ({ page, request, patient }) => {
+  test("shows the decrypted CPF and the address on the detail", async ({
+    page,
+    request,
+    patient,
+  }) => {
     const id = await createConsultation(request, patient, "ALL_APPROVE");
     await logIn(page);
     await page.goto("/backoffice/consultas");
@@ -383,5 +387,10 @@ test.describe("backoffice", () => {
 
     await expect(page).toHaveURL(new RegExp(`/backoffice/consultas/${id}$`));
     await expect(page.getByText(patient.cpfFormatted, { exact: true })).toBeVisible();
+    const patientFacts = page.locator("dl", { hasText: "Celular" });
+    await expect(patientFacts).toContainText("01310-100");
+    await expect(patientFacts).toContainText("Avenida Paulista, 1578");
+    await expect(patientFacts).toContainText("Bela Vista");
+    await expect(patientFacts).toContainText("São Paulo/SP");
   });
 });

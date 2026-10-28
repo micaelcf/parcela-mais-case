@@ -4,7 +4,7 @@ import { type APIRequestContext, expect, type Page } from "@playwright/test";
 
 import type { SimulationScenario } from "#/lib/enums";
 
-import { centsInput, type Patient } from "./patient";
+import { centsInput, dateText, type Patient } from "./patient";
 
 /** The picker's option labels (accessible names start with them). */
 export const SCENARIO_LABEL: Record<SimulationScenario, string> = {
@@ -28,10 +28,18 @@ export function scenarioRadio(page: Page, scenario: SimulationScenario) {
 
 export const CONSULTATION_URL = /\/consultas\/([0-9a-f-]{36})$/;
 
+/** Fills step 1: the CEP is looked up (the fake answers), then the number completes the address. */
 export async function fillPatientStep(page: Page, patient: Patient) {
   await page.getByLabel("Nome completo").fill(patient.fullName);
   await page.getByLabel("CPF", { exact: true }).fill(patient.cpf);
-  await page.getByLabel("Data de nascimento").fill(patient.birthdate);
+  await page.getByLabel("Data de nascimento").fill(dateText(patient.birthdate));
+  await page.getByLabel("CEP", { exact: true }).fill(patient.address.cep);
+  const number = page.getByLabel("Número");
+  await expect(number).toBeVisible();
+  await number.fill(patient.address.number);
+  if (patient.address.complement) {
+    await page.getByLabel("Complemento (opcional)").fill(patient.address.complement);
+  }
 }
 
 export async function fillContactStep(page: Page, patient: Patient) {
@@ -63,6 +71,20 @@ export async function signUp(
   return CONSULTATION_URL.exec(page.url())![1];
 }
 
+/** The `POST /api/consultations` body for `patient`. */
+export function signupBody(patient: Patient, scenario?: SimulationScenario) {
+  return {
+    fullName: patient.fullName,
+    cpf: patient.cpf,
+    birthdate: patient.birthdate,
+    address: patient.address,
+    phone: patient.phone,
+    monthlyIncomeCents: patient.monthlyIncomeCents,
+    treatmentAmountCents: patient.treatmentAmountCents,
+    ...(scenario ? { simulationScenario: scenario } : {}),
+  };
+}
+
 /** Creates a consultation through the public API (`POST /api/consultations`); resolves to its id. */
 export async function createConsultation(
   request: APIRequestContext,
@@ -71,15 +93,7 @@ export async function createConsultation(
 ): Promise<string> {
   const response = await request.post("/api/consultations", {
     headers: { "Idempotency-Key": randomUUID() },
-    data: {
-      fullName: patient.fullName,
-      cpf: patient.cpf,
-      birthdate: patient.birthdate,
-      phone: patient.phone,
-      monthlyIncomeCents: patient.monthlyIncomeCents,
-      treatmentAmountCents: patient.treatmentAmountCents,
-      ...(scenario ? { simulationScenario: scenario } : {}),
-    },
+    data: signupBody(patient, scenario),
   });
   expect(response.status(), await response.text()).toBe(202);
   const { id } = (await response.json()) as { id: string };

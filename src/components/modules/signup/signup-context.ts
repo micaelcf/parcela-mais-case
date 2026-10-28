@@ -1,5 +1,7 @@
 import { createContext, use } from "react";
 
+import type { CepLookupStatus } from "#/hooks/use-cep-lookup";
+
 import type { SignupForm } from "./signup-form";
 
 export type SignupContextValue = {
@@ -10,9 +12,12 @@ export type SignupContextValue = {
   goBack: (from: number) => void;
   /** Called by a field once mounted: true when it should take focus (its step was just entered, or it's the invalid one). */
   claimFocus: (name: string) => boolean;
-  /** API 422 messages by form field, shown until the field changes (they survive step changes). */
+  /** Messages by form field, shown until the field changes (they survive step changes): the API's
+   *  422 ones, and "wait for the address" when "Próximo" meets a CEP still being looked up. */
   serverErrors: Partial<Record<string, string>>;
   clearServerError: (name: string) => void;
+  /** The CEP lookup's state: the address fields show only once it's `found` or `unavailable`. */
+  cepStatus: CepLookupStatus;
 };
 
 export const SignupContext = createContext<SignupContextValue | null>(null);

@@ -1,22 +1,18 @@
-import type { ElementHandle, Locator, Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { expect, journeyTest as test } from "./support/fixtures";
 import { LENDERS, lenderCard } from "./support/journey";
+import { dateText } from "./support/patient";
 import { CONSULTATION_URL, scenarioRadio, signUp } from "./support/signup";
 
 /**
  * Describes the focused element and whether it shows a visible focus indicator: an outline that
  * isn't `none`, or a ring (a box-shadow layer with a positive spread and a visible colour; plain
- * elevation shadows have no spread). `"native-part"`: focus sits on a part inside a native date
- * input (its calendar button), which the browser rings itself, out of reach of page styles.
- * Runs in the page.
+ * elevation shadows have no spread). Runs in the page.
  */
 function focusIndicator(): string {
   const element = document.activeElement;
   if (!element || element === document.body) return "nothing focused";
-  if (element instanceof HTMLInputElement && element.type === "date") {
-    if (!element.matches(":focus-visible")) return "native-part";
-  }
   const style = getComputedStyle(element);
   const label = `<${element.tagName.toLowerCase()}> "${(element.textContent ?? "").trim().slice(0, 40)}"`;
   const visibleColour = (colour: string) => {
@@ -50,35 +46,52 @@ async function expectVisibleFocus(page: Page) {
   await expect.poll(() => page.evaluate(focusIndicator), { timeout: 2_000 }).toBe("visible");
 }
 
-/**
- * Presses Tab until `target` has focus, checking every control focused on the way. A native
- * part's ring is checked by sight: the input must look different once focus has left it.
- */
+/** Presses Tab until `target` has focus, checking every control focused on the way. */
 async function tabTo(page: Page, target: Locator, maxTabs = 30) {
-  let nativePart: { element: ElementHandle; focused: Buffer } | null = null;
   for (let presses = 0; presses < maxTabs; presses++) {
     await page.keyboard.press("Tab");
-    if (nativePart) {
-      const unfocused = await nativePart.element.screenshot({ animations: "disabled" });
-      expect(unfocused.equals(nativePart.focused), "native part shows a focus ring").toBe(false);
-      nativePart = null;
-    }
-    await expect
-      .poll(() => page.evaluate(focusIndicator), { timeout: 2_000 })
-      .toMatch(/^(visible|native-part)$/);
-    if ((await page.evaluate(focusIndicator)) === "native-part") {
-      const element = await page.evaluateHandle(() => document.activeElement!);
-      nativePart = {
-        element: element.asElement()!,
-        focused: await element.asElement()!.screenshot({ animations: "disabled" }),
-      };
-    }
+    await expectVisibleFocus(page);
     if (await target.evaluate((element) => element === document.activeElement)) return;
   }
   throw new Error(`${target.toString()} not reached after ${maxTabs} Tab presses`);
 }
 
 test.describe("accessibility", () => {
+  test("picks the birthdate from the calendar by keyboard", async ({ page }) => {
+    await page.goto("/cadastro/paciente");
+    const birthdate = page.getByLabel("Data de nascimento");
+    const opener = page.getByRole("button", { name: "Abrir calendário" });
+    const focusedDay = () =>
+      page.evaluate(() => document.activeElement?.getAttribute("data-day") ?? null);
+    await expect(birthdate).toBeVisible();
+    await tabTo(page, opener);
+
+    await page.keyboard.press("Enter");
+    const calendar = page.getByRole("dialog");
+    await expect(calendar).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(calendar).toHaveCount(0);
+    await expect(opener).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await expect(calendar).toBeVisible();
+    // Tab past the month/year pickers and the arrows into the grid, then one day on.
+    for (let presses = 0; presses < 8 && (await focusedDay()) === null; presses++) {
+      await page.keyboard.press("Tab");
+      await expectVisibleFocus(page);
+    }
+    const first = await focusedDay();
+    expect(first, "a day of the grid takes focus").not.toBeNull();
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(focusedDay).not.toBe(first);
+    const picked = await focusedDay();
+    await page.keyboard.press("Enter");
+
+    await expect(calendar).toHaveCount(0);
+    await expect(opener).toBeFocused();
+    await expect(birthdate).toHaveValue(picked ?? "");
+  });
+
   test("completes the journey by keyboard", async ({ page, patient }) => {
     await page.goto("/cadastro/paciente");
     await expect(page.getByLabel("Nome completo")).toBeVisible();
@@ -90,7 +103,15 @@ test.describe("accessibility", () => {
     await tabTo(page, page.getByLabel("Data de nascimento"));
     const [year, month, day] = patient.birthdate.split("-");
     await page.keyboard.type(`${day}${month}${year}`);
-    await expect(page.getByLabel("Data de nascimento")).toHaveValue(patient.birthdate);
+    await expect(page.getByLabel("Data de nascimento")).toHaveValue(dateText(patient.birthdate));
+    await tabTo(page, page.getByLabel("CEP", { exact: true }));
+    await page.keyboard.type(patient.address.cep);
+    // The looked-up address fills in and focus moves on to the number.
+    const number = page.getByLabel("Número");
+    await expect(number).toBeFocused();
+    await expectVisibleFocus(page);
+    await expect(page.getByLabel("Rua")).toHaveValue(patient.address.street);
+    await page.keyboard.type(patient.address.number);
     await tabTo(page, page.getByRole("button", { name: "Próximo" }));
     await page.keyboard.press("Enter");
 

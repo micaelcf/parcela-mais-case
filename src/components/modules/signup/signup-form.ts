@@ -2,6 +2,13 @@ import { createFormHook } from "@tanstack/react-form";
 import Type, { type Static, type TSchema } from "typebox";
 import { Compile } from "typebox/compile";
 
+import {
+  type Address,
+  AddressSchema,
+  BR_STATES,
+  type BrState,
+  normalizeAddress,
+} from "#/lib/address/address";
 import { normalizeCpf } from "#/lib/cpf/cpf";
 import { parseCentsInput } from "#/lib/money/money";
 import { normalizePhone } from "#/lib/phone/phone";
@@ -17,14 +24,25 @@ import {
 } from "#/server/modules/consultation/consultation.dto";
 
 import { fieldContext, formContext } from "./form-context";
-import { MoneyField, ScenarioField, TextField } from "./SignupFields";
+import {
+  CepField,
+  DateField,
+  MoneyField,
+  ScenarioField,
+  StateField,
+  TextField,
+} from "./SignupFields";
 
 const request = SignupRequestSchema.properties;
+const address = AddressSchema.properties;
 
-/** A currency input (raw text) checked by the API's cents schema, with that schema's message. */
-function centsInput(schema: TSchema) {
+/**
+ * A text input checked by an API schema against what `parse` reads from it, with that schema's
+ * message (a currency input against the cents schema, a UF against the state enum).
+ */
+function checkedText(schema: TSchema, parse: (raw: string) => unknown = (raw) => raw) {
   const validator = Compile(schema);
-  const issue = (raw: string) => collectIssues(schema, parseCentsInput(raw), validator)[0]?.message;
+  const issue = (raw: string) => collectIssues(schema, parse(raw), validator)[0]?.message;
   return Type.Refine(
     Type.String(),
     (raw) => issue(raw) === undefined,
@@ -34,15 +52,22 @@ function centsInput(schema: TSchema) {
 
 /**
  * What the form holds: the inputs as typed (masks included), checked by the API's own field schemas.
- * Money fields stay text until the request is built.
+ * Money fields stay text until the request is built; the address is flat here, nested in the body.
  */
 export const SignupFormSchema = Type.Object({
   fullName: request.fullName,
   cpf: request.cpf,
   birthdate: request.birthdate,
+  cep: address.cep,
+  street: address.street,
+  addressNumber: address.number,
+  complement: address.complement,
+  neighborhood: address.neighborhood,
+  city: address.city,
+  state: checkedText(address.state),
   phone: request.phone,
-  monthlyIncome: centsInput(request.monthlyIncomeCents),
-  treatmentAmount: centsInput(request.treatmentAmountCents),
+  monthlyIncome: checkedText(request.monthlyIncomeCents, parseCentsInput),
+  treatmentAmount: checkedText(request.treatmentAmountCents, parseCentsInput),
   simulationScenario: ScenarioSchema,
 });
 export type SignupFormValues = Static<typeof SignupFormSchema>;
@@ -52,6 +77,13 @@ const DEFAULT_VALUES: SignupFormValues = {
   fullName: "",
   cpf: "",
   birthdate: "",
+  cep: "",
+  street: "",
+  addressNumber: "",
+  complement: "",
+  neighborhood: "",
+  city: "",
+  state: "",
   phone: "",
   monthlyIncome: "",
   treatmentAmount: "",
@@ -59,10 +91,11 @@ const DEFAULT_VALUES: SignupFormValues = {
 };
 
 /**
- * `toStandardSchema` declares its input as `unknown`; TanStack Form wants the form's value type
- * there. Same `validate`, re-declared over the form values (the `types` hint is inference-only).
+ * The form's validator. `toStandardSchema` declares its input as `unknown`; TanStack Form wants the
+ * form's value type there, so it's re-declared over the form values (the `types` hint is
+ * inference-only).
  */
-const signupValidator: StandardSchemaV1<SignupFormValues, SignupFormValues> = {
+export const signupValidator: StandardSchemaV1<SignupFormValues, SignupFormValues> = {
   "~standard": { ...toStandardSchema(SignupFormSchema)["~standard"], types: undefined },
 };
 
@@ -71,7 +104,18 @@ export const SIGNUP_STEPS = [
   {
     to: "/cadastro/paciente",
     title: "Paciente",
-    fields: ["fullName", "cpf", "birthdate"],
+    fields: [
+      "fullName",
+      "cpf",
+      "birthdate",
+      "cep",
+      "street",
+      "addressNumber",
+      "complement",
+      "neighborhood",
+      "city",
+      "state",
+    ],
   },
   { to: "/cadastro/contato", title: "Contato", fields: ["phone"] },
   {
@@ -95,11 +139,38 @@ export function stepOfField(name: SignupFieldName): number {
   return SIGNUP_STEPS.findIndex((step) => step.fields.some((field) => field === name));
 }
 
-/** Request property (as the API reports it in 422 `fields[].path`) → the form field holding it. */
-const REQUEST_FIELD: Record<keyof SignupRequest, SignupFieldName> = {
+/**
+ * The address fields shown only once the CEP is looked up (found, or the lookup unavailable):
+ * while hidden they neither show errors nor take focus.
+ */
+export const ADDRESS_DETAIL_FIELDS = [
+  "street",
+  "addressNumber",
+  "complement",
+  "neighborhood",
+  "city",
+  "state",
+] as const satisfies readonly SignupFieldName[];
+
+export function isAddressDetailField(name: SignupFieldName): boolean {
+  return ADDRESS_DETAIL_FIELDS.some((field) => field === name);
+}
+
+/** A 422 `fields[].path`: a top-level request property or one inside `address`. */
+type RequestPath = Exclude<keyof SignupRequest, "address"> | `address.${keyof Address}`;
+
+/** Request path (as the API reports it in 422 `fields[].path`) → the form field holding it. */
+const REQUEST_FIELD: Record<RequestPath, SignupFieldName> = {
   fullName: "fullName",
   cpf: "cpf",
   birthdate: "birthdate",
+  "address.cep": "cep",
+  "address.street": "street",
+  "address.number": "addressNumber",
+  "address.complement": "complement",
+  "address.neighborhood": "neighborhood",
+  "address.city": "city",
+  "address.state": "state",
   phone: "phone",
   monthlyIncomeCents: "monthlyIncome",
   treatmentAmountCents: "treatmentAmount",
@@ -116,6 +187,12 @@ function cents(raw: string): number {
   return value;
 }
 
+function brState(raw: string): BrState {
+  const state = BR_STATES.find((candidate) => candidate === raw);
+  if (!state) throw new Error("A validated UF isn't one of the 27");
+  return state;
+}
+
 /** Validated form values → the API body. The scenario goes only when simulation controls are on. */
 export function toSignupRequest(
   values: SignupFormValues,
@@ -125,6 +202,15 @@ export function toSignupRequest(
     fullName: values.fullName.trim(),
     cpf: normalizeCpf(values.cpf),
     birthdate: values.birthdate,
+    address: normalizeAddress({
+      cep: values.cep,
+      street: values.street,
+      number: values.addressNumber,
+      complement: values.complement,
+      neighborhood: values.neighborhood,
+      city: values.city,
+      state: brState(values.state),
+    }),
     phone: normalizePhone(values.phone),
     monthlyIncomeCents: cents(values.monthlyIncome),
     treatmentAmountCents: cents(values.treatmentAmount),
@@ -135,7 +221,7 @@ export function toSignupRequest(
 const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, MoneyField, ScenarioField },
+  fieldComponents: { TextField, DateField, CepField, StateField, MoneyField, ScenarioField },
   formComponents: {},
 });
 
