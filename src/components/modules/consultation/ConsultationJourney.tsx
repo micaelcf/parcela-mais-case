@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { cn } from "cn";
 import { UserPlusIcon } from "lucide-react";
 
 import { buttonVariants } from "#/components/ui/button";
@@ -66,7 +65,7 @@ export function ConsultationJourney({
         {/* Back to the start: the signup layout mounts afresh (empty form, new idempotency key). */}
         <Link
           to="/cadastro/paciente"
-          className={cn(buttonVariants({ variant: "outline", className: "self-start" }))}
+          className={buttonVariants({ variant: "outline", className: "self-start" })}
         >
           <UserPlusIcon aria-hidden data-icon="inline-start" />
           Novo cadastro

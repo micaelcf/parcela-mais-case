@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { cn } from "cn";
 
 import { getLenderMetrics, getPipelineMetrics } from "#/api/backoffice";
 import { LenderHealthTable } from "#/components/modules/backoffice/LenderHealthTable";
@@ -68,7 +67,7 @@ function DashboardPage() {
               <LenderHealthTable lenders={lenders.lenders} />
               <Link
                 to="/backoffice/financeiras"
-                className={cn(buttonVariants({ variant: "link", className: "mt-2 px-0" }))}
+                className={buttonVariants({ variant: "link", className: "mt-2 px-0" })}
               >
                 Gerenciar financeiras
               </Link>

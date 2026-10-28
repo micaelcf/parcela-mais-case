@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { cn } from "cn";
 import { InfoIcon } from "lucide-react";
 
 import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
@@ -49,7 +48,7 @@ export function NoOfferPanel({ view, requoting, onRequote }: NoOfferPanelProps) 
             <p className="text-sm">
               Nenhuma financeira indicou um valor menor que poderia aprovar.
             </p>
-            <Link to="/cadastro/paciente" className={cn(buttonVariants({ variant: "outline" }))}>
+            <Link to="/cadastro/paciente" className={buttonVariants({ variant: "outline" })}>
               Começar um novo cadastro
             </Link>
           </div>

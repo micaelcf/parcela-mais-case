@@ -1,5 +1,4 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { cn } from "cn";
 import { ArrowLeftIcon } from "lucide-react";
 
 import { getConsultationDetail } from "#/api/backoffice";
@@ -19,7 +18,7 @@ export const Route = createFileRoute("/backoffice/consultas/$consultationId")({
 
 function BackToList() {
   return (
-    <Link to="/backoffice/consultas" className={cn(buttonVariants({ variant: "outline" }))}>
+    <Link to="/backoffice/consultas" className={buttonVariants({ variant: "outline" })}>
       <ArrowLeftIcon aria-hidden data-icon="inline-start" />
       Voltar para consultas
     </Link>
