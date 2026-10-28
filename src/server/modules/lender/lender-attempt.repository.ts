@@ -112,7 +112,7 @@ export const lenderAttemptRepository = {
       .limit(limit);
   },
 
-  /** Whether a half-open probe for `lender` was called after `since` and hasn't settled. */
+  /** Whether a NORMAL half-open probe for `lender` was called after `since` and hasn't settled. */
   async probeInFlight(tx: Tx, lender: LenderCode, since: Date): Promise<boolean> {
     const [row] = await tx
       .select({ id: lenderAttempt.id })
@@ -120,6 +120,7 @@ export const lenderAttemptRepository = {
       .where(
         and(
           eq(lenderAttempt.lender, lender),
+          eq(lenderAttempt.simulationScenario, "NORMAL"),
           eq(lenderAttempt.breakerProbe, true),
           isNull(lenderAttempt.settledAt),
           gt(lenderAttempt.calledAt, since),

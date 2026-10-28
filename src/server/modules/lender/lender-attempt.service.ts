@@ -35,13 +35,18 @@ async function breakerOf(executor: DbOrTx, lender: LenderCode, now: Date): Promi
   return breakerState(samples, now);
 }
 
-/** Kill switch, then breaker (one half-open probe at a time). Runs under the advisory lock. */
-async function decideGate(tx: Tx, lender: LenderCode, now: Date): Promise<Gate> {
+/**
+ * Kill switch, then breaker (one half-open probe at a time). Runs under the advisory lock.
+ * Forced-scenario attempts never probe: under half-open they are skipped like an open circuit.
+ */
+async function decideGate(tx: Tx, attempt: LenderAttemptRow, now: Date): Promise<Gate> {
+  const { lender } = attempt;
   if (!(await lenderSettingService.isEnabled(tx, lender)))
     return { kind: "SKIP", reason: "DISABLED" };
   const state = await breakerOf(tx, lender, now);
   if (state === "OPEN") return { kind: "SKIP", reason: "CIRCUIT_OPEN" };
   if (state === "HALF_OPEN") {
+    if (attempt.simulationScenario !== "NORMAL") return { kind: "SKIP", reason: "CIRCUIT_OPEN" };
     const since = new Date(now.getTime() - BREAKER.openMs);
     if (await lenderAttemptRepository.probeInFlight(tx, lender, since)) {
       return { kind: "SKIP", reason: "CIRCUIT_OPEN" };
@@ -135,10 +140,10 @@ export const lenderAttemptService = {
     const claimed = await db.transaction(async (tx) => {
       const attempt = await lenderAttemptRepository.pick(tx, attemptId);
       if (!attempt) return null;
-      let gate = await decideGate(tx, attempt.lender, new Date());
+      let gate = await decideGate(tx, attempt, new Date());
       if (gate.kind === "SKIP" || gate.probe) {
         await lenderAttemptRepository.lockBreaker(tx, attempt.lender);
-        gate = await decideGate(tx, attempt.lender, new Date());
+        gate = await decideGate(tx, attempt, new Date());
       }
       if (gate.kind === "SKIP") {
         await settleInTx(tx, attempt, { status: "UNAVAILABLE", reason: gate.reason });
