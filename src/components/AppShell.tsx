@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import { LockKeyholeIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { buttonVariants } from "#/components/ui/button";
 import { Toaster } from "#/components/ui/sonner";
 
 /** Public frame: brand header, centred content column, footer, toasts. */
@@ -21,7 +23,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             Parcela <span className="text-primary">Mais</span>
           </Link>
-          <span className="text-sm text-muted-foreground">Pré-aprovação para tratamentos</span>
+          <div className="flex items-center gap-4">
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              Pré-aprovação para tratamentos
+            </span>
+            {/* The backoffice redirects to its login when there's no session. */}
+            <Link to="/backoffice" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <LockKeyholeIcon aria-hidden data-icon="inline-start" />
+              Área da clínica
+            </Link>
+          </div>
         </div>
       </header>
       <main

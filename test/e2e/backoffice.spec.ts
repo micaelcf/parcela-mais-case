@@ -37,6 +37,19 @@ test.describe("backoffice", () => {
     await expect(page.getByText(`Operador: ${OPERATOR.username}`)).toBeVisible();
   });
 
+  test("is reachable from the public header and leads back to the signup", async ({ page }) => {
+    await page.goto("/cadastro/paciente");
+    await page.getByRole("link", { name: "Área da clínica" }).click();
+    // No session yet: the backoffice sends the operator to its login.
+    await expect(page).toHaveURL(/\/backoffice\/login$/);
+
+    await fillLogin(page, OPERATOR.username, OPERATOR.password);
+    await expect(page.getByRole("heading", { name: "Painel", exact: true })).toBeVisible();
+
+    await page.getByRole("link", { name: "Ir para o cadastro" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+  });
+
   test("rejects a wrong password", async ({ page }) => {
     await fillLogin(page, OPERATOR.username, `${OPERATOR.password}-errada`);
 

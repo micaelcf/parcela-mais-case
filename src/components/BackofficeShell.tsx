@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { LogOutIcon } from "lucide-react";
+import { ArrowLeftIcon, LogOutIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Button } from "#/components/ui/button";
+import { Button, buttonVariants } from "#/components/ui/button";
 import { Toaster } from "#/components/ui/sonner";
 
 const NAV = [
@@ -64,6 +64,13 @@ export function BackofficeShell({
               </div>
             </>
           ) : null}
+          <Link
+            to="/cadastro/paciente"
+            className={buttonVariants({ variant: "ghost", size: "sm", className: "ml-auto" })}
+          >
+            <ArrowLeftIcon aria-hidden data-icon="inline-start" />
+            Ir para o cadastro
+          </Link>
         </div>
       </header>
       <main
