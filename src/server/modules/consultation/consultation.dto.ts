@@ -1,5 +1,6 @@
 import Type, { type Static, type TSchema } from "typebox";
 
+import { AddressSchema } from "#/lib/address/address";
 import { CpfSchema } from "#/lib/cpf/cpf";
 import { PhoneSchema } from "#/lib/phone/phone";
 import {
@@ -87,6 +88,8 @@ export const SignupRequestSchema = Type.Object({
     () => "A idade deve estar entre 18 e 80 anos",
   ),
   phone: PhoneSchema,
+  /** The patient's address (stored on the patient, never in a public payload). */
+  address: AddressSchema,
   monthlyIncomeCents: Type.Integer({
     minimum: 0,
     maximum: Number.MAX_SAFE_INTEGER,

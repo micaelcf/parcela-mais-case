@@ -1,5 +1,6 @@
 import Type, { type Static, type TSchema } from "typebox";
 
+import { BR_STATES, type BrState } from "#/lib/address/address";
 import { CpfSchema } from "#/lib/cpf/cpf";
 import {
   ATTEMPT_REASONS,
@@ -233,6 +234,18 @@ export const ConsultationDetailSchema = Type.Object({
     fullName: Type.String(),
     birthdate: Type.String(),
     phone: Type.String(),
+    /** The latest address sent; null for patients saved before addresses existed. */
+    address: Nullable(
+      Type.Object({
+        cep: Type.String(),
+        street: Type.String(),
+        number: Type.String(),
+        complement: Nullable(Type.String()),
+        neighborhood: Type.String(),
+        city: Type.String(),
+        state: Type.Enum(BR_STATES),
+      }),
+    ),
     createdAt: Type.String(),
     updatedAt: Type.String(),
   }),
@@ -279,7 +292,11 @@ export type ConsultationDetail = Static<typeof ConsultationDetailSchema>;
 
 // ── Throttle events ────────────────────────────────────────────────────────────────────────
 
-export const THROTTLE_ROUTES = ["consultation.create", "consultation.requote"] as const;
+export const THROTTLE_ROUTES = [
+  "consultation.create",
+  "consultation.requote",
+  "address.lookup",
+] as const;
 
 export const ThrottleEventItemSchema = Type.Object({
   id: Type.String(),
@@ -357,6 +374,13 @@ export type ConsultationDetailRows = {
     fullName: string;
     birthdate: string;
     phone: string;
+    addressCep: string | null;
+    addressStreet: string | null;
+    addressNumber: string | null;
+    addressComplement: string | null;
+    addressNeighborhood: string | null;
+    addressCity: string | null;
+    addressState: BrState | null;
     createdAt: Date;
     updatedAt: Date;
   };
@@ -387,6 +411,31 @@ export type ConsultationDetailRows = {
     createdAt: Date;
   }>;
 };
+
+/** The stored address columns → the detail's address; null unless every required column is set. */
+function addressOf(
+  patient: ConsultationDetailRows["patient"],
+): ConsultationDetail["patient"]["address"] {
+  const {
+    addressCep: cep,
+    addressStreet: street,
+    addressNumber: number,
+    addressNeighborhood: neighborhood,
+    addressCity: city,
+    addressState: state,
+  } = patient;
+  if (
+    cep === null ||
+    street === null ||
+    number === null ||
+    neighborhood === null ||
+    city === null ||
+    state === null
+  ) {
+    return null;
+  }
+  return { cep, street, number, complement: patient.addressComplement, neighborhood, city, state };
+}
 
 /** Rows + the decrypted CPF → detail; attempts by lender, offers by lender then term. */
 export function toConsultationDetail(
@@ -427,6 +476,7 @@ export function toConsultationDetail(
       fullName: rows.patient.fullName,
       birthdate: rows.patient.birthdate,
       phone: rows.patient.phone,
+      address: addressOf(rows.patient),
       createdAt: rows.patient.createdAt.toISOString(),
       updatedAt: rows.patient.updatedAt.toISOString(),
     },

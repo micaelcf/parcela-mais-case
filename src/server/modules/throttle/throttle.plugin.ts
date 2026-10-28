@@ -36,6 +36,7 @@ function statusCodeOf(status: number | keyof typeof StatusMap | undefined): numb
  * `parse` runs before the body is read, so malformed and invalid requests are counted too. Elysia
  * wraps anything thrown in `parse` as a ParseError, so over the cap `parse` skips reading the
  * body (an empty one) and `transform`, still before validation, fails with 429 `IP_LIMIT`.
+ * Requests without a body (GET) never reach `parse`; `transform` counts them instead.
  * After the response, the row gets its status and error code.
  */
 export const throttlePlugin = new Elysia({ name: "throttle" }).macro({
@@ -45,9 +46,13 @@ export const throttlePlugin = new Elysia({ name: "throttle" }).macro({
       counted.set(request, admission);
       if (admission.rejection) return {};
     },
-    transform({ request }) {
-      const rejection = counted.get(request)?.rejection;
-      if (rejection) throw rejection;
+    async transform({ request }) {
+      let admission = counted.get(request);
+      if (!admission) {
+        admission = await throttleService.admit(clientIp(request.headers), route);
+        counted.set(request, admission);
+      }
+      if (admission.rejection) throw admission.rejection;
     },
     async afterResponse(context) {
       const requestId = counted.get(context.request)?.requestId;

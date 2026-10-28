@@ -6,11 +6,19 @@ import { type ThrottleRoute, throttleRepository } from "./throttle.repository";
 
 const RETENTION_GRACE_MS = 24 * 60 * 60 * 1000;
 
+/** Requests one IP may make per route inside `RATE_LIMIT_IP_WINDOW_MINUTES`. */
+const ROUTE_CAP: Record<ThrottleRoute, number> = {
+  "consultation.create": env.RATE_LIMIT_IP_MAX,
+  "consultation.requote": env.RATE_LIMIT_IP_MAX,
+  "address.lookup": env.RATE_LIMIT_LOOKUP_IP_MAX,
+};
+
 export const throttleService = {
   /**
    * Counts one request (`boundaries.md` § Throttle): records it, then counts the IP's rows for the
-   * route inside `RATE_LIMIT_IP_WINDOW_MINUTES`. `rejection` is set once the count passes
-   * `RATE_LIMIT_IP_MAX`; the row stays and is counted like any other.
+   * route inside `RATE_LIMIT_IP_WINDOW_MINUTES`. `rejection` is set once the count passes the
+   * route's cap (`RATE_LIMIT_LOOKUP_IP_MAX` for CEP lookups, `RATE_LIMIT_IP_MAX` otherwise); the
+   * row stays and is counted like any other.
    */
   async admit(
     ip: string,
@@ -24,7 +32,7 @@ export const throttleService = {
       env.RATE_LIMIT_IP_WINDOW_MINUTES,
     );
     const rejection =
-      count > env.RATE_LIMIT_IP_MAX
+      count > ROUTE_CAP[route]
         ? new DomainError(
             "IP_LIMIT",
             "Muitas solicitações a partir deste endereço. Tente novamente mais tarde.",

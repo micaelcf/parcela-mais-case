@@ -1,8 +1,16 @@
 import type { Static, TSchema } from "typebox";
 import { Compile, type Validator } from "typebox/compile";
 import type { TLocalizedValidationError } from "typebox/error";
+import { Settings } from "typebox/system";
 
 import { messageFor, REQUIRED_MESSAGE } from "./locale";
+
+/**
+ * TypeBox stops collecting diagnostics after `maxErrors` (default 8, a guard against unbounded
+ * buffering). The signup body alone has 14 fields, so a 422 or the form would hide errors past the
+ * eighth. 64 still bounds the work per request.
+ */
+Settings.Set({ maxErrors: 64 });
 
 /** Standard Schema v1 (https://standardschema.dev), declared locally to avoid a dependency. */
 export interface StandardSchemaV1<Input = unknown, Output = Input> {

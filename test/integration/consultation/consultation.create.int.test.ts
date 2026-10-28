@@ -19,6 +19,7 @@ import {
   readView,
   signupBody,
   uniqueCpf,
+  validAddress,
 } from "./consultation-client";
 
 // No worker runs in this file: every attempt stays PENDING and every job stays queued.
@@ -154,6 +155,110 @@ describe("POST /consultations", () => {
     const after = await readView(id);
     expect(after.treatmentAmountCents).toBe(1_000_000);
     expect(after).toEqual(before);
+  });
+
+  it("reports every invalid field at once, past TypeBox's default error cap", async () => {
+    const response = await postConsultation({
+      fullName: "Ana",
+      cpf: "529.982.247-24",
+      birthdate: "2015-01-01",
+      phone: "(00) 1234-5678",
+      monthlyIncomeCents: -1,
+      treatmentAmountCents: 1,
+      address: {
+        cep: "00000-000",
+        street: " ",
+        number: "",
+        neighborhood: "",
+        city: "",
+        state: "XX",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    const paths = new Set((await readProblem(response)).fields?.map((field) => field.path));
+    expect([...paths].sort()).toEqual(
+      [
+        "address.cep",
+        "address.city",
+        "address.neighborhood",
+        "address.number",
+        "address.state",
+        "address.street",
+        "birthdate",
+        "cpf",
+        "fullName",
+        "monthlyIncomeCents",
+        "phone",
+        "treatmentAmountCents",
+      ].sort(),
+    );
+  });
+
+  it("requires an address", async () => {
+    const response = await postConsultation({ ...signupBody(), address: undefined });
+
+    expect(response.status).toBe(422);
+    const body = await readProblem(response);
+    expect(body.code).toBe("VALIDATION");
+    expect(body.fields?.map((field) => field.path)).toEqual(["address"]);
+  });
+
+  it("rejects each invalid address field at its address path", async () => {
+    const response = await postConsultation({
+      ...signupBody(),
+      address: {
+        cep: "00000-000",
+        street: "   ",
+        number: "  ",
+        complement: "x".repeat(61),
+        neighborhood: "",
+        city: " ",
+        state: "XX",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    const fields = (await readProblem(response)).fields ?? [];
+    expect(fields).toHaveLength(7);
+    expect(Object.fromEntries(fields.map((field) => [field.path, field.message]))).toEqual({
+      "address.cep": "CEP inválido",
+      "address.street": "Informe a rua",
+      "address.number": "Informe o número (ou S/N)",
+      "address.complement": "Deve ter no máximo 60 caracteres",
+      "address.neighborhood": "Informe o bairro",
+      "address.city": "Informe a cidade",
+      "address.state": "Selecione a UF",
+    });
+  });
+
+  it("accepts a free-text number and an empty complement", async () => {
+    for (const address of [
+      validAddress({ number: "S/N", complement: "" }),
+      validAddress({ cep: "01310100", number: "123A", complement: "Apto 42" }),
+    ]) {
+      expect((await postConsultation(signupBody({ address }))).status).toBe(202);
+    }
+  });
+
+  it("treats the address as part of the idempotent request", async () => {
+    const key = randomUUID();
+    const original = signupBody({ address: validAddress({ complement: "" }) });
+    const id = await readCreatedId(await postConsultation(original, { key }));
+
+    // The same address written differently is the same request.
+    const same = await postConsultation(
+      { ...original, address: validAddress({ cep: "01310100", street: "  Avenida Paulista " }) },
+      { key },
+    );
+    expect(await readCreatedId(same)).toBe(id);
+
+    const moved = await postConsultation(
+      { ...original, address: validAddress({ number: "1579" }) },
+      { key },
+    );
+    expect(moved.status).toBe(422);
+    expect((await readProblem(moved)).code).toBe("IDEMPOTENCY_KEY_REUSED");
   });
 
   it("reuses the patient for a known CPF", async () => {

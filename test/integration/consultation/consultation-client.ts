@@ -1,5 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 
+import type { Address } from "#/lib/address/address";
 import { cpfCheckDigits } from "#/lib/cpf/cpf";
 import type { SimulationScenario } from "#/lib/enums";
 import { Compile } from "typebox/compile";
@@ -82,12 +83,26 @@ export function birthdateTurningTomorrow(age: number, today: Date = new Date()):
   return localIsoDate(date);
 }
 
+/** A valid address, as the form sends it after a CEP lookup (masked CEP). */
+export function validAddress(overrides: Partial<Address> = {}): Address {
+  return {
+    cep: "01310-100",
+    street: "Avenida Paulista",
+    number: "1578",
+    neighborhood: "Bela Vista",
+    city: "São Paulo",
+    state: "SP",
+    ...overrides,
+  };
+}
+
 export function signupBody(overrides: Partial<SignupRequest> = {}): SignupRequest {
   return {
     fullName: "Maria da Silva",
     cpf: uniqueCpf(),
     birthdate: birthdateTurning(40),
     phone: "11987654321",
+    address: validAddress(),
     monthlyIncomeCents: 1_000_000,
     treatmentAmountCents: 1_000_000,
     ...overrides,

@@ -42,7 +42,10 @@ const schema = {
   RATE_LIMIT_PATIENT_MAX: intAtLeast(1, 5),
   RATE_LIMIT_PATIENT_WINDOW_HOURS: intAtLeast(1, 24),
   RATE_LIMIT_IP_MAX: intAtLeast(1, 30),
+  RATE_LIMIT_LOOKUP_IP_MAX: intAtLeast(1, 120),
   RATE_LIMIT_IP_WINDOW_MINUTES: intAtLeast(1, 60),
+  VIACEP_BASE_URL: Type.String({ pattern: "^https?://", default: "https://viacep.com.br" }),
+  VIACEP_TIMEOUT_MS: intAtLeast(1, 3_000),
   GIT_SHA: Type.String({ minLength: 1, default: "dev" }),
   APP_DOMAIN: Type.Union([Type.Undefined(), Type.String({ minLength: 1 })]),
 } satisfies Record<string, TSchema>;

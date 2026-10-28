@@ -1,11 +1,32 @@
+import { type Address, normalizeAddress } from "#/lib/address/address";
 import { normalizeCpf } from "#/lib/cpf/cpf";
 import { normalizePhone } from "#/lib/phone/phone";
 import type { Tx } from "#/server/infra/db/client";
 import { cpfCrypto } from "#/server/lib/crypto/cpf-crypto";
 
-import { patientRepository } from "./patient.repository";
+import { type PatientAddressColumns, patientRepository } from "./patient.repository";
 
-export type PatientInput = { cpf: string; fullName: string; birthdate: string; phone: string };
+export type PatientInput = {
+  cpf: string;
+  fullName: string;
+  birthdate: string;
+  phone: string;
+  address: Address;
+};
+
+/** The normalised address as columns (`complement` null when absent). */
+function addressColumns(input: Address): PatientAddressColumns {
+  const address = normalizeAddress(input);
+  return {
+    addressCep: address.cep,
+    addressStreet: address.street,
+    addressNumber: address.number,
+    addressComplement: address.complement ?? null,
+    addressNeighborhood: address.neighborhood,
+    addressCity: address.city,
+    addressState: address.state,
+  };
+}
 
 export const patientService = {
   /**
@@ -22,6 +43,7 @@ export const patientService = {
       fullName: input.fullName.trim(),
       birthdate: input.birthdate,
       phone: normalizePhone(input.phone),
+      ...addressColumns(input.address),
     });
     await patientRepository.lockById(tx, id);
     return id;

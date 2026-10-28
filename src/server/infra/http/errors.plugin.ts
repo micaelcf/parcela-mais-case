@@ -15,6 +15,8 @@ const TITLES: Record<ErrorCode, string> = {
   OFFER_NOT_FOUND: "Oferta não encontrada",
   CHOICE_CONFLICT: "Outra oferta já foi escolhida",
   REQUOTE_NOT_ALLOWED: "Nova simulação não permitida",
+  CEP_NOT_FOUND: "CEP não encontrado",
+  ADDRESS_LOOKUP_UNAVAILABLE: "Consulta de CEP indisponível",
   UNAUTHENTICATED: "Sessão inválida",
   INVALID_CREDENTIALS: "Usuário ou senha inválidos",
   NOT_FOUND: "Recurso não encontrado",

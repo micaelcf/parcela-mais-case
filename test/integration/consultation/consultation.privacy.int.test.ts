@@ -1,6 +1,7 @@
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 
+import type { Address } from "#/lib/address/address";
 import { cpfCheckDigits } from "#/lib/cpf/cpf";
 import type { ConsultationPublicView } from "#/server/modules/consultation/consultation.dto";
 import { createWorker } from "#/server/worker";
@@ -33,11 +34,22 @@ const PHONE_DIGITS = "21976543210";
 const INCOME_CENTS = 8_765_431;
 const BIRTHDATE = birthdateTurning(44);
 const [FIRST_NAME, ...OTHER_NAMES] = ["Joana", "Ribeiro", "Castanheira"];
+/** A distinctive address: none of its street, number, neighbourhood or CEP may surface publicly. */
+const ADDRESS: Address = {
+  cep: "13087-415",
+  street: "Rua Quixabeira Azulada",
+  number: "4827B",
+  complement: "Bloco Jatobá",
+  neighborhood: "Jardim Ipezal",
+  city: "Campinas",
+  state: "SP",
+};
 const PATIENT = {
   fullName: [FIRST_NAME, ...OTHER_NAMES].join(" "),
   cpf: formatCpf(CPF),
   birthdate: BIRTHDATE,
   phone: "(21) 97654-3210",
+  address: ADDRESS,
   monthlyIncomeCents: INCOME_CENTS,
   treatmentAmountCents: 1_200_000,
 };
@@ -226,6 +238,27 @@ describe("public payload privacy", () => {
     // 5 GETs + at least one snapshot per stream + the two choose responses.
     expect(firstNames.length).toBeGreaterThanOrEqual(12);
     expect(new Set(firstNames)).toEqual(new Set([FIRST_NAME]));
+  });
+
+  it("public payloads carry no address", () => {
+    const { keys, values } = leaves(payloads.all);
+    const cepDigits = ADDRESS.cep.replace(/\D/g, "");
+    const forbidden = [
+      ADDRESS.cep,
+      cepDigits,
+      ADDRESS.street,
+      ADDRESS.number,
+      ADDRESS.complement ?? "",
+      ADDRESS.neighborhood,
+    ].map((needle) => needle.toLowerCase());
+    const leaking = scannedStrings(payloads.all).filter((value) =>
+      forbidden.some((needle) => value.toLowerCase().includes(needle)),
+    );
+    expect(leaking).toEqual([]);
+    expect(values.filter((value) => Number(value) === Number(cepDigits))).toEqual([]);
+    expect(keys.filter((key) => /^(address|cep|street|number|neighborhood)$/i.test(key))).toEqual(
+      [],
+    );
   });
 
   it("never stores the CPF in plaintext", async () => {

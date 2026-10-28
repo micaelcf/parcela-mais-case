@@ -4,6 +4,7 @@ import { Elysia, setupTypebox } from "elysia";
 
 import { errorsPlugin } from "#/server/infra/http/errors.plugin";
 import { simulatorPlugin } from "#/server/integrations/lenders/simulator/simulator.plugin";
+import { addressRoutes } from "#/server/modules/address/address.routes";
 import { backofficeCookieConfig } from "#/server/modules/backoffice/auth/backoffice-auth.plugin";
 import { backofficeRoutes } from "#/server/modules/backoffice/backoffice.routes";
 import { consultationRoutes } from "#/server/modules/consultation/consultation.routes";
@@ -18,6 +19,7 @@ export const app = new Elysia({ prefix: "/api", cookie: backofficeCookieConfig }
   .use(systemRoutes)
   .use(simulatorPlugin)
   .use(consultationRoutes)
+  .use(addressRoutes)
   .use(backofficeRoutes);
 
 export type App = typeof app;

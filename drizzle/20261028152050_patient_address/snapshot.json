@@ -1,0 +1,193 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "29e5c7fe-e272-4ca4-8ee6-d90674441b88",
+  "prevIds": ["a54f36b5-51f5-4100-a42b-4a99745c7d23"],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "patient", "address_cep"],
+      "writes": [
+        "s|col|public.patient.address_cep",
+        "n|col|public.patient.address_cep",
+        "e|col|public.patient.address_cep"
+      ],
+      "reads": ["n|tbl|public.patient", "n|sch|public"]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "patient", "address_street"],
+      "writes": [
+        "s|col|public.patient.address_street",
+        "n|col|public.patient.address_street",
+        "e|col|public.patient.address_street"
+      ],
+      "reads": ["n|tbl|public.patient", "n|sch|public"]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "patient", "address_number"],
+      "writes": [
+        "s|col|public.patient.address_number",
+        "n|col|public.patient.address_number",
+        "e|col|public.patient.address_number"
+      ],
+      "reads": ["n|tbl|public.patient", "n|sch|public"]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "patient", "address_complement"],
+      "writes": [
+        "s|col|public.patient.address_complement",
+        "n|col|public.patient.address_complement",
+        "e|col|public.patient.address_complement"
+      ],
+      "reads": ["n|tbl|public.patient", "n|sch|public"]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "patient", "address_neighborhood"],
+      "writes": [
+        "s|col|public.patient.address_neighborhood",
+        "n|col|public.patient.address_neighborhood",
+        "e|col|public.patient.address_neighborhood"
+      ],
+      "reads": ["n|tbl|public.patient", "n|sch|public"]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "patient", "address_city"],
+      "writes": [
+        "s|col|public.patient.address_city",
+        "n|col|public.patient.address_city",
+        "e|col|public.patient.address_city"
+      ],
+      "reads": ["n|tbl|public.patient", "n|sch|public"]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "patient", "address_state"],
+      "writes": [
+        "s|col|public.patient.address_state",
+        "n|col|public.patient.address_state",
+        "e|col|public.patient.address_state"
+      ],
+      "reads": ["n|tbl|public.patient", "n|sch|public"]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "patient",
+        "name": "address_cep",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "patient",
+        "name": "address_street",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "patient",
+        "name": "address_number",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "patient",
+        "name": "address_complement",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "patient",
+        "name": "address_neighborhood",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "patient",
+        "name": "address_city",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "patient",
+        "name": "address_state",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

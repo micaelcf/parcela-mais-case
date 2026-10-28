@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { fromDrizzle } from "pg-boss";
 
+import { normalizeAddress } from "#/lib/address/address";
 import { normalizeCpf } from "#/lib/cpf/cpf";
 import type { SimulationScenario } from "#/lib/enums";
 import { normalizePhone } from "#/lib/phone/phone";
@@ -42,6 +43,8 @@ function requestHashOf(body: SignupRequest): string {
     body.monthlyIncomeCents,
     body.treatmentAmountCents,
     body.simulationScenario ?? "NORMAL",
+    // Built in a fixed key order, so its serialisation is canonical too.
+    normalizeAddress(body.address),
   ]);
   return createHash("sha256").update(canonical).digest("hex");
 }

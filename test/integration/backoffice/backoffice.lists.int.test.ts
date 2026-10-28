@@ -167,6 +167,60 @@ describe("backoffice consultation explorer", () => {
     expect(detail.choice?.offerId).toBe(offer.id);
   });
 
+  it("shows the patient address normalised, the latest submission winning", async () => {
+    const cpf = uniqueCpf();
+    const first = await createConsultation({
+      cpf,
+      address: {
+        cep: "01310-100",
+        street: "  Avenida Paulista ",
+        number: " 1578 ",
+        complement: "  Conjunto 12 ",
+        neighborhood: " Bela Vista",
+        city: "São Paulo ",
+        state: "SP",
+      },
+    });
+
+    const firstDetail = await getOk(`/consultations/${first}`, cookie, ConsultationDetailSchema);
+    expect(firstDetail.patient.address).toEqual({
+      cep: "01310100",
+      street: "Avenida Paulista",
+      number: "1578",
+      complement: "Conjunto 12",
+      neighborhood: "Bela Vista",
+      city: "São Paulo",
+      state: "SP",
+    });
+
+    // Same CPF, new address without a complement: the patient keeps only the latest one.
+    const second = await createConsultation({
+      cpf,
+      address: {
+        cep: "20040002",
+        street: "Rua da Assembleia",
+        number: "S/N",
+        complement: "   ",
+        neighborhood: "Centro",
+        city: "Rio de Janeiro",
+        state: "RJ",
+      },
+    });
+    const expected = {
+      cep: "20040002",
+      street: "Rua da Assembleia",
+      number: "S/N",
+      complement: null,
+      neighborhood: "Centro",
+      city: "Rio de Janeiro",
+      state: "RJ",
+    };
+    for (const id of [first, second]) {
+      const detail = await getOk(`/consultations/${id}`, cookie, ConsultationDetailSchema);
+      expect(detail.patient.address).toEqual(expected);
+    }
+  });
+
   it("finds consultations by exact CPF only", async () => {
     const cpf = uniqueCpf();
     const first = await createConsultation({ cpf }, "NONE_APPROVE");
