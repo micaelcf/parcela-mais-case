@@ -10,11 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as CadastroContatoRouteImport } from './routes/cadastro.contato'
+import { Route as CadastroFinanceiroRouteImport } from './routes/cadastro.financeiro'
+import { Route as CadastroPacienteRouteImport } from './routes/cadastro.paciente'
+import { Route as ConsultasConsultationIdRouteImport } from './routes/consultas.$consultationId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
@@ -22,31 +32,90 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CadastroContatoRoute = CadastroContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
+  getParentRoute: () => CadastroRoute,
+} as any)
+const CadastroFinanceiroRoute = CadastroFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => CadastroRoute,
+} as any)
+const CadastroPacienteRoute = CadastroPacienteRouteImport.update({
+  id: '/paciente',
+  path: '/paciente',
+  getParentRoute: () => CadastroRoute,
+} as any)
+const ConsultasConsultationIdRoute = ConsultasConsultationIdRouteImport.update({
+  id: '/consultas/$consultationId',
+  path: '/consultas/$consultationId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cadastro': typeof CadastroRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/cadastro/contato': typeof CadastroContatoRoute
+  '/cadastro/financeiro': typeof CadastroFinanceiroRoute
+  '/cadastro/paciente': typeof CadastroPacienteRoute
+  '/consultas/$consultationId': typeof ConsultasConsultationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cadastro': typeof CadastroRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/cadastro/contato': typeof CadastroContatoRoute
+  '/cadastro/financeiro': typeof CadastroFinanceiroRoute
+  '/cadastro/paciente': typeof CadastroPacienteRoute
+  '/consultas/$consultationId': typeof ConsultasConsultationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cadastro': typeof CadastroRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/cadastro/contato': typeof CadastroContatoRoute
+  '/cadastro/financeiro': typeof CadastroFinanceiroRoute
+  '/cadastro/paciente': typeof CadastroPacienteRoute
+  '/consultas/$consultationId': typeof ConsultasConsultationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/$'
+  fullPaths:
+    | '/'
+    | '/cadastro'
+    | '/api/$'
+    | '/cadastro/contato'
+    | '/cadastro/financeiro'
+    | '/cadastro/paciente'
+    | '/consultas/$consultationId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/$'
-  id: '__root__' | '/' | '/api/$'
+  to:
+    | '/'
+    | '/cadastro'
+    | '/api/$'
+    | '/cadastro/contato'
+    | '/cadastro/financeiro'
+    | '/cadastro/paciente'
+    | '/consultas/$consultationId'
+  id:
+    | '__root__'
+    | '/'
+    | '/cadastro'
+    | '/api/$'
+    | '/cadastro/contato'
+    | '/cadastro/financeiro'
+    | '/cadastro/paciente'
+    | '/consultas/$consultationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CadastroRoute: typeof CadastroRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
+  ConsultasConsultationIdRoute: typeof ConsultasConsultationIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +127,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/$': {
       id: '/api/$'
       path: '/api/$'
@@ -65,12 +141,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cadastro/contato': {
+      id: '/cadastro/contato'
+      path: '/contato'
+      fullPath: '/cadastro/contato'
+      preLoaderRoute: typeof CadastroContatoRouteImport
+      parentRoute: typeof CadastroRoute
+    }
+    '/cadastro/financeiro': {
+      id: '/cadastro/financeiro'
+      path: '/financeiro'
+      fullPath: '/cadastro/financeiro'
+      preLoaderRoute: typeof CadastroFinanceiroRouteImport
+      parentRoute: typeof CadastroRoute
+    }
+    '/cadastro/paciente': {
+      id: '/cadastro/paciente'
+      path: '/paciente'
+      fullPath: '/cadastro/paciente'
+      preLoaderRoute: typeof CadastroPacienteRouteImport
+      parentRoute: typeof CadastroRoute
+    }
+    '/consultas/$consultationId': {
+      id: '/consultas/$consultationId'
+      path: '/consultas/$consultationId'
+      fullPath: '/consultas/$consultationId'
+      preLoaderRoute: typeof ConsultasConsultationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface CadastroRouteChildren {
+  CadastroContatoRoute: typeof CadastroContatoRoute
+  CadastroFinanceiroRoute: typeof CadastroFinanceiroRoute
+  CadastroPacienteRoute: typeof CadastroPacienteRoute
+}
+
+const CadastroRouteChildren: CadastroRouteChildren = {
+  CadastroContatoRoute: CadastroContatoRoute,
+  CadastroFinanceiroRoute: CadastroFinanceiroRoute,
+  CadastroPacienteRoute: CadastroPacienteRoute,
+}
+
+const CadastroRouteWithChildren = CadastroRoute._addFileChildren(
+  CadastroRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CadastroRoute: CadastroRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
+  ConsultasConsultationIdRoute: ConsultasConsultationIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
