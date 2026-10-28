@@ -12,8 +12,8 @@ Proof: `vp run e2e test/e2e/address.spec.ts -g "announces the lookup while it ru
 **C178** · RF-112 — a new CEP refills street/neighborhood/city/UF and clears number/complement
 Proof: `vp run e2e test/e2e/address.spec.ts -g "refills the address when the CEP changes"`
 
-**C179** · RF-113 — an unknown CEP shows `CEP não encontrado` on the CEP field and keeps the address fields hidden
-Proof: `vp run e2e test/e2e/address.spec.ts -g "flags a CEP that doesn't exist"`
+**C179** · RF-113 — an unknown CEP shows `CEP não encontrado` on the CEP field once it's left (RFC D30) and keeps the address fields hidden
+Proof: `vp run e2e test/e2e/address.spec.ts -g "flags a CEP that doesn't exist once it's left"`
 
 **C180** · RF-113 — `Próximo` with an unresolved CEP stays on step 1 with the error on the CEP field, never focusing a hidden field
 Proof: `vp run e2e test/e2e/address.spec.ts -g "keeps Próximo on the step until the CEP resolves"`
@@ -49,7 +49,7 @@ Proof: `vp test test/integration/address/address.int.test.ts -t "caps lookups pe
 Proof: `vp run e2e test/e2e/address.spec.ts -g "answers a malformed CEP from the real route"`
 
 **C191** · RF-104 (RFC D28) — the birthdate is a masked `dd/mm/aaaa` input with a calendar popover; picking from the month/year dropdowns fills it, by mouse and by keyboard (focus returns to the trigger); `31/02/1990` is invalid
-Proof: `vp run e2e test/e2e/signup.spec.ts -g "picks the birthdate from the calendar"`, `vp run e2e test/e2e/a11y.spec.ts -g "picks the birthdate from the calendar by keyboard"`, `vp test src/components/date-picker/date-text.test.ts`
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "picks the birthdate from the calendar"`, `vp run e2e test/e2e/a11y.spec.ts -g "picks the birthdate from the calendar by keyboard"`, `vp test src/lib/date/date-text.test.ts` (moved 2026-10-28; superseded in form by C204)
 
 **C192** · RF-103, RF-104, RF-105 — a 422 and the form list every invalid field at once (12 here), past TypeBox's default `maxErrors` of 8 (now 64)
 Proof: `vp test test/integration/consultation/consultation.create.int.test.ts -t "reports every invalid field at once, past TypeBox's default error cap"`, `vp test src/components/modules/signup/signup-form.test.ts -t "reports every invalid field at once, past TypeBox's error cap"`

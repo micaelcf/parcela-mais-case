@@ -529,6 +529,16 @@ The user asked for a full address in step 1, right after the birthdate. The CEP 
 
 **Decision.** No native `type="date"` inputs or `<select>` elements: dates use a shadcn-pattern date picker (masked `dd/mm/aaaa` input plus a `Popover` + `Calendar` with month/year dropdowns), choices use the shadcn `Select`. Values on the wire are unchanged (`YYYY-MM-DD`).
 
+**Amendment (2026-10-28, user request).** The date picker is shadcn's base "Date Picker → Input" example as published (`InputGroup` + `InputGroupButton` + `Popover` + `Calendar`, registry primitives installed with the CLI), wrapped once in `src/components/ui/date-picker.tsx`; no custom calendar internals. Every reusable design-system piece lives in `src/components/ui/` (including the new `stepper.tsx`).
+
+### D29. Route files: directories for anything nested two or more levels (user rule, 2026-10-28)
+
+**Decision.** A path nested two or more levels uses TanStack directory routes (`cadastro/route.tsx`, `cadastro/paciente.tsx`, `backoffice/consultas/index.tsx`, `api/$.ts`); flat `.` names only for single-level pages. URLs are unchanged.
+
+### D30. Signup form ergonomics (user request, 2026-10-28)
+
+**Decision.** (a) Fields validate on blur and on submit (`Próximo`/send), never while typing: a multistep form shouldn't scold a half-typed value. (b) The stepper shows each step's semantic icon, marks the active step (`aria-current="step"`, highlighted tile) and completed steps (drawn check), with React Bits Stepper's motion (spring glider, direction-aware slide + fade, height animation; reduced motion respected) in this app's visual language. (c) An optional patient e-mail on the contact step (`src/lib/email`: WHATWG local part, dotted domain with a 2+ letter TLD, ≤ 254 chars; stored trimmed and lower-cased; last write wins, so a resubmission without it clears it; in the idempotency hash; never public). (d) Table search keeps its 400 ms debounce (Enter applies at once, CPF-shaped text never sent), now through `@tanstack/react-pacer` instead of a hand-rolled timer.
+
 ### Supporting decisions taken by the agent during the grill (vetoable)
 
 From grill §3 (renamed AD*n* = grill §3 D*n*). Normative unless vetoed.
