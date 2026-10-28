@@ -9,6 +9,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 
 const GENERATED = ["src/routeTree.gen.ts"];
+/** CLI-owned shadcn components (bindings.md): not hand-edited, so not linted; still type-checked. */
+const VENDORED = ["src/components/ui/**"];
 
 /** Test-only values; never valid outside a test run. Password: "senha-de-teste". */
 const testEnv = {
@@ -36,7 +38,7 @@ const config = defineConfig({
     ignorePatterns: GENERATED,
   },
   lint: {
-    ignorePatterns: GENERATED,
+    ignorePatterns: [...GENERATED, ...VENDORED],
     jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
     rules: { "vite-plus/prefer-vite-plus-imports": "error" },
     options: { typeAware: true, typeCheck: true },
