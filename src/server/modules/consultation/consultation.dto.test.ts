@@ -135,4 +135,22 @@ describe("consultation public view", () => {
     });
     expect(toConsultationPublicView(withOffer).suggestion).toBeNull();
   });
+
+  it("keeps lender refusal limits out of the attempts", () => {
+    // Alfa's NORMAL limit is the income × 10: the public view must not carry it.
+    const view = toConsultationPublicView(
+      rows({
+        quoteStatus: "SETTLED",
+        treatmentAmountCents: 2_400_000,
+        attempts: [
+          attempt("ALFA", "REFUSED", "AMOUNT_ABOVE_LIMIT", 2_345_670),
+          attempt("BETA", "APPROVED"),
+          attempt("GAMA", "REFUSED", "AMOUNT_ABOVE_LIMIT", 2_000_000),
+        ],
+        offers: [offer("BETA", 12)],
+      }),
+    );
+    for (const item of view.attempts) expect(item).not.toHaveProperty("maxApprovableCents");
+    expect(JSON.stringify(view)).not.toMatch(/2345670|2000000/);
+  });
 });

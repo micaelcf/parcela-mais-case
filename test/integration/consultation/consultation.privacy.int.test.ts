@@ -16,6 +16,7 @@ import {
   readEvents,
   readView,
   type StreamEvent,
+  uniqueCpf,
   waitSettled,
 } from "./consultation-client";
 
@@ -41,11 +42,35 @@ const PATIENT = {
   treatmentAmountCents: 1_200_000,
 };
 
+/**
+ * A second patient whose NORMAL journeys make Alfa refuse with its income × 10 limit: the amounts
+ * exceed that limit (Beta still approves 60 %), so the lender's refusal carries a number derived
+ * from the income.
+ */
+const LOW_INCOME_CENTS = 234_567;
+const ALFA_LIMIT_CENTS = LOW_INCOME_CENTS * 10;
+const LOW_INCOME_PATIENT = {
+  ...PATIENT,
+  cpf: formatCpf(uniqueCpf()),
+  monthlyIncomeCents: LOW_INCOME_CENTS,
+  treatmentAmountCents: 2_400_000,
+};
+
+/** Income figures in cents (and their BRL decimals) that no public payload may carry. */
+const INCOME_DERIVED_CENTS = [INCOME_CENTS, INCOME_CENTS * 10, LOW_INCOME_CENTS, ALFA_LIMIT_CENTS];
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
-/** Every public payload of one patient's journey: GETs, SSE snapshots, choose and requote bodies. */
-type Payloads = { views: ConsultationPublicView[]; all: unknown[] };
+/**
+ * Every public payload of the journeys: GETs, SSE snapshots, choose and requote bodies;
+ * `incomeRefusals` are the NORMAL views where Alfa refused on income.
+ */
+type Payloads = {
+  views: ConsultationPublicView[];
+  incomeRefusals: ConsultationPublicView[];
+  all: unknown[];
+};
 
 async function snapshotsOf(
   stream: Promise<{ status: number; events: StreamEvent[] }>,
@@ -62,6 +87,12 @@ async function journeyPayloads(): Promise<Payloads> {
   const approvedStream = readEvents(approvedId);
   const refusedId = await createConsultation(PATIENT, "NONE_APPROVE");
   const refusedStream = readEvents(refusedId);
+  const normalId = await createConsultation(LOW_INCOME_PATIENT);
+  const normalStream = readEvents(normalId);
+  const lowRefusedId = await createConsultation(
+    { ...LOW_INCOME_PATIENT, treatmentAmountCents: 3_000_000 },
+    "NONE_APPROVE",
+  );
 
   const approved = await waitSettled(approvedId);
   const offer = approved.offers[0];
@@ -70,6 +101,13 @@ async function journeyPayloads(): Promise<Payloads> {
   expect(chosen.status).toBe(200);
   const chooseBody: unknown = await chosen.json();
 
+  const normal = await waitSettled(normalId);
+  const normalOffer = normal.offers[0];
+  if (!normalOffer) throw new Error("NORMAL produced no offer");
+  const normalChosen = await choose(normalId, normalOffer.id);
+  expect(normalChosen.status).toBe(200);
+  const normalChooseBody: unknown = await normalChosen.json();
+
   await waitSettled(refusedId);
   const requote = await postRequote(refusedId, { treatmentAmountCents: 600_000 });
   const requoteBody: unknown = JSON.parse(await requote.clone().text());
@@ -77,13 +115,29 @@ async function journeyPayloads(): Promise<Payloads> {
   const requotedStream = readEvents(requotedId);
   await waitSettled(requotedId);
 
+  await waitSettled(lowRefusedId);
+  const normalRequote = await postRequote(lowRefusedId, { treatmentAmountCents: 2_500_000 });
+  const normalRequoteBody: unknown = JSON.parse(await normalRequote.clone().text());
+  const normalRequotedId = await readCreatedId(normalRequote);
+  const normalRequotedStream = readEvents(normalRequotedId);
+  await waitSettled(normalRequotedId);
+
   const snapshots = [
     ...(await snapshotsOf(approvedStream)),
     ...(await snapshotsOf(refusedStream)),
     ...(await snapshotsOf(requotedStream)),
+    ...(await snapshotsOf(normalStream)),
+    ...(await snapshotsOf(normalRequotedStream)),
   ];
-  const views = await Promise.all([approvedId, refusedId, requotedId].map(readView));
-  return { views, all: [...views, ...snapshots, chooseBody, requoteBody] };
+  const incomeRefusalIds = [normalId, normalRequotedId];
+  const views = await Promise.all(
+    [approvedId, refusedId, requotedId, ...incomeRefusalIds].map(readView),
+  );
+  return {
+    views,
+    incomeRefusals: views.slice(-incomeRefusalIds.length),
+    all: [...views, ...snapshots, chooseBody, normalChooseBody, requoteBody, normalRequoteBody],
+  };
 }
 
 let payloads: Payloads;
@@ -133,23 +187,35 @@ describe("public payload privacy", () => {
   });
 
   it("public payloads carry only the first name", () => {
-    const { values } = leaves(payloads.all);
+    const { keys, values } = leaves(payloads.all);
     const strings = scannedStrings(payloads.all);
     const [year, month, day] = BIRTHDATE.split("-");
     const forbidden = [
       BIRTHDATE,
       `${day}/${month}/${year}`,
       PHONE_DIGITS,
-      String(INCOME_CENTS),
+      ...INCOME_DERIVED_CENTS.map(String),
       ...OTHER_NAMES.map((name) => name.toLowerCase()),
     ];
     const leaking = strings.filter((value) =>
       forbidden.some((needle) => value.toLowerCase().includes(needle)),
     );
     expect(leaking).toEqual([]);
-    expect(
-      values.filter((value) => value === INCOME_CENTS || value === Number(PHONE_DIGITS)),
-    ).toEqual([]);
+    const forbiddenNumbers = [
+      Number(PHONE_DIGITS),
+      ...INCOME_DERIVED_CENTS,
+      ...INCOME_DERIVED_CENTS.map((cents) => cents / 100),
+    ];
+    expect(values.filter((value) => forbiddenNumbers.includes(Number(value)))).toEqual([]);
+    expect(keys.filter((key) => key === "maxApprovableCents")).toEqual([]);
+
+    // Positive control: Alfa did refuse on income in both NORMAL journeys.
+    for (const view of payloads.incomeRefusals) {
+      expect(view.attempts.find((attempt) => attempt.lender === "ALFA")).toMatchObject({
+        status: "REFUSED",
+        reason: "AMOUNT_ABOVE_LIMIT",
+      });
+    }
 
     for (const view of payloads.views) expect(view.patientFirstName).toBe(FIRST_NAME);
     const firstNames = payloads.all.flatMap((payload) =>
@@ -157,8 +223,8 @@ describe("public payload privacy", () => {
         ? [payload.patientFirstName]
         : [],
     );
-    // 3 GETs + at least one snapshot per stream + the choose response.
-    expect(firstNames.length).toBeGreaterThanOrEqual(7);
+    // 5 GETs + at least one snapshot per stream + the two choose responses.
+    expect(firstNames.length).toBeGreaterThanOrEqual(12);
     expect(new Set(firstNames)).toEqual(new Set([FIRST_NAME]));
   });
 

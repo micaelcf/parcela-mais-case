@@ -131,7 +131,6 @@ export const AttemptViewSchema = Type.Object({
   reason: Nullable(Type.Enum(ATTEMPT_REASONS)),
   approvedCents: Nullable(Type.Integer()),
   monthlyRate: Nullable(Type.String()),
-  maxApprovableCents: Nullable(Type.Integer()),
   settledAt: Nullable(Type.String()),
 });
 
@@ -186,6 +185,7 @@ export type ConsultationViewRows = {
     reason: AttemptReason | null;
     approvedCents: number | null;
     monthlyRate: string | null;
+    /** Feeds `suggestion` only; never copied into the view (RF-502: Alfa's is income × 10). */
     maxApprovableCents: number | null;
     settledAt: Date | null;
   }>;
@@ -242,7 +242,6 @@ export function toConsultationPublicView(rows: ConsultationViewRows): Consultati
       reason: attempt.reason,
       approvedCents: attempt.approvedCents,
       monthlyRate: attempt.monthlyRate,
-      maxApprovableCents: attempt.maxApprovableCents,
       settledAt: iso(attempt.settledAt),
     }));
   const offers = [...rows.offers]
