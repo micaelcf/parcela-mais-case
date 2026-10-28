@@ -68,7 +68,7 @@ Amended 2026-10-28 (implementation): a forced outcome must reach the worker befo
 
 ## Throttle (`throttle.plugin.ts`)
 
-`onBeforeHandle` on the two POST routes: insert a `request_throttle` row (`ip_hmac` from `client-ip.ts`, `route`), **before** body validation, then count rows for `(ip_hmac, route)` in the window. Over the limit → 429 `IP_LIMIT`. `onAfterResponse` writes `status_code`/`error_code` on that row. With no `X-Forwarded-For` (dev without Caddy) the IP is the literal `"local"`.
+On the throttled routes (create and requote POSTs, and since 2026-10-28 the `GET /addresses/:cep` lookup): insert a `request_throttle` row (`ip_hmac` from `client-ip.ts`, `route`), **before** validation, then count rows for `(ip_hmac, route)` in `RATE_LIMIT_IP_WINDOW_MINUTES`. Over the route's cap (`RATE_LIMIT_IP_MAX` for `consultation.create`/`consultation.requote`, `RATE_LIMIT_LOOKUP_IP_MAX` for `address.lookup`) → 429 `IP_LIMIT`. POSTs are counted in `parse`; Elysia never runs `parse` on a GET, so `transform` counts any request `parse` didn't (still before validation). `onAfterResponse` writes `status_code`/`error_code` on that row. With no `X-Forwarded-For` (dev without Caddy) the IP is the literal `"local"`.
 
 Amended 2026-10-28 (implementation): in Elysia 2 `onBeforeHandle` runs **after** validation, so it can't count invalid requests. The guard is a `throttle` macro: its route-scoped `parse` hook inserts and counts before the body is read (so malformed JSON counts too), `transform` raises the stored `IP_LIMIT` before validation (errors thrown in `parse` arrive wrapped as `ParseError`), and `afterResponse` writes the outcome. Malformed JSON under the cap answers 422 `VALIDATION`.
 

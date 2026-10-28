@@ -510,6 +510,25 @@ Page numbers and totals are the familiar admin UX. One format makes "sort by any
 
 **Decision.** Request `?page=&pageSize=&sort=field:dir&q=&<field filters>`; response `{ items, page, pageSize, total, totalPages }`. One TypeBox contract and one front table component serve every list.
 
+### D27. The patient's address, looked up by CEP through our API (user request, 2026-10-28)
+
+The user asked for a full address in step 1, right after the birthdate. The CEP comes first and is looked up on ViaCEP; the other fields appear only once the CEP resolved, prefilled.
+
+| Option                                   | Verdict                                                                                                                      |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| In step 1, right after the birthdate     | **Chosen** (user)                                                                                                            |
+| A separate "Endereço" step               | Rejected by user. Dissent preserved: step 1 becomes long                                                                     |
+| Lookup through `GET /api/addresses/:cep` | **Chosen** (user): server timeout, error mapping, cache and a per-IP cap; the browser only talks to us; testable with a fake |
+| Browser calls viacep.com.br directly     | Rejected by user: third-party dependency in the browser, no caching, E2E tied to the real service                            |
+
+**Evidence.** A (user decisions); B for ViaCEP's response shapes (`erro: true`/`"true"`, HTTP 400 for a malformed CEP).
+
+**Decision.** Request `address { cep, street, number, complement?, neighborhood, city, state }` (`src/lib/address`), required on create, part of the idempotency hash, stored normalised on the patient (last write wins, like the phone) in nullable columns: patients saved before this change have none. Never in public payloads (RF-502). The lookup answers 200/404 `CEP_NOT_FOUND`/503 `ADDRESS_LOOKUP_UNAVAILABLE`; when ViaCEP is unavailable the form reveals empty fields for manual entry, so ViaCEP is never on the submit path and the API doesn't cross-check the CEP against the city on submit. Lookups use the throttle with their own per-IP cap (`RATE_LIMIT_LOOKUP_IP_MAX`, default 120 per window: a clinic shares one IP) and a bounded in-process cache.
+
+### D28. Design-system inputs only (user request, 2026-10-28)
+
+**Decision.** No native `type="date"` inputs or `<select>` elements: dates use a shadcn-pattern date picker (masked `dd/mm/aaaa` input plus a `Popover` + `Calendar` with month/year dropdowns), choices use the shadcn `Select`. Values on the wire are unchanged (`YYYY-MM-DD`).
+
 ### Supporting decisions taken by the agent during the grill (vetoable)
 
 From grill §3 (renamed AD*n* = grill §3 D*n*). Normative unless vetoed.

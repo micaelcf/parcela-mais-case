@@ -38,6 +38,8 @@ Moving between steps never resets values: the form lives in the `cadastro` layou
 
 ## Forms and validation
 
+- **Design-system inputs only (RFC D28, 2026-10-28):** no native `type="date"`/`datetime-local` inputs and no `<select>` outside `src/components/ui/**`. Dates use the shared date picker (masked `dd/mm/aaaa` input + `Popover`/`Calendar` with month/year dropdowns; value ISO `YYYY-MM-DD`); choices use the shadcn `Select`.
+- **Address (RFC D27):** step 1 shows the CEP after the birthdate; the lookup goes through `src/api/addresses.ts` (`GET /api/addresses/:cep`); street, number, complement, neighborhood, city and UF appear only after the CEP resolves (found → prefilled, city/UF read-only; unavailable → empty and editable; not found → error on the CEP, fields hidden).
 - TanStack Form via `createFormHook` in `src/components/modules/signup/signup-form.ts` (pattern from the template's `src/hooks/demo.form.ts`, which is deleted).
 - The form-level validator is `toStandardSchema(SignupFormSchema)` on `onChange` + `onSubmit`. Field errors land on fields via issue paths (proven).
 - DTO schemas come from `server/modules/consultation/consultation.dto.ts` (drizzle-derived and refined; `CpfSchema` from `lib/cpf/cpf.ts`). Inputs keep raw strings; the schema works on normalised digits. Masking is display-only via zero-dependency formatters.

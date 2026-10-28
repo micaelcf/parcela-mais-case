@@ -51,7 +51,9 @@ src/server/
       simulator/                            # stand-in for the four external lenders
         simulator.plugin.ts                 # Elysia plugin at /simulator/lenders
         scenario.ts                         # scenario → per-lender behaviour (pure)
-        alfa.simulator.ts … delta.simulator.ts
+      alfa.simulator.ts … delta.simulator.ts
+    viacep/
+      viacep.adapter.ts                     # GET {VIACEP_BASE_URL}/ws/{cep}/json/ → found | not_found | unavailable (RFC D27). Never name server files `*.client.*`/`*.server.*`: TanStack Start's import protection stubs `*.client.*` in the server build
   modules/
     consultation/
       db/consultation.table.ts              db/consultation.relations.ts
@@ -61,7 +63,10 @@ src/server/
       consultation.routes.ts                # public routes + SSE
     patient/
       db/patient.table.ts                   db/patient.relations.ts
-      patient.repository.ts                 patient.service.ts        # upsert by cpf_hmac
+      patient.repository.ts                 patient.service.ts        # upsert by cpf_hmac (incl. the normalised address)
+    address/
+      address.routes.ts                     # GET /addresses/:cep (throttle route `address.lookup`)
+      address.service.ts                    # ViaCEP lookup + bounded in-process cache
     lender/                                 # our side of lending: attempts, breaker, kill switch
       db/lender-attempt.table.ts            db/lender-attempt.relations.ts
       db/lender-setting.table.ts            db/lender-switch-log.table.ts

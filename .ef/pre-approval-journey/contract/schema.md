@@ -26,18 +26,19 @@ Column conventions: ids `uuid().primaryKey().$defaultFn(uuidv7)`; money `bigint(
 
 ### `patient` (`modules/patient/db/patient.table.ts`)
 
-| Column                      | Type                               | Notes                                                                                                             |
-| --------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `id`                        | uuid pk                            | v7                                                                                                                |
-| `cpf_hmac`                  | bytea not null **unique**          | HMAC-SHA256(`PII_HMAC_KEY`, `"cpf:v1:" + 11 digits`)                                                              |
-| `cpf_ciphertext`            | bytea not null                     | `iv(12) ‖ ct(11) ‖ tag(16)`, AES-256-GCM, AAD = `cpf_hmac`                                                        |
-| `cpf_key_version`           | smallint not null                  |                                                                                                                   |
-| `full_name`                 | text not null                      | trimmed                                                                                                           |
-| `birthdate`                 | date not null                      |                                                                                                                   |
-| `phone`                     | text not null                      | the 11 national digits of a Brazilian mobile (`DDD` + `9` + 8), country/trunk prefix dropped (amended 2026-10-28) |
-| `created_at` / `updated_at` | timestamptz not null default now() |                                                                                                                   |
+| Column                          | Type                                                                                            | Notes                                                                                                                     |
+| ------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`                            | uuid pk                                                                                         | v7                                                                                                                        |
+| `cpf_hmac`                      | bytea not null **unique**                                                                       | HMAC-SHA256(`PII_HMAC_KEY`, `"cpf:v1:" + 11 digits`)                                                                      |
+| `cpf_ciphertext`                | bytea not null                                                                                  | `iv(12) ‖ ct(11) ‖ tag(16)`, AES-256-GCM, AAD = `cpf_hmac`                                                                |
+| `cpf_key_version`               | smallint not null                                                                               |                                                                                                                           |
+| `full_name`                     | text not null                                                                                   | trimmed                                                                                                                   |
+| `birthdate`                     | date not null                                                                                   |                                                                                                                           |
+| `phone`                         | text not null                                                                                   | the 11 national digits of a Brazilian mobile (`DDD` + `9` + 8), country/trunk prefix dropped (amended 2026-10-28)         |
+| `address_cep` … `address_state` | text null (7 columns: `cep`, `street`, `number`, `complement`, `neighborhood`, `city`, `state`) | normalised address (RFC D27, 2026-10-28); null for patients saved before addresses existed; `complement` null when absent |
+| `created_at` / `updated_at`     | timestamptz not null default now()                                                              |                                                                                                                           |
 
-Upsert: `ON CONFLICT (cpf_hmac) DO UPDATE SET full_name, birthdate, phone, updated_at`; never touches the ciphertext.
+Upsert: `ON CONFLICT (cpf_hmac) DO UPDATE SET full_name, birthdate, phone, address_*, updated_at`; never touches the ciphertext.
 
 ### `consultation` (`modules/consultation/db/consultation.table.ts`)
 
@@ -111,7 +112,7 @@ No UPDATE or DELETE path exists in `offer.repository.ts`.
 
 ### `request_throttle` (`modules/throttle/db/request-throttle.table.ts`)
 
-`id` uuid pk · `ip_hmac` bytea not null · `route` text not null (`consultation.create` | `consultation.requote`) · `status_code` smallint null (set after the response) · `error_code` text null (e.g. `IP_LIMIT`, `PATIENT_LIMIT`, `VALIDATION`) · `created_at` timestamptz not null default now(). Index `(ip_hmac, route, created_at)`, `(created_at, id)`. Rows older than the IP window + 24 h are purged by `throttle.purge`.
+`id` uuid pk · `ip_hmac` bytea not null · `route` text not null (`consultation.create` | `consultation.requote` | `address.lookup`) · `status_code` smallint null (set after the response) · `error_code` text null (e.g. `IP_LIMIT`, `PATIENT_LIMIT`, `VALIDATION`, `CEP_NOT_FOUND`) · `created_at` timestamptz not null default now(). Index `(ip_hmac, route, created_at)`, `(created_at, id)`. Rows older than the IP window + 24 h are purged by `throttle.purge`.
 
 ## Relations (by origin file)
 
