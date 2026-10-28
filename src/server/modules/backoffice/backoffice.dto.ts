@@ -135,7 +135,7 @@ export type LimitCode = (typeof LIMIT_CODES)[number];
 export const AbuseMetricsSchema = Type.Object({
   from: Type.String(),
   to: Type.String(),
-  /** Counted create/requote requests. */
+  /** Counted requests on every throttled route: create, requote and CEP lookups. */
   requests: Type.Integer(),
   limitHits: Type.Object({ IP_LIMIT: Type.Integer(), PATIENT_LIMIT: Type.Integer() }),
   /** Requests answered 429. */

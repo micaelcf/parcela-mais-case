@@ -84,7 +84,7 @@ const filters: DataTableFilter[] = [
   },
 ];
 
-/** Every counted create/requote request, server-paged (RF-614, RF-615). */
+/** Every counted request (create, requote, CEP lookup), server-paged (RF-614, RF-615). */
 export function ThrottleEventTable({
   list,
   query,
