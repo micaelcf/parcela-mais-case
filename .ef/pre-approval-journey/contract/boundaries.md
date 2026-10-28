@@ -6,7 +6,7 @@ Read by every backend slice. "TX" = one `db.transaction`. Every state change is 
 
 1. `INSERT … ON CONFLICT (idempotency_key) DO NOTHING RETURNING id` is attempted **last**, but the replay check runs first: `SELECT` by `idempotency_key`; if found, compare `request_hash`. Equal → return the existing id (202), no other effect. Different → `IDEMPOTENCY_KEY_REUSED`.
 2. Validate the scenario gate (`SIMULATION_DISABLED`).
-3. Upsert the patient by `cpf_hmac` (`patient.service`), then `SELECT … FOR UPDATE` the patient row (serialises concurrent creates for one CPF).
+3. Upsert the patient by `cpf_hmac` (`patient.service`), then `SELECT … FOR UPDATE` the patient row (serialises concurrent creates for one CPF), then **repeat the step-1 replay check** (amended 2026-10-28, audit A4: a same-key replay that waited on the lock must answer 202, not hit the cap).
 4. Count `consultation` rows for the patient within `RATE_LIMIT_PATIENT_WINDOW_HOURS`; ≥ max → `PATIENT_LIMIT` (rolls back the TX).
 5. Insert the consultation (`deadline_at = now + CONSULTATION_DEADLINE_MS`) and 4 `PENDING` attempts (scenario copied).
 6. `boss.send("lender.<code>", { attemptId }, { db: fromDrizzle(tx, sql) })` × 4 and `boss.send("consultation.finalize", { consultationId }, { db, startAfter: deadline_at })`.
@@ -20,7 +20,8 @@ A unique violation on `idempotency_key` racing step 1 is retried once as a repla
 2. **Gate** (same TX, `pg_advisory_xact_lock(hashtext('breaker:' || lender))`):
    a. `lender_setting.enabled = false` → settle `UNAVAILABLE/DISABLED` (no call).
    b. Breaker (`circuit-breaker.ts`, below) `OPEN` → settle `UNAVAILABLE/CIRCUIT_OPEN` (no call).
-   c. `HALF_OPEN` → if another `breaker_probe` attempt is in flight (called, not settled, < 30 s) → `CIRCUIT_OPEN`; else mark this attempt `breaker_probe = true`.
+   c. `HALF_OPEN` → for a `NORMAL` attempt, if another `NORMAL` `breaker_probe` attempt is in flight (called, not settled, < 30 s) → `CIRCUIT_OPEN`; else mark this attempt `breaker_probe = true`.
+   Forced-scenario attempts skip steps b–c entirely (never counted, never a probe, never blocked by the breaker; the kill switch in a. still applies). Amended 2026-10-28 (verification; supersedes the audit-A3 interim rule): an open Delta circuit from ordinary traffic made `ALL_APPROVE`/`DELTA_FAILS` show `CIRCUIT_OPEN`, breaking RF-214.
    d. Else set `called_at = now()`.
 3. **Call** (outside any TX): `adapter.preApprove(req, AbortSignal.timeout(max(0, deadline_at − now)))`.
 4. **Settle** (TX), guarded on `status = 'PENDING'`:

@@ -42,7 +42,6 @@ type ConsultationPublicView = {
     reason: AttemptReason | null;
     approvedCents: number | null;
     monthlyRate: string | null;
-    maxApprovableCents: number | null;
     settledAt: string | null;
   }>;
   offers: Array<{
@@ -63,25 +62,25 @@ type ConsultationPublicView = {
 ```
 
 `journeyStatus`: `CHOSEN` if a choice exists; else `OFFERS` if any offer exists; else `NO_OFFER` if `SETTLED`; else `QUOTING`.
-`suggestion` = the max `maxApprovableCents` among refusals that's ≥ 100000 and < `treatmentAmountCents`; else null.
+`suggestion` = the max stored refusal hint (`lender_attempt.max_approvable_cents`) that's ≥ 100000 and < `treatmentAmountCents`; else null. The hints themselves never appear in public payloads (amended 2026-10-28, audit A1: Alfa's hint is income × 10, so exposing it leaked the income). Residual tension for the owner: in NORMAL, when Beta, Delta and Gama all fail to offer, the suggestion itself can equal income × 10 (RFC O9).
 Offer sorting (lowest installment / lowest total) happens in the browser over these API values. The browser never computes money.
 
 ## Backoffice (`/backoffice/**`, prefixed plugin with the auth `derive` + `onBeforeHandle`)
 
-| Method & path                                  | Request                     | Success                                                                                                               |
-| ---------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `POST /backoffice/session`                     | `{ username, password }`    | 204 + `Set-Cookie: bo_session` (httpOnly, Secure, SameSite=Lax, Max-Age 28800)                                        |
-| `GET /backoffice/session`                      |                             | 200 `{ username }`                                                                                                    |
-| `DELETE /backoffice/session`                   |                             | 204 + cookie removed                                                                                                  |
-| `GET /backoffice/metrics/pipeline`             | `?from&to&bucket=day\|hour` | 200 pipeline series + totals (RF-604/605)                                                                             |
-| `GET /backoffice/metrics/lenders`              | `?from&to`                  | 200 per-lender p50/p95, rates, `breaker: "CLOSED"\|"OPEN"\|"HALF_OPEN"`, `enabled`, `queueBacklog`                    |
-| `GET /backoffice/metrics/abuse`                | `?from&to`                  | 200 limit hits, 429 counts, top CPF-patients (by id + first name, never CPF) and top IP hashes (first 8 hex)          |
-| `PUT /backoffice/lenders/:lender/switch`       | `{ enabled }`               | 200 lender state; appends `lender_switch_log`                                                                         |
-| `GET /backoffice/lenders/switch-log`           | ListQuery                   | 200 ListResponse                                                                                                      |
-| `GET /backoffice/consultations`                | ListQuery                   | 200 ListResponse (no CPF, no decryption)                                                                              |
-| `GET /backoffice/consultations/:id`            |                             | 200 detail: full patient incl. **decrypted CPF**, frozen inputs, attempts with timestamps and reasons, offers, choice |
-| `POST /backoffice/consultations/search-by-cpf` | `{ cpf, page?, pageSize? }` | 200 ListResponse (exact match via `cpf_hmac`)                                                                         |
-| `GET /backoffice/throttle-events`              | ListQuery                   | 200 ListResponse                                                                                                      |
+| Method & path                                  | Request                                                                                                                            | Success                                                                                                               |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `POST /backoffice/session`                     | `{ username, password }`                                                                                                           | 204 + `Set-Cookie: bo_session` (httpOnly, Secure, SameSite=Lax, Max-Age 28800)                                        |
+| `GET /backoffice/session`                      |                                                                                                                                    | 200 `{ username }`                                                                                                    |
+| `DELETE /backoffice/session`                   |                                                                                                                                    | 204 + cookie removed                                                                                                  |
+| `GET /backoffice/metrics/pipeline`             | `?from&to&bucket=day\|hour`                                                                                                        | 200 pipeline series + totals (RF-604/605)                                                                             |
+| `GET /backoffice/metrics/lenders`              | `?from&to`                                                                                                                         | 200 per-lender p50/p95, rates, `breaker: "CLOSED"\|"OPEN"\|"HALF_OPEN"`, `enabled`, `queueBacklog`                    |
+| `GET /backoffice/metrics/abuse`                | `?from&to`                                                                                                                         | 200 limit hits, 429 counts, top CPF-patients (by id + first name, never CPF) and top IP hashes (first 8 hex)          |
+| `PUT /backoffice/lenders/:lender/switch`       | `{ enabled }`                                                                                                                      | 200 lender state; appends `lender_switch_log`                                                                         |
+| `GET /backoffice/lenders/switch-log`           | ListQuery                                                                                                                          | 200 ListResponse                                                                                                      |
+| `GET /backoffice/consultations`                | ListQuery                                                                                                                          | 200 ListResponse (no CPF, no decryption)                                                                              |
+| `GET /backoffice/consultations/:id`            |                                                                                                                                    | 200 detail: full patient incl. **decrypted CPF**, frozen inputs, attempts with timestamps and reasons, offers, choice |
+| `POST /backoffice/consultations/search-by-cpf` | `{ cpf, …ListQuery }` (page, pageSize, sort, q and the consultations filter allow-list as body keys; amended 2026-10-28, audit A5) | 200 ListResponse (exact match via `cpf_hmac`); unknown sort/filter → 422                                              |
+| `GET /backoffice/throttle-events`              | ListQuery                                                                                                                          | 200 ListResponse                                                                                                      |
 
 Session cookie value = `"<username>|<expiresAtEpochSeconds>"`, signed by Elysia (`cookie: { secrets: BACKOFFICE_SESSION_SECRET, sign: ["bo_session"] }`). Missing, unsigned, tampered (`InvalidCookie` caught in `derive`) or expired → **401** `UNAUTHENTICATED`.
 
@@ -106,6 +105,8 @@ Unknown sort/filter field → 422 `VALIDATION`. Every sort appends `id` as the t
 | `CHOICE_CONFLICT`                            | 409    | a different offer is already chosen                        |
 | `REQUOTE_NOT_ALLOWED`                        | 409    | source not `SETTLED`, has an approval, or amount not lower |
 | `UNAUTHENTICATED` / `INVALID_CREDENTIALS`    | 401    |                                                            |
+| `NOT_FOUND`                                  | 404    | no `/api` route matches (amended 2026-10-28, audit A8)     |
+| `INTERNAL`                                   | 500    | unexpected error; logged as `http.unhandled_error`         |
 
 ## Lender simulator (`/simulator/lenders/*`, deliberately heterogeneous contracts)
 

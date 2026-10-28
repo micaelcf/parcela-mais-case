@@ -206,3 +206,15 @@ Verdict **FAIL**: 0 blockers · 2 major · 4 minor · 2 nits · 7 questions. Ful
 - A7 nit (D5/RF-709): `docker builder prune -f` is not project-scoped. A8 nit: `NOT_FOUND`/`INTERNAL` missing from `api.md`.
 - Questions: Q-1 real client IP under rootless Podman; Q-2 SSE through Caddy never exercised; Q-3 `Secure` cookie on plain-HTTP deploys; Q-4 RF-408 "identical body" while quoting; Q-5 CPF typed in the explorer's free-text search lands in the URL; Q-6 queue backlog up to 60 s stale; Q-7 lender-health rates include forced attempts.
 - Remediation (orchestrator triage): fix A1–A8, Q-2 (prove through Caddy), Q-3 (`Secure` only when served over HTTPS), Q-5 (refuse CPF-shaped free text); record Q-1, Q-4, Q-6, Q-7 as owner questions in the RFC.
+
+### Stage 5 remediation, round 1 (2026-10-28)
+
+- A1 `210215b`: `maxApprovableCents` removed from the public view; C99 extended with NORMAL Alfa refusals (red: income × 10 appeared 11 times; green after). Residual RF-302/RF-502 tension → RFC O9.
+- A2/A6/A7 `767771f`: prod stack publishes only Caddy; Postgres credentials from env (no default password for prod); `compose.dev.yaml` publishes 5432 for `vp run up`; `STACK_DATABASE_URL`; Docker build-cache prune skipped. `compose-stack.test.ts` guards it (red against the old compose file with 5 violations). Observed under `up --prod`: `postgres-1 5432/tcp` (unpublished), only Caddy on 8080/8443.
+- A3 `b2bc3d7` then superseded by `fdd90d6`: forced attempts first settled `CIRCUIT_OPEN` under half-open; the post-fix E2E run then failed 10 tests because Delta's circuit had opened from ordinary NORMAL traffic (dev DB: 50 `CIRCUIT_OPEN`, 2 probes timing out). Decision (RFC D11 amendment): forced attempts bypass the automatic breaker entirely; the probe test now also proves an `ALL_APPROVE` approval while the circuit is OPEN.
+- A4 `8b47996`: replay re-checked after the patient lock (red: `[202, 429, 429, 429, 429]`; green after).
+- A5/Q-3/Q-5 `c349756`: search-by-cpf takes list controls in its body; `Secure` follows `APP_DOMAIN`; CPF-shaped free text refused in table search boxes.
+- A8: `NOT_FOUND`/`INTERNAL` added to `api.md`. Q-1/Q-4/Q-6/Q-7 → RFC O5–O8.
+- Q-2 `proxy.spec.ts` "streams snapshots through Caddy without buffering": `up --prod` + `E2E_BASE_URL=http://localhost:8080 vp run e2e test/e2e/proxy.spec.ts` → 2 passed.
+- Flake seen once and fixed in the test wait (`fbf5e19`): abuse metrics read before every throttle outcome was recorded.
+- Gates after remediation: `vp check` clean (222 files), `tsc` clean, `vp test` 45 files / 141 tests, `vp run e2e` 35 passed / 2 skipped (proxy specs, off-proxy).

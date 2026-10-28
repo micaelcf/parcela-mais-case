@@ -140,7 +140,7 @@ test/                                       # ONLY integration and E2E suites; u
     *.spec.ts                               # Playwright Test, final phase
 scripts/ops/{doctor,up,prune,deploy,migrate,hash-password}.ts
 scripts/ops/lib/*.ts                        # pure, Node-safe; unit tests co-located (*.test.ts)
-compose.yaml  Dockerfile  Caddyfile  .env.example  playwright.config.ts  components.json
+compose.yaml  compose.dev.yaml  Dockerfile  Caddyfile  .env.example  playwright.config.ts  components.json
 drizzle/                                    # drizzle-kit 1.0 migrations
 ```
 
