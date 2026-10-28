@@ -111,12 +111,13 @@ describe("deploy plan", () => {
     const upIndex = healthy.calls.findIndex(isUp);
     expect(healthy.calls.findIndex(isRemoval)).toBeGreaterThan(upIndex);
 
+    // Docker's BuildKit cache has no project label: deploy skips it rather than prune other projects' cache.
     const docker = fakeHost({ engine: { name: "docker", bin: "docker" } });
     expect(await runDeploy(docker.deps)).toBe(0);
     expect(docker.calls.filter(isRemoval).map((call) => call.argv)).toEqual([
       ["docker", "rmi", OLD_IMAGE, OLDER_IMAGE],
-      ["docker", "builder", "prune", "-f"],
     ]);
+    expect(docker.log.join("\n")).toMatch(/build cache skipped/);
 
     const unhealthy: Scenario[] = [
       { upExitCode: 1 },

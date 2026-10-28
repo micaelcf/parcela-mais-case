@@ -1,0 +1,10 @@
+# Dev-only override, loaded by `vp run up` (and the `doctor` hint) on top of compose.yaml:
+#   <engine> compose -f compose.yaml -f compose.dev.yaml -p parcela-mais-case up -d --wait postgres
+# `vp run up --prod` and `vp run deploy` never load it, so the prod stack publishes only Caddy.
+services:
+  postgres:
+    environment:
+      # Dev-safe default: .env.example's DATABASE_URL connects with it.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parcela}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"

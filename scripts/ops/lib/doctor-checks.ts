@@ -1,4 +1,4 @@
-import { compose, type Engine } from "./engine";
+import { devCompose, type Engine } from "./engine";
 
 /**
  * `vp run doctor` (RF-704): pure checks over facts the Bun entry gathers read-only. Each check is
@@ -212,7 +212,7 @@ function checkDatabase(engine: Engine, database: DatabaseFacts | null): CheckRes
         ok: false,
         label: "database reachable",
         detail: database.error,
-        hint: `start Postgres: ${compose(engine, "up", "-d", "--wait", "postgres").join(" ")} (or vp run up)`,
+        hint: `start Postgres: ${devCompose(engine, "up", "-d", "--wait", "postgres").join(" ")} (or vp run up)`,
       },
     ];
   }

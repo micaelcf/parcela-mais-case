@@ -50,9 +50,15 @@ export function detectEngine(probe: EngineProbe): Engine {
   return { name: "docker", bin: locate("docker", probe) ?? "docker" };
 }
 
-/** `<engine> compose -f compose.yaml -p parcela-mais-case …args`: the only way scripts call compose. */
+/** `<engine> compose -f compose.yaml -p parcela-mais-case …args`: the prod stack; publishes only Caddy. */
 export function compose(engine: Engine, ...args: readonly string[]): string[] {
   return [engine.bin, "compose", "-f", "compose.yaml", "-p", PROJECT, ...args];
+}
+
+/** `compose` plus `compose.dev.yaml` (Postgres on the host port, dev password): `vp run up` only. */
+export function devCompose(engine: Engine, ...args: readonly string[]): string[] {
+  const files = ["-f", "compose.yaml", "-f", "compose.dev.yaml"];
+  return [engine.bin, "compose", ...files, "-p", PROJECT, ...args];
 }
 
 /** Removes dangling images carrying the project label (superseded builds, intermediate layers). */
@@ -60,16 +66,23 @@ export function pruneDanglingProjectImages(engine: Engine): string[] {
   return [engine.bin, "image", "prune", "-f", "--filter", `label=${PROJECT_LABEL}`];
 }
 
+export type BuildCachePrune = { readonly argv: string[] } | { readonly skipped: string };
+
 /**
- * Build cache removal. Podman's build cache is its intermediate images, which carry the project
- * label, so it is scoped to this project. Docker's BuildKit cache has no labels: `builder prune -f`
- * (without `--all`) removes only cache no image references.
+ * Build cache removal, this project's only. Podman's build cache is its intermediate images, which
+ * carry the project label. Docker's BuildKit cache has no labels and `builder prune` can't filter by
+ * project, so on Docker it is skipped rather than pruning every project's cache.
  */
-const BUILD_CACHE_PRUNE: Record<EngineName, readonly string[]> = {
+const BUILD_CACHE_PRUNE: Record<EngineName, readonly string[] | null> = {
   podman: ["builder", "prune", "-f", "--filter", `label=${PROJECT_LABEL}`],
-  docker: ["builder", "prune", "-f"],
+  docker: null,
 };
 
-export function pruneBuildCache(engine: Engine): string[] {
-  return [engine.bin, ...BUILD_CACHE_PRUNE[engine.name]];
+export function pruneBuildCache(engine: Engine): BuildCachePrune {
+  const args = BUILD_CACHE_PRUNE[engine.name];
+  return args
+    ? { argv: [engine.bin, ...args] }
+    : {
+        skipped: `build cache skipped: ${engine.name}'s build cache has no project label (\`${engine.name} builder prune\` would clear every project's)`,
+      };
 }

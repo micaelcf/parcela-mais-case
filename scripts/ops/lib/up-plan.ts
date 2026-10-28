@@ -1,4 +1,4 @@
-import { compose, type Engine } from "./engine";
+import { compose, devCompose, type Engine } from "./engine";
 import { checkHealth, type HealthFetch, healthUrl, type Sleep } from "./health";
 import type { RunCommand } from "./run";
 
@@ -12,9 +12,9 @@ export function parseUpArgs(
   return { ok: false, error: `unknown option(s): ${args.join(" ")} (up takes only --prod)` };
 }
 
-/** Dev: Postgres healthy, then migrations; the app and worker then run in the foreground. */
+/** Dev: Postgres healthy (host port from `compose.dev.yaml`), then migrations; app and worker follow. */
 export function devSetupPlan(engine: Engine): string[][] {
-  return [compose(engine, "up", "-d", "--wait", "postgres"), ["bun", "scripts/ops/migrate.ts"]];
+  return [devCompose(engine, "up", "-d", "--wait", "postgres"), ["bun", "scripts/ops/migrate.ts"]];
 }
 
 /** The dev foreground processes, each with its log prefix. */

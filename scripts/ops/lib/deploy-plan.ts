@@ -30,7 +30,7 @@ function lines(output: string): string[] {
   ];
 }
 
-/** Labelled project images that no current service container uses, then the build cache. */
+/** Labelled project images that no current service container uses, then this project's build cache. */
 async function removeSupersededImages(deps: DeployDeps): Promise<boolean> {
   const { run, engine, log } = deps;
   const inUse = await run(compose(engine, "--profile", "prod", "images", "-q"), { quiet: true });
@@ -49,7 +49,12 @@ async function removeSupersededImages(deps: DeployDeps): Promise<boolean> {
     log(`removing ${superseded.length} superseded project image(s)`);
     if ((await run([engine.bin, "rmi", ...superseded])).exitCode !== 0) return false;
   }
-  return (await run(pruneBuildCache(engine))).exitCode === 0;
+  const cache = pruneBuildCache(engine);
+  if ("skipped" in cache) {
+    log(`– ${cache.skipped}`);
+    return true;
+  }
+  return (await run(cache.argv)).exitCode === 0;
 }
 
 /**

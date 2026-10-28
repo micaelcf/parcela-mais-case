@@ -8,11 +8,13 @@ const LABEL_FILTER = "label=com.parcela.project=parcela-mais-case";
 
 function recordingDeps(engine: Engine) {
   const executed: string[][] = [];
+  const log: string[] = [];
   const exec: Exec = async (argv) => {
     executed.push([...argv]);
     return { exitCode: 0, stdout: "", stderr: "" };
   };
-  return { deps: { run: createRunner(exec, {}), engine, log: () => {} }, executed };
+  const deps = { run: createRunner(exec, {}), engine, log: (line: string) => log.push(line) };
+  return { deps, executed, log };
 }
 
 const scopedToProject = (argv: readonly string[]) => {
@@ -26,7 +28,7 @@ describe("prune plan (RF-705)", () => {
   it("targets only this project locally", async () => {
     const podman = recordingDeps({ name: "podman", bin: "podman" });
     expect(await runPrune(podman.deps, [])).toBe(0);
-    expect(podman.executed).toEqual(prunePlan({ name: "podman", bin: "podman" }));
+    expect(podman.executed).toEqual(prunePlan({ name: "podman", bin: "podman" }).commands);
     expect(podman.executed[0]).toEqual([
       "podman",
       "compose",
@@ -43,12 +45,14 @@ describe("prune plan (RF-705)", () => {
       "local",
     ]);
     for (const argv of podman.executed) expect(scopedToProject(argv), argv.join(" ")).toBe(true);
+    expect(podman.log.join("\n")).toMatch(/build cache/);
 
-    // Docker's BuildKit cache can't be labelled: the one unscoped step only drops unreferenced cache.
+    // Docker's BuildKit cache can't be labelled, so no project-scoped prune exists: it is skipped, and said so.
     const docker = recordingDeps({ name: "docker", bin: "docker" });
     expect(await runPrune(docker.deps, [])).toBe(0);
-    const unscoped = docker.executed.filter((argv) => !scopedToProject(argv));
-    expect(unscoped).toEqual([["docker", "builder", "prune", "-f"]]);
+    for (const argv of docker.executed) expect(scopedToProject(argv), argv.join(" ")).toBe(true);
+    expect(docker.executed.some((argv) => argv[1] === "builder")).toBe(false);
+    expect(docker.log.join("\n")).toMatch(/build cache skipped/);
 
     for (const argv of [...podman.executed, ...docker.executed]) {
       expect(

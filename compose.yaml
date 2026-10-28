@@ -16,25 +16,27 @@ x-app: &app
   init: true
   env_file: .env
   environment:
-    DATABASE_URL: postgres://parcela:parcela@postgres:5432/parcela
+    # A managed Postgres needs only STACK_DATABASE_URL in .env; the default is the bundled service.
+    DATABASE_URL: ${STACK_DATABASE_URL:-postgres://${POSTGRES_USER:-parcela}:${POSTGRES_PASSWORD:-}@postgres:5432/${POSTGRES_DB:-parcela}}
     LENDER_BASE_URL: http://app:3000/api/simulator/lenders
     GIT_SHA: ${GIT_SHA:-dev}
     NODE_ENV: production
   labels: *project-labels
 
 services:
+  # No host port and no default password here: compose.dev.yaml (only `vp run up` loads it)
+  # publishes 5432 and supplies the dev password. Without POSTGRES_PASSWORD in .env the prod stack
+  # fails closed (Postgres refuses to initialise, or the app's login is rejected).
   postgres:
     image: docker.io/library/postgres:18-alpine
     environment:
-      POSTGRES_USER: parcela
-      POSTGRES_PASSWORD: parcela
-      POSTGRES_DB: parcela
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-parcela}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-parcela}
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U parcela -d parcela"]
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 2s
       timeout: 3s
       retries: 30
