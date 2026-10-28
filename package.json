@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio",
     "doctor": "bun scripts/ops/doctor.ts",
     "up": "bun scripts/ops/up.ts",
+    "down": "bun scripts/ops/down.ts",
     "prune": "bun scripts/ops/prune.ts",
     "deploy": "bun scripts/ops/deploy.ts",
     "backoffice:hash-password": "bun scripts/ops/hash-password.ts",
