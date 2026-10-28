@@ -22,7 +22,10 @@ export const MIN_TREATMENT_CENTS = 100_000;
 export const MAX_TREATMENT_CENTS = 5_000_000;
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** A UUID in either letter case. A schema `pattern` keeps no regex flags, so the source spells both. */
+const UUID_PATTERN =
+  "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
+const UUID = new RegExp(UUID_PATTERN);
 
 export function isUuid(value: string): boolean {
   return UUID.test(value);
@@ -103,14 +106,14 @@ export const SignupRequestSchema = Type.Object({
 export type SignupRequest = Static<typeof SignupRequestSchema>;
 
 export const IdempotencyHeadersSchema = Type.Object({
-  "idempotency-key": Type.String({ pattern: UUID.source, error: "Idempotency-Key inválida" }),
+  "idempotency-key": Type.String({ pattern: UUID_PATTERN, error: "Idempotency-Key inválida" }),
 });
 
 export const CreatedSchema = Type.Object({ id: Type.String() });
 export type Created = Static<typeof CreatedSchema>;
 
 export const ChooseRequestSchema = Type.Object({
-  offerId: Type.String({ pattern: UUID.source, error: "Oferta inválida" }),
+  offerId: Type.String({ pattern: UUID_PATTERN, error: "Oferta inválida" }),
 });
 export type ChooseRequest = Static<typeof ChooseRequestSchema>;
 

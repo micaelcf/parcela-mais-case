@@ -114,6 +114,19 @@ describe("POST /consultations", () => {
     expect(finalizeJobs).toHaveLength(1);
   });
 
+  it("treats the Idempotency-Key as one UUID whatever its letter case", async () => {
+    // Swift's UUID().uuidString is upper case; the same UUID in either case is one key.
+    const key = randomUUID();
+    const body = signupBody();
+
+    const upper = await postConsultation(body, { key: key.toUpperCase() });
+    expect(upper.status).toBe(202);
+    const first = await readCreatedId(upper);
+    const second = await readCreatedId(await postConsultation(body, { key }));
+
+    expect(second).toBe(first);
+  });
+
   it("rejects a reused key with a different body", async () => {
     const key = randomUUID();
     const original = signupBody({ treatmentAmountCents: 1_000_000 });

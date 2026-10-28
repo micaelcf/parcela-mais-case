@@ -176,7 +176,8 @@ export const consultationService = {
    */
   create(body: SignupRequest, idempotencyKey: string): Promise<{ id: string }> {
     return createConsultation({
-      idempotencyKey,
+      // One UUID is one key whatever its letter case (stored lower case).
+      idempotencyKey: idempotencyKey.toLowerCase(),
       requestHash: requestHashOf(body),
       scenario: body.simulationScenario ?? "NORMAL",
       monthlyIncomeCents: body.monthlyIncomeCents,
@@ -208,8 +209,8 @@ export const consultationService = {
       throw requoteNotAllowed("O novo valor deve ser menor que o da consulta original.");
     }
     return createConsultation({
-      idempotencyKey,
-      requestHash: requoteHashOf(sourceId, body),
+      idempotencyKey: idempotencyKey.toLowerCase(),
+      requestHash: requoteHashOf(sourceId.toLowerCase(), body),
       scenario: body.simulationScenario ?? "NORMAL",
       monthlyIncomeCents: consultation.monthlyIncomeCents,
       treatmentAmountCents: body.treatmentAmountCents,
@@ -254,8 +255,10 @@ export const consultationService = {
    * `boundaries.md` § Choose: under the consultation lock, the offer must belong to it; the first
    * choice sticks, re-choosing it is a no-op, any other offer conflicts. Allowed while QUOTING.
    */
-  async choose(id: string, offerId: string): Promise<ConsultationPublicView> {
+  async choose(id: string, requestedOfferId: string): Promise<ConsultationPublicView> {
     if (!isUuid(id)) throw notFound();
+    // Offer ids are stored lower case; compare them that way whatever case the client sent.
+    const offerId = requestedOfferId.toLowerCase();
     await db.transaction(async (tx) => {
       const locked = await consultationRepository.lockById(tx, id);
       if (!locked) throw notFound();

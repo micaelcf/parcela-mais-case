@@ -138,6 +138,18 @@ describe("offers and choice", () => {
     expect(second.text).toBe(first.text);
   });
 
+  it("accepts an offer id in either letter case", async () => {
+    const view = await settledAllApprove();
+    const offerId = offerOf(view, "BETA", 18).id;
+
+    const upper = await chooseView(view.id, offerId.toUpperCase());
+    expect(upper.status).toBe(200);
+    // Choosing it again in lower case is the same choice, not a conflict.
+    const lower = await chooseView(view.id, offerId);
+    expect(lower.status).toBe(200);
+    expect(JSON.parse(lower.text)).toMatchObject({ choice: { offerId } });
+  });
+
   it("rejects a different offer after a choice", async () => {
     const [view, other] = await Promise.all([settledAllApprove(), settledAllApprove()]);
     const chosenId = offerOf(view, "ALFA", 6).id;
