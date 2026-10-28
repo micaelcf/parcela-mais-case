@@ -218,3 +218,15 @@ Verdict **FAIL**: 0 blockers · 2 major · 4 minor · 2 nits · 7 questions. Ful
 - Q-2 `proxy.spec.ts` "streams snapshots through Caddy without buffering": `up --prod` + `E2E_BASE_URL=http://localhost:8080 vp run e2e test/e2e/proxy.spec.ts` → 2 passed.
 - Flake seen once and fixed in the test wait (`fbf5e19`): abuse metrics read before every throttle outcome was recorded.
 - Gates after remediation: `vp check` clean (222 files), `tsc` clean, `vp test` 45 files / 141 tests, `vp run e2e` 35 passed / 2 skipped (proxy specs, off-proxy).
+
+## Stage 5 — verify round 2 (2026-10-28, reviewer, range `d56f475..4fac4a1`)
+
+Verdict **FAIL**. Report: `agent://Stage5VerifyRound2` (copy `local://audit-round-2.md`). Fixed: A1, A2, A3 (as amended), A4, A7, A8, Q-2, Q-3. Partially fixed: A5 (Coverage rows stale), Q-5 (N2). Regressed: A6 → N1.
+
+- N1 major: nested `${…}` inside a compose default breaks on podman-compose ≤ 1.5 (accepted by `doctor`).
+- N2 minor: "Ana 5299822" (letters + partial CPF) still reaches the URL after the 400 ms pause.
+- N3 minor: the remediation tests have no check ids; Coverage rows stale (list endpoints 4, error codes 13, breaker forced case, A4 gap now proven, C80 Docker wording, startup configurations 5, proxy rows).
+- N4 minor: `api.md` still says `Secure` always; no D12/grill amendment for Q-3; PRD not amended for RF-216/705/709.
+- N5 nit: docs say a managed Postgres needs only `STACK_DATABASE_URL`; `POSTGRES_PASSWORD` is still required.
+- QN1: grill Q11's reopen condition fired (Delta trips its breaker on NORMAL traffic; real failure rate ≈ 0.62, P(≥16/20) ≈ 7 %, not 5.6×10⁻⁶). QN2: the proxy streaming proof doesn't record the content encoding.
+- Round 3 plan: fix N1, N2 (+ an E2E guard for Q-5), docs for N3/N4/N5, record QN1 as O10 and correct D11's number, answer QN2 with an observed encoding.
