@@ -183,7 +183,7 @@ Written to `contract/` (8 files) and the requirement list to `checks.md`. RFC am
 - **Requote (`NONE_APPROVE`, R$ 10.000):** cards "recusada · valor acima do limite" (Alfa) and "perfil não elegível" (others), suggestion "Simular com R$ 5.000,00"; clicking it → `POST …/requote` 202 → new `/consultas/<id>` with "valor solicitado R$ 5.000,00" settling live in NORMAL (Delta "indisponível" by deadline).
 - **Backoffice:** login `operador` → "Painel" with volumes (R$ 443.000,00 requested / 39 consultations); exact CPF search `111.444.777-35` lists "Rui Prado" and the URL stays `/backoffice/consultas`; detail shows "CPF 111.444.777-35". Found and fixed a real defect: a stale `bo_session` (signed with the previous secret) made login answer 500 `InvalidCookie` (`db91b97`, regression test "logs in over a stale or forged session cookie").
 
-### W6 (S10) — landed `1010fe2` (+ `0d96e1c`, `db91b97`, `32e0a26`, `d4…` proxy spec)
+### W6 (S10) — landed `1010fe2` (+ `0d96e1c`, `db91b97`, `32e0a26`, `0241ceb` proxy spec)
 
 - E2E (C156, RF-807): `vp run e2e` against `vp run up` → **35 passed, 1 skipped** (the proxy spec, off-proxy) in 46.3 s; the builder ran it green 3× in a row before handing over, and the lead re-ran it once after the fixes below.
 - Defects the E2E work and the browser smoke surfaced, all fixed with the failing check now green: blur errors shifting the "Voltar" button (C126, `0d96e1c`); login 500 with a stale `bo_session` (`db91b97` + integration regression); the table search debounce navigating back to the list after Enter + click (`32e0a26`).

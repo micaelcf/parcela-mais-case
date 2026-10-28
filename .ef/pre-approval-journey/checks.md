@@ -160,16 +160,16 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 
 ## Slices
 
-| Slice | Outcome                                                                        | Wave | Status  | File                                                                     | Checks        |
-| ----- | ------------------------------------------------------------------------------ | ---- | ------- | ------------------------------------------------------------------------ | ------------- |
-| S0    | toolchain, env, validation bridge and an empty `/api` serve and pass the gates | 0    | pending | [slices/S0-foundation.md](slices/S0-foundation.md)                       | C1–C8         |
-| S1    | schema, migrations, queue and integration harness run against real Postgres    | 0    | pending | [slices/S1-schema-infra.md](slices/S1-schema-infra.md)                   | C9–C11        |
-| S2    | CPF validation, CPF/IP protection and exact Price are correct in isolation     | 1    | pending | [slices/S2-cpf-pii-price.md](slices/S2-cpf-pii-price.md)                 | C12–C23       |
-| S3    | simulated lenders, adapters and breaker derivation                             | 1    | pending | [slices/S3-lender-integration.md](slices/S3-lender-integration.md)       | C24–C40       |
-| S4    | fan-out, deadline, live stream, one choice                                     | 2    | pending | [slices/S4-orchestration.md](slices/S4-orchestration.md)                 | C41–C76, C158 |
-| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor             | 2    | pending | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88       |
-| S6    | requote, per-patient and per-IP caps, no PII in public payloads                | 3    | pending | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100      |
-| S7    | backoffice auth, metrics, lists, kill switch API                               | 4    | pending | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117     |
-| S8    | public journey UI + UI kit                                                     | 4    | pending | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144     |
-| S9    | backoffice UI                                                                  | 5    | pending | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154     |
-| S10   | E2E suite + browser smoke                                                      | 6    | pending | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157     |
+| Slice | Outcome                                                                        | Wave | Status | File                                                                     | Checks        |
+| ----- | ------------------------------------------------------------------------------ | ---- | ------ | ------------------------------------------------------------------------ | ------------- |
+| S0    | toolchain, env, validation bridge and an empty `/api` serve and pass the gates | 0    | done   | [slices/S0-foundation.md](slices/S0-foundation.md)                       | C1–C8         |
+| S1    | schema, migrations, queue and integration harness run against real Postgres    | 0    | done   | [slices/S1-schema-infra.md](slices/S1-schema-infra.md)                   | C9–C11        |
+| S2    | CPF validation, CPF/IP protection and exact Price are correct in isolation     | 1    | done   | [slices/S2-cpf-pii-price.md](slices/S2-cpf-pii-price.md)                 | C12–C23       |
+| S3    | simulated lenders, adapters and breaker derivation                             | 1    | done   | [slices/S3-lender-integration.md](slices/S3-lender-integration.md)       | C24–C40       |
+| S4    | fan-out, deadline, live stream, one choice                                     | 2    | done   | [slices/S4-orchestration.md](slices/S4-orchestration.md)                 | C41–C76, C158 |
+| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor             | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88       |
+| S6    | requote, per-patient and per-IP caps, no PII in public payloads                | 3    | done   | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100      |
+| S7    | backoffice auth, metrics, lists, kill switch API                               | 4    | done   | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117     |
+| S8    | public journey UI + UI kit                                                     | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144     |
+| S9    | backoffice UI                                                                  | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154     |
+| S10   | E2E suite + browser smoke                                                      | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157     |
