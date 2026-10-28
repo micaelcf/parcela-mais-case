@@ -26,6 +26,8 @@ const testEnv = {
   SIMULATOR_TIME_SCALE: "0.2",
   CONSULTATION_DEADLINE_MS: "2000",
   SIMULATOR_DELTA_FAILURE_RATE: "0.3",
+  // tslog prints nothing in tests; transports (the log-line assertions) still get every record.
+  TSLOG_TYPE: "hidden",
   LENDER_BASE_URL: "http://localhost/api/simulator/lenders",
   GIT_SHA: "test-sha",
 };

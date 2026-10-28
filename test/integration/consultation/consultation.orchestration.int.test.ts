@@ -1,6 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 
 import { env } from "#/server/infra/env/server-env";
+import { logger } from "#/server/lib/log/logger";
 import { consultationService } from "#/server/modules/consultation/consultation.service";
 import { lenderAttemptRepository } from "#/server/modules/lender/lender-attempt.repository";
 import { createWorker } from "#/server/worker";
@@ -15,13 +16,14 @@ import {
   waitSettled,
 } from "./consultation-client";
 
-/** Every stdout/stderr line written while the file runs (the logger writes one JSON line each). */
+/** Every JSON line the logger writes while the file runs (one per event). */
 const lines: string[] = [];
-const capture = (...args: unknown[]) => {
-  lines.push(args.map(String).join(" "));
-};
-vi.spyOn(console, "log").mockImplementation(capture);
-vi.spyOn(console, "error").mockImplementation(capture);
+logger.attachTransport({
+  format: "json",
+  write: (_record, line) => {
+    lines.push(line);
+  },
+});
 
 type LenderCallLine = {
   event: "lender.call";
@@ -63,7 +65,6 @@ beforeAll(() => worker.start());
 afterAll(async () => {
   await worker.stop();
   await closeTestApp();
-  vi.restoreAllMocks();
 });
 
 describe("orchestration", () => {

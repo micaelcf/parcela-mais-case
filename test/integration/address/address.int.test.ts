@@ -1,6 +1,8 @@
 import { createServer, type ServerResponse } from "node:http";
 
-import { afterAll, describe, expect, it, vi } from "vite-plus/test";
+import { afterAll, describe, expect, it } from "vite-plus/test";
+
+import { logger } from "#/server/lib/log/logger";
 
 /**
  * A fake ViaCEP on a free port. Each CEP picks a behaviour; `hits` counts the calls per CEP so a
@@ -208,8 +210,11 @@ describe("GET /addresses/:cep", () => {
 
   it("logs each upstream call once without the CEP", async () => {
     const lines: string[] = [];
-    const log = vi.spyOn(console, "log").mockImplementation((line: unknown) => {
-      lines.push(String(line));
+    const detach = logger.attachTransport({
+      format: "json",
+      write: (_record, line) => {
+        lines.push(line);
+      },
     });
     try {
       expect((await lookup("30130010")).status).toBe(200);
@@ -218,7 +223,7 @@ describe("GET /addresses/:cep", () => {
       // Cached: no upstream call, no line.
       expect((await lookup("30130-010")).status).toBe(200);
     } finally {
-      log.mockRestore();
+      detach();
     }
 
     const lookups = lines.filter((line) => line.includes('"event":"address.lookup"'));

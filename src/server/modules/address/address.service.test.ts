@@ -85,8 +85,6 @@ describe("address service", () => {
   });
 
   it("keeps at most the bound, evicting the least recently used CEP", async () => {
-    // One log line per upstream call: keep the thousand of them out of the test output.
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
     const { service, calls } = serviceWith(found);
     const cepOf = (index: number) => String(10_000_000 + index);
 
