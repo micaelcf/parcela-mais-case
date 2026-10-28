@@ -59,6 +59,23 @@ const config = defineConfig({
           ],
         },
       },
+      {
+        // RFC D3: src/ runs on Node (vp dev, vp test) and Bun (containers); only scripts/ops may use Bun APIs.
+        files: ["src/**/*.ts", "src/**/*.tsx"],
+        rules: {
+          "no-restricted-globals": [
+            "error",
+            { name: "Bun", message: "src/ must stay runtime-portable: use Web or node:* APIs." },
+          ],
+          "no-restricted-imports": [
+            "error",
+            {
+              paths: [{ name: "bun", message: "src/ must stay runtime-portable." }],
+              patterns: [{ group: ["bun:*"], message: "src/ must stay runtime-portable." }],
+            },
+          ],
+        },
+      },
     ],
   },
   resolve: { tsconfigPaths: true },
