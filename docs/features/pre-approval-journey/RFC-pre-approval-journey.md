@@ -551,6 +551,12 @@ The user asked for a full address in step 1, right after the birthdate. The CEP 
 
 **Evidence.** A (E2E for each point, keyboard journey through the review and the dialog, browser checks in light and dark themes).
 
+### D33. Light/dark theme toggle (user request, 2026-10-28)
+
+**Decision.** The `<html>` class is the one source of truth: the existing pre-paint script in `routes/__root.tsx` applies `localStorage["theme"]` (`light`/`dark`) or else the system preference; `useThemeMode` (`useSyncExternalStore` over that class, following system changes live while no choice is stored) and `ThemeToggle` (a `Tema escuro` toggle button, `aria-pressed`) set and remember it. Both top bars carry the toggle; the shells pass the mode to `Toaster`, which otherwise asked `next-themes` with no provider mounted and so always followed the OS. No `next-themes` provider: its injected `<script>` is rendered client-side here (no SSR) and the pre-paint script already covers the flash.
+
+**Evidence.** A (E2E: system default and live change, toggle + reload persistence before paint, backoffice toggle).
+
 ### Supporting decisions taken by the agent during the grill (vetoable)
 
 From grill §3 (renamed AD*n* = grill §3 D*n*). Normative unless vetoed.

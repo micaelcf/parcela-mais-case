@@ -109,3 +109,12 @@ Proof: `vp run e2e test/e2e/a11y.spec.ts -g "completes the journey by keyboard"`
 
 **C229** · RF-414 — "Novo cadastro" on the offers screen opens the first signup step with an empty form (added 2026-10-28, user request)
 Proof: `vp run e2e test/e2e/offers.spec.ts -g "starts a new signup from the offers screen"`
+
+**C230** · RF-812 — without a stored choice the theme follows the system, also when it changes while the page is open
+Proof: `vp run e2e test/e2e/theme.spec.ts -g "follows the system theme until the user picks one"`
+
+**C231** · RF-812 — the top-bar toggle switches the theme, and the choice survives a reload (applied before first paint) over the system setting
+Proof: `vp run e2e test/e2e/theme.spec.ts -g "switches the theme from the top bar and keeps the choice after a reload"`
+
+**C232** · RF-812 — the backoffice top bar has the same toggle
+Proof: `vp run e2e test/e2e/theme.spec.ts -g "offers the switch in the backoffice too"`
