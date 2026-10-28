@@ -7,13 +7,11 @@
   },
   "scripts": {
     "dev": "vp dev --port 3000",
-    "generate-routes": "tsr generate",
     "build": "vp build",
     "preview": "vp preview",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:pull": "drizzle-kit pull",
+    "db:migrate": "bun --env-file=.env.local scripts/ops/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "prepare": "vp config"
   },
@@ -42,7 +40,6 @@
   "devDependencies": {
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/devtools-vite": "0.8.5",
-    "@tanstack/router-cli": "^1.132.0",
     "@types/node": "^22.10.2",
     "@types/pg": "^8.15.6",
     "@types/react": "^19.2.0",
@@ -51,7 +48,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "^17.3.1",
     "drizzle-kit": "1.0.0-rc.5",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
     "vite-plus": "1.3.0"
   },
