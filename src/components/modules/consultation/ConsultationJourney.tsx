@@ -23,7 +23,8 @@ type ConsultationJourneyProps = {
   /** The user chose in this visit: the confirmation takes focus. */
   justChose: boolean;
   requoting: boolean;
-  onChoose: (offer: OfferView) => void;
+  /** Sends the choice; resolves whether it was recorded. */
+  onChoose: (offer: OfferView) => Promise<boolean>;
   onRequote: (treatmentAmountCents: number) => void;
 };
 

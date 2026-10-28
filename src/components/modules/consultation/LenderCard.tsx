@@ -1,13 +1,14 @@
 import { CheckCircle2Icon, CircleSlashIcon, Loader2Icon, PlugZapIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
 import { Badge } from "#/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import type { AttemptStatus } from "#/lib/enums";
 import { formatBRL, formatRate } from "#/lib/money/money";
 import type { AttemptView } from "#/server/modules/consultation/consultation.dto";
 
-import { LENDER_NAME, REASON_TEXT, STATUS_LABEL } from "./lender-copy";
+import { REASON_TEXT, STATUS_LABEL } from "./lender-copy";
 
 const STATUS_BADGE: Record<
   AttemptStatus,
@@ -43,7 +44,6 @@ function Detail({ attempt }: { attempt: AttemptView }) {
 
 /** One lender's live state. A polite live region, with a fixed height so updates never shift layout. */
 export function LenderCard({ attempt }: { attempt: AttemptView }) {
-  const name = LENDER_NAME[attempt.lender];
   const headingId = `lender-${attempt.lender.toLowerCase()}`;
   const badge = STATUS_BADGE[attempt.status];
   return (
@@ -57,7 +57,9 @@ export function LenderCard({ attempt }: { attempt: AttemptView }) {
       className="h-32 gap-3"
     >
       <CardHeader className="flex items-center justify-between gap-2">
-        <CardTitle id={headingId}>{name}</CardTitle>
+        <CardTitle id={headingId}>
+          <LenderIdentity lender={attempt.lender} />
+        </CardTitle>
         <Badge variant={badge.variant}>
           {badge.icon}
           {STATUS_LABEL[attempt.status]}

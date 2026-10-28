@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
 
+import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
 import { Button, buttonVariants } from "#/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#/components/ui/card";
 import { formatBRL } from "#/lib/money/money";
 import type { ConsultationPublicView } from "#/server/modules/consultation/consultation.dto";
 
-import { LENDER_NAME, REASON_TEXT, STATUS_LABEL } from "./lender-copy";
+import { REASON_TEXT, STATUS_LABEL } from "./lender-copy";
 
 type NoOfferPanelProps = {
   view: ConsultationPublicView;
@@ -31,10 +32,14 @@ export function NoOfferPanel({ view, requoting, onRequote }: NoOfferPanelProps) 
       <CardContent className="flex flex-col gap-5">
         <ul className="flex flex-col gap-1.5 text-sm">
           {view.attempts.map((attempt) => (
-            <li key={attempt.lender}>
-              <span className="font-medium">{LENDER_NAME[attempt.lender]}:</span>{" "}
-              {STATUS_LABEL[attempt.status]}
-              {attempt.reason ? ` · ${REASON_TEXT[attempt.reason]}` : null}
+            <li key={attempt.lender} className="flex flex-wrap items-center gap-x-1.5">
+              <span className="font-medium">
+                <LenderIdentity lender={attempt.lender} size="sm" />:
+              </span>
+              <span>
+                {STATUS_LABEL[attempt.status]}
+                {attempt.reason ? ` · ${REASON_TEXT[attempt.reason]}` : null}
+              </span>
             </li>
           ))}
         </ul>

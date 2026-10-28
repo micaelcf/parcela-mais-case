@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import type { OfferView } from "#/server/modules/consultation/consultation.dto";
 
-import { sortOffers } from "./sort-offers";
+import { groupOffersByLender, sortOffers } from "./sort-offers";
 
 function offer(
   lender: OfferView["lender"],
@@ -65,5 +65,32 @@ describe("sortOffers", () => {
     const before = ids(OFFERS);
     sortOffers(OFFERS, "total");
     expect(ids(OFFERS)).toEqual(before);
+  });
+});
+
+describe("groupOffersByLender", () => {
+  const groups = (sort: "installment" | "total") =>
+    groupOffersByLender(OFFERS, sort).map((group) => [group.lender, ids(group.offers)]);
+
+  it("orders groups by their lowest installment, ties in lender order", () => {
+    expect(groups("installment")).toEqual([
+      ["BETA", ["BETA-24", "BETA-12"]],
+      ["DELTA", ["DELTA-12", "DELTA-24"]],
+      ["ALFA", ["ALFA-12", "ALFA-6"]],
+      ["GAMA", ["GAMA-10"]],
+    ]);
+  });
+
+  it("orders groups by their lowest total", () => {
+    expect(groups("total")).toEqual([
+      ["DELTA", ["DELTA-12", "DELTA-24"]],
+      ["BETA", ["BETA-12", "BETA-24"]],
+      ["GAMA", ["GAMA-10"]],
+      ["ALFA", ["ALFA-6", "ALFA-12"]],
+    ]);
+  });
+
+  it("returns no groups without offers", () => {
+    expect(groupOffersByLender([], "installment")).toEqual([]);
   });
 });

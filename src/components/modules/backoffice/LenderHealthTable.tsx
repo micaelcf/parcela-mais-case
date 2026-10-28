@@ -1,4 +1,5 @@
 import { LENDER_NAME } from "#/components/modules/consultation/lender-copy";
+import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
 import { Badge } from "#/components/ui/badge";
 import { Switch } from "#/components/ui/switch";
 import {
@@ -81,7 +82,7 @@ export function LenderHealthTable({
           return (
             <TableRow key={lender.lender} data-lender={lender.lender}>
               <TableHead scope="row" className="font-medium">
-                {name}
+                <LenderIdentity lender={lender.lender} size="sm" />
               </TableHead>
               <TableCell>
                 <Badge variant={lender.enabled ? "secondary" : "destructive"}>

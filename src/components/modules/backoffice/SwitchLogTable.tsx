@@ -1,6 +1,7 @@
 import { createColumnHelper } from "@tanstack/react-table";
 
 import { LENDER_NAME } from "#/components/modules/consultation/lender-copy";
+import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
 import { Badge } from "#/components/ui/badge";
 import { LENDER_CODES } from "#/lib/enums";
 import type { ListResponse } from "#/lib/list/list-contract";
@@ -24,7 +25,7 @@ const columns = column.columns([
   }),
   column.accessor("lender", {
     header: "Financeira",
-    cell: (info) => LENDER_NAME[info.getValue()],
+    cell: (info) => <LenderIdentity lender={info.getValue()} size="sm" />,
   }),
   column.accessor("enabled", {
     header: "Ação",

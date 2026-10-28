@@ -14,6 +14,10 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-lender-alfa: var(--lender-alfa);
+  --color-lender-beta: var(--lender-beta);
+  --color-lender-gama: var(--lender-gama);
+  --color-lender-delta: var(--lender-delta);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -78,6 +82,11 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  /* Fictional lenders' brand marks: filled tiles behind a `--background` glyph. */
+  --lender-alfa: oklch(0.5 0.16 255);
+  --lender-beta: oklch(0.5 0.19 300);
+  --lender-gama: oklch(0.56 0.16 45);
+  --lender-delta: oklch(0.5 0.12 155);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -117,6 +126,10 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  --lender-alfa: oklch(0.74 0.12 255);
+  --lender-beta: oklch(0.75 0.13 300);
+  --lender-gama: oklch(0.78 0.13 55);
+  --lender-delta: oklch(0.76 0.12 155);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.75 0.11 180);

@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { expect, journeyTest as test } from "./support/fixtures";
-import { LENDERS, lenderCard } from "./support/journey";
+import { choiceDialog, LENDERS, lenderCard } from "./support/journey";
 import { dateText } from "./support/patient";
 import { CONSULTATION_URL, scenarioRadio, signUp } from "./support/signup";
 
@@ -136,6 +136,12 @@ test.describe("accessibility", () => {
     await expect(allApprove).toBeFocused();
     await expect(allApprove).toBeChecked();
     await expectVisibleFocus(page);
+    await tabTo(page, page.getByRole("button", { name: "Próximo" }));
+    await page.keyboard.press("Enter");
+
+    // The review step has no fields: its heading takes focus, then the submit is a Tab away.
+    await expect(page).toHaveURL(/\/cadastro\/revisao$/);
+    await expect(page.getByText(patient.fullName, { exact: true })).toBeVisible();
     await tabTo(page, page.getByRole("button", { name: "Solicitar pré-aprovação" }));
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(CONSULTATION_URL);
@@ -144,6 +150,14 @@ test.describe("accessibility", () => {
     for (const { name } of LENDERS) await expect(lenderCard(page, name)).toContainText("aprovada");
     await tabTo(page, page.getByRole("button", { name: "Escolher Alfa em 12x de R$ 974,28" }));
     await page.keyboard.press("Enter");
+
+    // Choosing is final, so a dialog asks first; focus stays inside it until it closes.
+    const dialog = choiceDialog(page);
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("12x de R$ 974,28");
+    await tabTo(page, dialog.getByRole("button", { name: "Confirmar escolha" }));
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeHidden();
 
     const confirmation = page.getByRole("alert").filter({ hasText: "A escolha foi registrada" });
     await expect(confirmation).toContainText("Alfa · 12x de R$ 974,28");

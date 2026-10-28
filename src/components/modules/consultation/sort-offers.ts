@@ -19,3 +19,22 @@ export function sortOffers(offers: readonly OfferView[], sort: OfferSort): Offer
       a.termMonths - b.termMonths,
   );
 }
+
+export type LenderOfferGroup = { lender: OfferView["lender"]; offers: OfferView[] };
+
+/**
+ * The offers grouped by lender, each group sorted like `sortOffers` and the groups ordered by
+ * their best offer (ties in lender order).
+ */
+export function groupOffersByLender(
+  offers: readonly OfferView[],
+  sort: OfferSort,
+): LenderOfferGroup[] {
+  const groups = new Map<OfferView["lender"], OfferView[]>();
+  for (const offer of sortOffers(offers, sort)) {
+    const group = groups.get(offer.lender);
+    if (group) group.push(offer);
+    else groups.set(offer.lender, [offer]);
+  }
+  return [...groups].map(([lender, grouped]) => ({ lender, offers: grouped }));
+}

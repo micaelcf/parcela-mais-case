@@ -43,3 +43,24 @@ export async function offerFigures(row: Locator) {
     totalCents: parseBRL(total[1]),
   };
 }
+
+/** One lender's collapsible group of offers. */
+export function offerGroup(page: Page, lender: LenderCode): Locator {
+  return page.locator(`[data-lender-group="${lender}"]`);
+}
+
+/** The button heading a lender's offer group; it collapses and expands the group. */
+export function offerGroupToggle(page: Page, lender: LenderCode): Locator {
+  return offerGroup(page, lender).getByRole("heading").getByRole("button");
+}
+
+/** The dialog that confirms a choice before it is sent. */
+export function choiceDialog(page: Page): Locator {
+  return page.getByRole("alertdialog", { name: "Confirmar a escolha desta oferta?" });
+}
+
+/** Chooses an offer by its row button's accessible name and confirms it in the dialog. */
+export async function chooseOffer(page: Page, buttonName: string) {
+  await page.getByRole("button", { name: buttonName }).click();
+  await choiceDialog(page).getByRole("button", { name: "Confirmar escolha" }).click();
+}

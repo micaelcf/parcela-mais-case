@@ -1,11 +1,10 @@
 import { CircleCheckBigIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
 import { Alert, AlertDescription, AlertTitle } from "#/components/ui/alert";
 import { formatBRL, formatRate } from "#/lib/money/money";
 import type { OfferView } from "#/server/modules/consultation/consultation.dto";
-
-import { LENDER_NAME } from "./lender-copy";
 
 /** The persisted choice. Takes focus when it appears right after the user chose. */
 export function ChoiceConfirmation({ offer, focus }: { offer: OfferView; focus: boolean }) {
@@ -26,8 +25,9 @@ export function ChoiceConfirmation({ offer, focus }: { offer: OfferView; focus: 
       </AlertTitle>
       <AlertDescription className="text-accent-foreground">
         <p>
-          {LENDER_NAME[offer.lender]} · {offer.termMonths}x de {formatBRL(offer.installmentCents)} ·
-          total {formatBRL(offer.totalCents)} · {formatRate(offer.monthlyRate)}
+          <LenderIdentity lender={offer.lender} size="sm" className="font-medium" /> ·{" "}
+          {offer.termMonths}x de {formatBRL(offer.installmentCents)} · total{" "}
+          {formatBRL(offer.totalCents)} · {formatRate(offer.monthlyRate)}
         </p>
         <p>A escolha foi registrada. A clínica vai seguir com a contratação.</p>
       </AlertDescription>

@@ -1,4 +1,4 @@
-import { LENDER_NAME } from "#/components/modules/consultation/lender-copy";
+import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
 import {
   Table,
   TableBody,
@@ -74,7 +74,7 @@ export function ChosenByLenderTable({ rows }: { rows: PipelineMetrics["chosenByL
         {rows.map((row) => (
           <TableRow key={row.lender}>
             <TableHead scope="row" className="font-medium">
-              {LENDER_NAME[row.lender]}
+              <LenderIdentity lender={row.lender} size="sm" />
             </TableHead>
             <TableCell className="text-right tabular-nums">
               {formatCount(row.chosenOffers)}

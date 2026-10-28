@@ -41,18 +41,19 @@ function LiveConsultation({ initial }: { initial: ConsultationPublicView }) {
   const [requoting, setRequoting] = useState(false);
   const [requoteKey] = useState(() => crypto.randomUUID());
 
-  async function choose(offer: OfferView) {
+  async function choose(offer: OfferView): Promise<boolean> {
     setChoosingOfferId(offer.id);
     const result = await chooseOffer(view.id, offer.id);
     setChoosingOfferId(null);
     if (!result.ok) {
       toast.error(result.problem.title, { description: result.problem.detail });
       await router.invalidate();
-      return;
+      return false;
     }
     setJustChose(true);
     toast.success("Oferta escolhida");
     await router.invalidate();
+    return true;
   }
 
   async function requote(treatmentAmountCents: number) {
@@ -75,7 +76,7 @@ function LiveConsultation({ initial }: { initial: ConsultationPublicView }) {
       choosingOfferId={choosingOfferId}
       justChose={justChose}
       requoting={requoting}
-      onChoose={(offer) => void choose(offer)}
+      onChoose={choose}
       onRequote={(amount) => void requote(amount)}
     />
   );

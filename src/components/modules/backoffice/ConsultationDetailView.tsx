@@ -3,6 +3,7 @@ import {
   REASON_TEXT,
   STATUS_LABEL,
 } from "#/components/modules/consultation/lender-copy";
+import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
 import { maskCep, maskCpf, maskPhone } from "#/components/modules/signup/masks";
 import { Badge } from "#/components/ui/badge";
 import {
@@ -133,7 +134,9 @@ export function ConsultationDetailView({ detail }: { detail: ConsultationDetail 
           {detail.attempts.map((attempt) => (
             <li key={attempt.id} className="flex flex-col gap-3 rounded-lg border p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-heading font-semibold">{LENDER_NAME[attempt.lender]}</h3>
+                <h3 className="font-heading font-semibold">
+                  <LenderIdentity lender={attempt.lender} />
+                </h3>
                 <div className="flex gap-2">
                   {attempt.breakerProbe ? <Badge variant="outline">Sondagem</Badge> : null}
                   <Badge variant={ATTEMPT_VARIANT[attempt.status]}>
@@ -216,7 +219,7 @@ export function ConsultationDetailView({ detail }: { detail: ConsultationDetail 
               detail.offers.map((offer) => (
                 <TableRow key={offer.id}>
                   <TableHead scope="row" className="font-medium">
-                    {LENDER_NAME[offer.lender]}
+                    <LenderIdentity lender={offer.lender} size="sm" />
                   </TableHead>
                   <TableCell className="text-right tabular-nums">
                     {formatBRL(offer.approvedCents)}
