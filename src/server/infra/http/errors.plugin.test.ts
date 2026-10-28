@@ -76,6 +76,25 @@ describe("errorsPlugin", () => {
     expect(await response.json()).toMatchObject({ code: "VALIDATION" });
   });
 
+  it("answers a body sent as text/plain with 422 VALIDATION, not a 500", async () => {
+    // fetch sends `text/plain;charset=UTF-8` for a string body without headers.
+    const app = new Elysia().use(errorsPlugin).post("/x", { body: Body }, ({ body }) => body);
+
+    const response = await app.handle(
+      new Request("http://localhost/x", {
+        method: "POST",
+        headers: { "content-type": "text/plain;charset=UTF-8" },
+        body: JSON.stringify({ cpf: "52998224725" }),
+      }),
+    );
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({
+      code: "VALIDATION",
+      detail: "Envie o corpo como JSON (Content-Type: application/json).",
+    });
+  });
+
   it("answers an unexpected error with 500 INTERNAL and no internals", async () => {
     const app = new Elysia().use(errorsPlugin).get("/x", () => {
       throw new Error("connect ECONNREFUSED postgres:5432 password=s3cret");

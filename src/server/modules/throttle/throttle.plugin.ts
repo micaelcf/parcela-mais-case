@@ -1,6 +1,7 @@
 import { Elysia, NotFound, ParseError, StatusMap, ValidationError } from "elysia";
 
 import { clientIp } from "#/server/infra/http/client-ip";
+import { isUnsupportedMediaType } from "#/server/infra/http/errors.plugin";
 import { DomainError, type ErrorCode } from "#/server/lib/errors/domain-error";
 import { logger } from "#/server/lib/log/logger";
 
@@ -14,7 +15,13 @@ const counted = new WeakMap<Request, { requestId: string; rejection: DomainError
 function errorCodeOf(error: unknown): ErrorCode | null {
   if (error === undefined) return null;
   if (error instanceof DomainError) return error.code;
-  if (error instanceof ValidationError || error instanceof ParseError) return "VALIDATION";
+  if (
+    error instanceof ValidationError ||
+    error instanceof ParseError ||
+    isUnsupportedMediaType(error)
+  ) {
+    return "VALIDATION";
+  }
   if (error instanceof NotFound) return "NOT_FOUND";
   return "INTERNAL";
 }

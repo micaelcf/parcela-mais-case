@@ -1,4 +1,4 @@
-import { Elysia, NotFound, ParseError, ValidationError } from "elysia";
+import { Elysia, ElysiaStatus, NotFound, ParseError, ValidationError } from "elysia";
 import type { TSchema } from "typebox";
 
 import { collectIssues } from "#/lib/validation/standard-schema";
@@ -58,6 +58,11 @@ function validationFields(error: ValidationError): FieldError[] {
   return [{ path: error.type ?? "", message: "Valor inválido" }];
 }
 
+/** Elysia 2 throws a 415 status (not an Error) when the body's content type has no JSON parser. */
+export function isUnsupportedMediaType(error: unknown): boolean {
+  return error instanceof ElysiaStatus && error.status === 415;
+}
+
 /** Maps every thrown error to one RFC 9457 problem+json response (contract `api.md` § Errors). */
 export const errorsPlugin = new Elysia({ name: "errors" }).onError("global", ({ error }) => {
   if (error instanceof DomainError) return problem(error);
@@ -68,6 +73,11 @@ export const errorsPlugin = new Elysia({ name: "errors" }).onError("global", ({ 
   if (error instanceof NotFound) return problem(new DomainError("NOT_FOUND", ""));
   if (error instanceof ParseError) {
     return problem(new DomainError("VALIDATION", "O corpo da requisição não é um JSON válido."));
+  }
+  if (isUnsupportedMediaType(error)) {
+    return problem(
+      new DomainError("VALIDATION", "Envie o corpo como JSON (Content-Type: application/json)."),
+    );
   }
   logger.error("http.unhandled_error", {
     name: error instanceof Error ? error.name : typeof error,
