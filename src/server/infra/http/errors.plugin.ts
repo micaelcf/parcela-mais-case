@@ -69,12 +69,16 @@ export function isUnsupportedMediaType(error: unknown): boolean {
 const PARSED_BODY_TYPE =
   /^(application\/(.+\+)?json|application\/x-www-form-urlencoded|multipart\/form-data)\b/i;
 
+/** Methods that carry no body, so their Content-Type header (if any) means nothing. */
+const BODYLESS_METHODS: ReadonlySet<string> = new Set(["GET", "HEAD", "OPTIONS"]);
+
 /**
  * A body sent with a content type Elysia doesn't parse. Without a route `parse` hook Elysia throws
  * its 415; with one (throttle, backoffice guard) it skips that check and the body fails validation
- * as a whole. Both must answer the same.
+ * as a whole. Both must answer the same. A body-less request keeps its field errors.
  */
 function hasUnparsedBody(request: Request): boolean {
+  if (BODYLESS_METHODS.has(request.method)) return false;
   const contentType = request.headers.get("content-type");
   return contentType !== null && contentType !== "" && !PARSED_BODY_TYPE.test(contentType);
 }

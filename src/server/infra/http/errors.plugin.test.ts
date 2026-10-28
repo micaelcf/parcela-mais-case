@@ -105,6 +105,25 @@ describe("errorsPlugin", () => {
     }
   });
 
+  it("keeps field errors for a request without a body whatever its Content-Type", async () => {
+    // A GET carries no body to parse; a stray Content-Type header must not hide its field errors.
+    const Params = Type.Object({ cep: Type.String({ pattern: "^\\d{8}$" }) });
+    const app = new Elysia()
+      .use(errorsPlugin)
+      .get("/x/:cep", { params: Params }, ({ params }) => params);
+
+    const response = await app.handle(
+      new Request("http://localhost/x/12345", { headers: { "content-type": "text/plain" } }),
+    );
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({
+      code: "VALIDATION",
+      detail: "Verifique os campos destacados.",
+      fields: [{ path: "cep" }],
+    });
+  });
+
   it("answers an unexpected error with 500 INTERNAL and no internals", async () => {
     const app = new Elysia().use(errorsPlugin).get("/x", () => {
       throw new Error("connect ECONNREFUSED postgres:5432 password=s3cret");
