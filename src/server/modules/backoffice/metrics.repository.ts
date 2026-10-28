@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lt, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, type SQL, sql } from "drizzle-orm";
 
 import { LENDER_CODES, type LenderCode } from "#/lib/enums";
 import { db } from "#/server/infra/db/client";
@@ -153,7 +153,7 @@ export const metricsRepository = {
     return { ALFA, BETA, GAMA, DELTA };
   },
 
-  /** Counted requests, limit hits per code and 429 answers recorded in the range. */
+  /** Counted consultation requests, limit hits per code and 429 answers recorded in the range. */
   async throttleSummary(range: MetricRange) {
     const [row] = await db
       .select({
@@ -168,7 +168,7 @@ export const metricsRepository = {
     return row;
   },
 
-  /** IP hashes (first 8 hex chars) by counted requests, most first. */
+  /** IP hashes (first 8 hex chars) by counted consultation requests, most first. */
   topIps(range: MetricRange, limit: number) {
     const requests = sql<number>`count(*)`.mapWith(Number);
     return db
@@ -198,6 +198,16 @@ export const metricsRepository = {
   },
 };
 
+/**
+ * Abuse figures cover the consultation routes only (RF-614). CEP lookups are ordinary signup
+ * traffic, one or more per signup, and would swamp them; the throttle-events list shows them.
+ */
+const ABUSE_ROUTES = ["consultation.create", "consultation.requote"] as const;
+
 function throttleIn(range: MetricRange) {
-  return and(gte(requestThrottle.createdAt, range.from), lt(requestThrottle.createdAt, range.to));
+  return and(
+    gte(requestThrottle.createdAt, range.from),
+    lt(requestThrottle.createdAt, range.to),
+    inArray(requestThrottle.route, [...ABUSE_ROUTES]),
+  );
 }

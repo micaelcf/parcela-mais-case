@@ -16,7 +16,7 @@ const { consultationRepository } =
 const { lenderAttemptRepository } =
   await import("#/server/modules/lender/lender-attempt.repository");
 const { createWorker } = await import("#/server/worker");
-const { closeTestApp, testLenderRegistry } = await import("../setup/app-fetch");
+const { appFetch, closeTestApp, testLenderRegistry } = await import("../setup/app-fetch");
 const {
   choose,
   createConsultation,
@@ -313,6 +313,14 @@ describe("backoffice metrics", () => {
     const brunoFirst = await send(bruno, "Bruno Costa", otherIp);
     await send(bruno, "Bruno Costa", otherIp);
     expect(statuses).toEqual([202, 202, 429, 202, 202, 429, 429, 202, 202]);
+    // CEP lookups are ordinary signup traffic, not consultation abuse: those from the heavy IP
+    // stay out of every abuse figure (throttle events still list them).
+    for (let looked = 0; looked < 4; looked += 1) {
+      const lookup = await appFetch("http://localhost/api/addresses/12345", {
+        headers: { "x-forwarded-for": heavyIp },
+      });
+      expect(lookup.status).toBe(422);
+    }
 
     const patientIdOf = async (created: Response) => {
       const id = await readCreatedId(created);
