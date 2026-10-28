@@ -46,8 +46,9 @@ describe("Brazilian mobile phone", () => {
       ["(11) 88765-4321", "NOT_MOBILE"],
       ["(11) 8765-4321", "NOT_MOBILE"],
       ["(11) 1234-5678", "NOT_MOBILE"],
-      // Wrong length, another country or stray characters.
+      // Wrong length, another country, one digit repeated, or stray characters.
       ["98765-4321", "INVALID"],
+      ["(99) 99999-9999", "INVALID"],
       ["119876543210", "INVALID"],
       ["+1 415 555 0100", "INVALID"],
       ["11 9876a-4321", "INVALID"],

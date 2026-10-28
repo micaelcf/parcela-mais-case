@@ -22,7 +22,7 @@ Proof: `vp test src/lib/cpf/cpf.test.ts -t "rejects wrong lengths and non-digits
 **C16** · RF-103 — `CpfSchema` fails a compiled TypeBox check for `529.982.247-24` with the message "CPF inválido" and passes `529.982.247-25`
 Proof: `vp test src/lib/cpf/cpf.test.ts -t "CpfSchema rejects invalid check digits with a pt-BR message"`
 
-**C174** · RF-101 — the phone rule accepts a Brazilian mobile however it's written (separators, `+55`/`55`, `0` trunk) and stores its 11 national digits; it names each failure: unknown DDD (`00`, `10`, `20`, `23`, `52`, `90`), landline (8 local digits starting 2–5, with or without prefixes), 11 digits not starting with 9, wrong length, another country, stray characters (added 2026-10-28, user report: phone validation)
+**C174** · RF-101 — the phone rule accepts a Brazilian mobile however it's written (separators, `+55`/`55`, `0` trunk) and stores its 11 national digits; it names each failure: unknown DDD (`00`, `10`, `20`, `23`, `52`, `90`), landline (8 local digits starting 2–5, with or without prefixes), 11 digits not starting with 9, wrong length, another country, one repeated digit (`(99) 99999-9999`), stray characters (added 2026-10-28, user report: phone validation)
 Proof: `vp test src/lib/phone/phone.test.ts`
 
 **C17** · RF-503 — `encrypt` returns 39 bytes (`iv12 ‖ ct11 ‖ tag16`) that don't contain the 11 ASCII digits, two encryptions of one CPF differ (random IV), and `decrypt` returns the digits

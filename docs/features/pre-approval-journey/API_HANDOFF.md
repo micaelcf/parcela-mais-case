@@ -62,7 +62,7 @@ There's no OpenAPI document. No route declares a `response` schema, so the TypeB
   - `application/x-www-form-urlencoded` and `multipart/form-data` bodies are **accepted**, with values coerced like JSON strings. Observed: a form-encoded choose → 200, a form-encoded requote reached its business rules (409), and a multipart choose reached the offer lookup (404 `OFFER_NOT_FOUND`). Don't rely on that.
 - **Unknown request properties are silently ignored**: `{"foo":"bar"}` alongside a valid body → 202.
 - **`monthlyIncomeCents: 0` is valid.** The lower bound is 0, not 1.
-- **`phone` must be a Brazilian mobile number**: a real area code (one of the 67 DDDs), then `9` and 8 digits. Separators `() + . -` and spaces are allowed, and a `+55`/`55` country code or a `0` trunk prefix is dropped (`+55 11 98765-4321` → stored `11987654321`). Landlines, other countries and unknown area codes are refused, each with its own message (§ 4.1).
+- **`phone` must be a Brazilian mobile number**: a real area code (one of the 67 DDDs), then `9` and 8 digits. Separators `() + . -` and spaces are allowed, and a `+55`/`55` country code or a `0` trunk prefix is dropped (`+55 11 98765-4321` → stored `11987654321`). Landlines, other countries, unknown area codes and one repeated digit (`(99) 99999-9999`) are refused, each with a message (§ 4.1).
 - **The `birthdate` message is misleading.** A badly formatted `birthdate` (`"14/05/1990"`) gets the age message `"A idade deve estar entre 18 e 80 anos"`, not a format message. Age is computed against the server's local date, not the client's, so near midnight a birthday can land on a different day than it does in Brazil (UTC−3).
 
 **Consultation view and SSE**

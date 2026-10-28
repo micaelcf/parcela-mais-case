@@ -107,7 +107,8 @@ export type PhoneIssue = "INVALID" | "AREA_CODE" | "LANDLINE" | "NOT_MOBILE";
 export function phoneIssue(input: string): PhoneIssue | null {
   if (!PHONE_CHARS.test(input.trim())) return "INVALID";
   const digits = normalizePhone(input);
-  if (!/^\d{10,11}$/.test(digits)) return "INVALID";
+  // One digit repeated (`(99) 99999-9999`) fits the pattern but is never a real number.
+  if (!/^\d{10,11}$/.test(digits) || /^(\d)\1+$/.test(digits)) return "INVALID";
   if (!AREA_CODES.has(digits.slice(0, 2))) return "AREA_CODE";
   const local = digits.slice(2);
   if (LANDLINE_LOCAL.test(local)) return "LANDLINE";
