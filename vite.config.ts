@@ -97,6 +97,9 @@ const config = defineConfig({
           setupFiles: ["test/integration/setup/file-db.setup.ts"],
           testTimeout: 60_000,
           hookTimeout: 60_000,
+          // Each file runs a real worker and races a 2 s lender deadline; more files at once than
+          // this starves the event loop enough that slow-but-valid lenders finalize as TIMEOUT.
+          maxWorkers: 4,
         },
       },
     ],
