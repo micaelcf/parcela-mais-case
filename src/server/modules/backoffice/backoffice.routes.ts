@@ -26,6 +26,10 @@ const loginRoutes = new Elysia({ name: "backoffice-login" }).post(
   { body: LoginRequestSchema },
   async ({ body, cookie, set }) => {
     const value = await backofficeSessionService.login(body.username, body.password);
+    // Drop whatever `bo_session` the browser sent first: Elysia re-verifies an incoming signed
+    // cookie when serialising the response, so a stale or forged one would turn this login into a
+    // 500. Deleting the jar entry makes `set` start a fresh, freshly signed cookie.
+    delete cookie[SESSION_COOKIE];
     cookie[SESSION_COOKIE].set({ value, maxAge: SESSION_TTL_SECONDS, ...sessionCookieAttributes });
     set.status = 204;
   },

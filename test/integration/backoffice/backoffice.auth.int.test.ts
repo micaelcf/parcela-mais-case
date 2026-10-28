@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { afterAll, describe, expect, it } from "vite-plus/test";
 
-import { closeTestApp } from "../setup/app-fetch";
+import { appFetch, closeTestApp } from "../setup/app-fetch";
 import { readProblem, uniqueCpf } from "../consultation/consultation-client";
 import {
   backofficeFetch,
@@ -59,6 +59,20 @@ describe("backoffice session", () => {
     expect(response.status).toBe(401);
     expect((await readProblem(response)).code).toBe("INVALID_CREDENTIALS");
     expect(response.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("logs in over a stale or forged session cookie", async () => {
+    // A browser can still hold a cookie signed with an old secret (or a forged one); the login
+    // must replace it, not fail on it.
+    const response = await appFetch(`http://localhost/api/backoffice/session`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: "bo_session=operador%7C1.forged" },
+      body: JSON.stringify({ username: USERNAME, password: PASSWORD }),
+    });
+
+    expect(response.status).toBe(204);
+    const current = await backofficeFetch("/session", { cookie: sessionCookieOf(response) });
+    expect(current.status).toBe(200);
   });
 
   it("refuses every route without a valid session", async () => {
