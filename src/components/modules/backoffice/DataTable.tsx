@@ -21,7 +21,7 @@ import {
   ChevronsLeftIcon,
   ChevronsRightIcon,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useEffect, useId, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -354,14 +354,20 @@ function SearchBox({
   // The URL is the source of truth: a back/forward or a reset elsewhere refills the box.
   useEffect(() => setDraft(value), [value]);
 
+  // The pending debounced search, cancelled by Enter: TanStack keeps this route mounted while the
+  // next route's loader runs, so a timer left behind could navigate back to the list after the
+  // user already clicked through to a detail page.
+  const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
   useEffect(() => {
     if (draft.trim() === value) return;
-    const timer = setTimeout(() => onSearch(draft), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
+    pending.current = setTimeout(() => onSearch(draft), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(pending.current);
   }, [draft, value, onSearch]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    clearTimeout(pending.current);
     if (draft.trim() !== value) onSearch(draft);
   }
 
