@@ -71,6 +71,17 @@ const config = defineConfig({
           env: testEnv,
         },
       },
+      {
+        test: {
+          name: "integration",
+          include: ["test/integration/**/*.int.test.ts"],
+          env: testEnv,
+          globalSetup: ["test/integration/setup/global-setup.ts"],
+          setupFiles: ["test/integration/setup/file-db.setup.ts"],
+          testTimeout: 60_000,
+          hookTimeout: 60_000,
+        },
+      },
     ],
   },
   // Tests exercise server and isomorphic code only; the app plugins (Start, nitro, devtools) would boot a dev app.

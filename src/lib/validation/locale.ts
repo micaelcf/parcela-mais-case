@@ -32,7 +32,7 @@ const MESSAGES: MessageTable = {
 
 export function messageFor<K extends Keyword>(error: ErrorOf<K>): string {
   // The table is keyed by the same keyword that discriminates `error`.
-  const format = MESSAGES[error.keyword as K] as ((error: ErrorOf<K>) => string) | undefined;
+  const format = MESSAGES[error.keyword];
   return format ? format(error) : Locale.pt_BR(error);
 }
 

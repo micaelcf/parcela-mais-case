@@ -1,0 +1,1664 @@
+{
+  "type": "base",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "871956bb-a3bf-40b0-a614-4cc29b4c792d",
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": ["enum", "public", "attempt_reason"],
+      "writes": [
+        "s|enum|public.attempt_reason",
+        "n|enum|public.attempt_reason",
+        "e|enum|public.attempt_reason",
+        "n|type|public.attempt_reason"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": ["enum", "public", "attempt_status"],
+      "writes": [
+        "s|enum|public.attempt_status",
+        "n|enum|public.attempt_status",
+        "e|enum|public.attempt_status",
+        "n|type|public.attempt_status"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": ["enum", "public", "lender_code"],
+      "writes": [
+        "s|enum|public.lender_code",
+        "n|enum|public.lender_code",
+        "e|enum|public.lender_code",
+        "n|type|public.lender_code"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": ["enum", "public", "quote_status"],
+      "writes": [
+        "s|enum|public.quote_status",
+        "n|enum|public.quote_status",
+        "e|enum|public.quote_status",
+        "n|type|public.quote_status"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": ["enum", "public", "simulation_scenario"],
+      "writes": [
+        "s|enum|public.simulation_scenario",
+        "n|enum|public.simulation_scenario",
+        "e|enum|public.simulation_scenario",
+        "n|type|public.simulation_scenario"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "consultation"],
+      "writes": [
+        "s|tbl|public.consultation",
+        "n|tbl|public.consultation",
+        "e|tbl|public.consultation",
+        "n|rel|public.consultation",
+        "n|type|public.consultation",
+        "n|rel|public.consultation_pkey",
+        "n|rel|public.consultation_idempotency_key_key"
+      ],
+      "reads": ["n|sch|public", "n|enum|public.simulation_scenario", "n|enum|public.quote_status"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "lender_attempt"],
+      "writes": [
+        "s|tbl|public.lender_attempt",
+        "n|tbl|public.lender_attempt",
+        "e|tbl|public.lender_attempt",
+        "n|rel|public.lender_attempt",
+        "n|type|public.lender_attempt",
+        "n|rel|public.lender_attempt_pkey",
+        "n|rel|public.lender_attempt_consultation_lender_key"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.lender_code",
+        "n|enum|public.simulation_scenario",
+        "n|enum|public.attempt_status",
+        "n|enum|public.attempt_reason"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "lender_setting"],
+      "writes": [
+        "s|tbl|public.lender_setting",
+        "n|tbl|public.lender_setting",
+        "e|tbl|public.lender_setting",
+        "n|rel|public.lender_setting",
+        "n|type|public.lender_setting",
+        "n|rel|public.lender_setting_pkey"
+      ],
+      "reads": ["n|sch|public", "n|enum|public.lender_code"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "lender_switch_log"],
+      "writes": [
+        "s|tbl|public.lender_switch_log",
+        "n|tbl|public.lender_switch_log",
+        "e|tbl|public.lender_switch_log",
+        "n|rel|public.lender_switch_log",
+        "n|type|public.lender_switch_log",
+        "n|rel|public.lender_switch_log_pkey"
+      ],
+      "reads": ["n|sch|public", "n|enum|public.lender_code"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "offer"],
+      "writes": [
+        "s|tbl|public.offer",
+        "n|tbl|public.offer",
+        "e|tbl|public.offer",
+        "n|rel|public.offer",
+        "n|type|public.offer",
+        "n|rel|public.offer_pkey",
+        "n|rel|public.offer_attempt_term_key"
+      ],
+      "reads": ["n|sch|public", "n|enum|public.lender_code"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "patient"],
+      "writes": [
+        "s|tbl|public.patient",
+        "n|tbl|public.patient",
+        "e|tbl|public.patient",
+        "n|rel|public.patient",
+        "n|type|public.patient",
+        "n|rel|public.patient_pkey",
+        "n|rel|public.patient_cpf_hmac_key"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "request_throttle"],
+      "writes": [
+        "s|tbl|public.request_throttle",
+        "n|tbl|public.request_throttle",
+        "e|tbl|public.request_throttle",
+        "n|rel|public.request_throttle",
+        "n|type|public.request_throttle",
+        "n|rel|public.request_throttle_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "consultation", "consultation_patient_created_idx"],
+      "writes": [
+        "s|idx|public.consultation_patient_created_idx",
+        "n|idx|public.consultation_patient_created_idx",
+        "e|idx|public.consultation_patient_created_idx",
+        "n|rel|public.consultation_patient_created_idx"
+      ],
+      "reads": [
+        "n|tbl|public.consultation",
+        "n|sch|public",
+        "n|col|public.consultation.patient_id",
+        "n|col|public.consultation.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "consultation", "consultation_created_id_idx"],
+      "writes": [
+        "s|idx|public.consultation_created_id_idx",
+        "n|idx|public.consultation_created_id_idx",
+        "e|idx|public.consultation_created_id_idx",
+        "n|rel|public.consultation_created_id_idx"
+      ],
+      "reads": [
+        "n|tbl|public.consultation",
+        "n|sch|public",
+        "n|col|public.consultation.created_at",
+        "n|col|public.consultation.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "consultation", "consultation_quote_deadline_idx"],
+      "writes": [
+        "s|idx|public.consultation_quote_deadline_idx",
+        "n|idx|public.consultation_quote_deadline_idx",
+        "e|idx|public.consultation_quote_deadline_idx",
+        "n|rel|public.consultation_quote_deadline_idx"
+      ],
+      "reads": [
+        "n|tbl|public.consultation",
+        "n|sch|public",
+        "n|col|public.consultation.quote_status",
+        "n|col|public.consultation.deadline_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "lender_attempt", "lender_attempt_breaker_idx"],
+      "writes": [
+        "s|idx|public.lender_attempt_breaker_idx",
+        "n|idx|public.lender_attempt_breaker_idx",
+        "e|idx|public.lender_attempt_breaker_idx",
+        "n|rel|public.lender_attempt_breaker_idx"
+      ],
+      "reads": [
+        "n|tbl|public.lender_attempt",
+        "n|sch|public",
+        "n|col|public.lender_attempt.lender",
+        "n|col|public.lender_attempt.simulation_scenario"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "lender_switch_log",
+        "lender_switch_log_created_id_idx"
+      ],
+      "writes": [
+        "s|idx|public.lender_switch_log_created_id_idx",
+        "n|idx|public.lender_switch_log_created_id_idx",
+        "e|idx|public.lender_switch_log_created_id_idx",
+        "n|rel|public.lender_switch_log_created_id_idx"
+      ],
+      "reads": [
+        "n|tbl|public.lender_switch_log",
+        "n|sch|public",
+        "n|col|public.lender_switch_log.created_at",
+        "n|col|public.lender_switch_log.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "request_throttle",
+        "request_throttle_ip_route_created_idx"
+      ],
+      "writes": [
+        "s|idx|public.request_throttle_ip_route_created_idx",
+        "n|idx|public.request_throttle_ip_route_created_idx",
+        "e|idx|public.request_throttle_ip_route_created_idx",
+        "n|rel|public.request_throttle_ip_route_created_idx"
+      ],
+      "reads": [
+        "n|tbl|public.request_throttle",
+        "n|sch|public",
+        "n|col|public.request_throttle.ip_hmac",
+        "n|col|public.request_throttle.route",
+        "n|col|public.request_throttle.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "request_throttle", "request_throttle_created_id_idx"],
+      "writes": [
+        "s|idx|public.request_throttle_created_id_idx",
+        "n|idx|public.request_throttle_created_id_idx",
+        "e|idx|public.request_throttle_created_id_idx",
+        "n|rel|public.request_throttle_created_id_idx"
+      ],
+      "reads": [
+        "n|tbl|public.request_throttle",
+        "n|sch|public",
+        "n|col|public.request_throttle.created_at",
+        "n|col|public.request_throttle.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "consultation"],
+      "writes": [
+        "s|fk|public.consultation.consultation_patient_id_patient_id_fkey",
+        "n|fk|public.consultation.consultation_patient_id_patient_id_fkey",
+        "e|fk|public.consultation.consultation_patient_id_patient_id_fkey",
+        "n|con|public.consultation.consultation_patient_id_patient_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.consultation",
+        "n|sch|public",
+        "n|tbl|public.patient",
+        "n|sch|public",
+        "n|col|public.consultation.patient_id",
+        "n|col|public.patient.id",
+        "e|uniqueness|public.patient.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "consultation"],
+      "writes": [
+        "s|fk|public.consultation.consultation_chosen_offer_id_offer_id_fkey",
+        "n|fk|public.consultation.consultation_chosen_offer_id_offer_id_fkey",
+        "e|fk|public.consultation.consultation_chosen_offer_id_offer_id_fkey",
+        "n|con|public.consultation.consultation_chosen_offer_id_offer_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.consultation",
+        "n|sch|public",
+        "n|tbl|public.offer",
+        "n|sch|public",
+        "n|col|public.consultation.chosen_offer_id",
+        "n|col|public.offer.id",
+        "e|uniqueness|public.offer.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "lender_attempt"],
+      "writes": [
+        "s|fk|public.lender_attempt.lender_attempt_consultation_id_consultation_id_fkey",
+        "n|fk|public.lender_attempt.lender_attempt_consultation_id_consultation_id_fkey",
+        "e|fk|public.lender_attempt.lender_attempt_consultation_id_consultation_id_fkey",
+        "n|con|public.lender_attempt.lender_attempt_consultation_id_consultation_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lender_attempt",
+        "n|sch|public",
+        "n|tbl|public.consultation",
+        "n|sch|public",
+        "n|col|public.lender_attempt.consultation_id",
+        "n|col|public.consultation.id",
+        "e|uniqueness|public.consultation.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "offer"],
+      "writes": [
+        "s|fk|public.offer.offer_attempt_id_lender_attempt_id_fkey",
+        "n|fk|public.offer.offer_attempt_id_lender_attempt_id_fkey",
+        "e|fk|public.offer.offer_attempt_id_lender_attempt_id_fkey",
+        "n|con|public.offer.offer_attempt_id_lender_attempt_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.offer",
+        "n|sch|public",
+        "n|tbl|public.lender_attempt",
+        "n|sch|public",
+        "n|col|public.offer.attempt_id",
+        "n|col|public.lender_attempt.id",
+        "e|uniqueness|public.lender_attempt.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "offer"],
+      "writes": [
+        "s|fk|public.offer.offer_consultation_id_consultation_id_fkey",
+        "n|fk|public.offer.offer_consultation_id_consultation_id_fkey",
+        "e|fk|public.offer.offer_consultation_id_consultation_id_fkey",
+        "n|con|public.offer.offer_consultation_id_consultation_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.offer",
+        "n|sch|public",
+        "n|tbl|public.consultation",
+        "n|sch|public",
+        "n|col|public.offer.consultation_id",
+        "n|col|public.consultation.id",
+        "e|uniqueness|public.consultation.id"
+      ]
+    }
+  ],
+  "ddl": [
+    {
+      "schema": "public",
+      "name": "consultation",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "lender_attempt",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "lender_setting",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "lender_switch_log",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "offer",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "patient",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "request_throttle",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "attempt_reason",
+      "values": [
+        "AMOUNT_ABOVE_LIMIT",
+        "PROFILE_NOT_ELIGIBLE",
+        "LENDER_ERROR",
+        "TIMEOUT",
+        "CIRCUIT_OPEN",
+        "DISABLED",
+        "INTEGRATION_ERROR"
+      ],
+      "entityType": "enums"
+    },
+    {
+      "schema": "public",
+      "name": "attempt_status",
+      "values": ["PENDING", "APPROVED", "REFUSED", "UNAVAILABLE"],
+      "entityType": "enums"
+    },
+    {
+      "schema": "public",
+      "name": "lender_code",
+      "values": ["ALFA", "BETA", "GAMA", "DELTA"],
+      "entityType": "enums"
+    },
+    {
+      "schema": "public",
+      "name": "quote_status",
+      "values": ["QUOTING", "SETTLED"],
+      "entityType": "enums"
+    },
+    {
+      "schema": "public",
+      "name": "simulation_scenario",
+      "values": ["NORMAL", "ALL_APPROVE", "DELTA_FAILS", "DELTA_TIMES_OUT", "NONE_APPROVE"],
+      "entityType": "enums"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "patient_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "idempotency_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "request_hash",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "monthly_income_cents",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "treatment_amount_cents",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "birthdate",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "age_years",
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "simulation_scenario",
+      "type": "simulation_scenario",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'NORMAL'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "quote_status",
+      "type": "quote_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'QUOTING'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "deadline_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "settled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "chosen_offer_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "chosen_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "consultation_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "lender",
+      "type": "lender_code",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "simulation_scenario",
+      "type": "simulation_scenario",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "status",
+      "type": "attempt_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'PENDING'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "reason",
+      "type": "attempt_reason",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "approved_cents",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "monthly_rate",
+      "type": "numeric(7,6)",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "max_approvable_cents",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "breaker_probe",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "picked_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "called_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "settled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "latency_ms",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_setting",
+      "name": "lender",
+      "type": "lender_code",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_setting",
+      "name": "enabled",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_setting",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_switch_log",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_switch_log",
+      "name": "lender",
+      "type": "lender_code",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_switch_log",
+      "name": "enabled",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_switch_log",
+      "name": "actor",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "lender_switch_log",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "attempt_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "consultation_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "lender",
+      "type": "lender_code",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "approved_cents",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "requested_cents",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "monthly_rate",
+      "type": "numeric(7,6)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "term_months",
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "installment_cents",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "total_cents",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "cpf_hmac",
+      "type": "bytea",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "cpf_ciphertext",
+      "type": "bytea",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "cpf_key_version",
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "full_name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "birthdate",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "phone",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "ip_hmac",
+      "type": "bytea",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "route",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "status_code",
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "error_code",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "consultation_patient_created_idx",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "patient_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "consultation_created_id_idx",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "consultation_quote_deadline_idx",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "quote_status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "deadline_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "lender_attempt_breaker_idx",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "lender",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "simulation_scenario",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "\"settled_at\" desc",
+          "isExpression": true,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "lender_switch_log",
+      "name": "lender_switch_log_created_id_idx",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "request_throttle_ip_route_created_idx",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "ip_hmac",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "route",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "request_throttle_created_id_idx",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "consultation_patient_id_patient_id_fkey",
+      "nameExplicit": false,
+      "columns": ["patient_id"],
+      "schemaTo": "public",
+      "tableTo": "patient",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "consultation_chosen_offer_id_offer_id_fkey",
+      "nameExplicit": false,
+      "columns": ["chosen_offer_id"],
+      "schemaTo": "public",
+      "tableTo": "offer",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "lender_attempt_consultation_id_consultation_id_fkey",
+      "nameExplicit": false,
+      "columns": ["consultation_id"],
+      "schemaTo": "public",
+      "tableTo": "consultation",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "offer_attempt_id_lender_attempt_id_fkey",
+      "nameExplicit": false,
+      "columns": ["attempt_id"],
+      "schemaTo": "public",
+      "tableTo": "lender_attempt",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "offer_consultation_id_consultation_id_fkey",
+      "nameExplicit": false,
+      "columns": ["consultation_id"],
+      "schemaTo": "public",
+      "tableTo": "consultation",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "consultation_pkey",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "lender_attempt_pkey",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "lender_setting",
+      "name": "lender_setting_pkey",
+      "columns": ["lender"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "lender_switch_log",
+      "name": "lender_switch_log_pkey",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "offer_pkey",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "patient_pkey",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "request_throttle",
+      "name": "request_throttle_pkey",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "lender_attempt",
+      "name": "lender_attempt_consultation_lender_key",
+      "nameExplicit": true,
+      "columns": ["consultation_id", "lender"],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "public",
+      "table": "offer",
+      "name": "offer_attempt_term_key",
+      "nameExplicit": true,
+      "columns": ["attempt_id", "term_months"],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "public",
+      "table": "consultation",
+      "name": "consultation_idempotency_key_key",
+      "nameExplicit": false,
+      "columns": ["idempotency_key"],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "public",
+      "table": "patient",
+      "name": "patient_cpf_hmac_key",
+      "nameExplicit": false,
+      "columns": ["cpf_hmac"],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    }
+  ]
+}
