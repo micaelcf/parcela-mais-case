@@ -34,6 +34,9 @@ describe("parseListQuery", () => {
     expect(validationPaths({ sort: "cpf:asc" })).toEqual(["sort"]);
     expect(validationPaths({ cpf: "52998224725" })).toEqual(["cpf"]);
     expect(validationPaths({ actor: "operador" })).toEqual(["actor"]);
+    expect(validationPaths({ sort: "toString:asc" })).toEqual(["sort"]);
+    expect(validationPaths({ constructor: "x" })).toEqual(["constructor"]);
+    expect(validationPaths({ toStringFrom: "2026-10-01" })).toEqual(["toStringFrom"]);
     expect(validationPaths({ lenderFrom: "ALFA" })).toEqual(["lenderFrom"]);
   });
 

@@ -59,7 +59,7 @@ export function parseListQuery(raw: Record<string, unknown>, spec: ListSpec): Pa
 
   const sortRaw = raw.sort === undefined ? spec.defaultSort : (scalarText(raw.sort) ?? "");
   const [sortField = "", sortDirection] = sortRaw.split(":");
-  if (!sortPattern.test(sortRaw) || !(sortField in spec.sorts)) {
+  if (!sortPattern.test(sortRaw) || !Object.hasOwn(spec.sorts, sortField)) {
     fields.push({ path: "sort", message: "Ordenação não permitida" });
   }
 
@@ -70,7 +70,7 @@ export function parseListQuery(raw: Record<string, unknown>, spec: ListSpec): Pa
 
   const filters: ParsedFilter[] = [];
   for (const [name, value] of Object.entries(raw)) {
-    if (RESERVED[name] || value === undefined || value === "") continue;
+    if (Object.hasOwn(RESERVED, name) || value === undefined || value === "") continue;
     const match = resolveFilter(name, spec);
     if (!match) {
       fields.push({ path: name, message: "Filtro não permitido" });
@@ -156,14 +156,15 @@ function resolveFilter(
   name: string,
   spec: ListSpec,
 ): { filter: FilterSpec; op: ParsedFilter["op"] } | undefined {
-  const exact = spec.filters[name];
+  const exact = Object.hasOwn(spec.filters, name) ? spec.filters[name] : undefined;
   if (exact?.kind === "eq") return { filter: exact, op: "eq" };
   for (const [suffix, op] of [
     ["From", "gte"],
     ["To", "lte"],
   ] as const) {
     if (!name.endsWith(suffix)) continue;
-    const range = spec.filters[name.slice(0, -suffix.length)];
+    const base = name.slice(0, -suffix.length);
+    const range = Object.hasOwn(spec.filters, base) ? spec.filters[base] : undefined;
     if (range?.kind === "range") return { filter: range, op };
   }
   return undefined;
