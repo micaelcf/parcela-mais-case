@@ -1,8 +1,9 @@
+import type { DevBinding } from "./dev-binding";
 import { devCompose, type Engine } from "./engine";
 
 /**
  * `vp run doctor` (RF-704): pure checks over facts the Bun entry gathers read-only. Each check is
- * one ✓/✗ line; every ✗ carries a fix hint.
+ * one ✓/✗ line (or `!` for a warning that doesn't fail doctor); every ✗ and ! carries a fix hint.
  */
 
 export type CheckResult = {
@@ -10,6 +11,8 @@ export type CheckResult = {
   readonly label: string;
   readonly detail: string;
   readonly hint?: string;
+  /** ok, but worth a look: printed with `!`. */
+  readonly warning?: boolean;
 };
 
 export type EnvFileFacts = {
@@ -30,6 +33,8 @@ export type DatabaseFacts =
       readonly expectedPgBossVersion: number;
     };
 
+export type PortSetting = "POSTGRES_PORT" | "HTTP_PORT" | "HTTPS_PORT";
+
 /** `project`: published by one of this compose project's containers (expected when it's up). */
 export type PortState = "free" | "project" | "busy";
 
@@ -45,12 +50,39 @@ export type DoctorFacts = {
   readonly envFiles: readonly EnvFileFacts[];
   /** null when no DATABASE_URL is configured anywhere. */
   readonly database: DatabaseFacts | null;
-  readonly ports: ReadonlyArray<{ readonly port: number; readonly state: PortState }>;
-  readonly platform: string;
+  /** `setting`: the .env key that moves the port; null for the dev server's fixed 3000. */
+  readonly ports: ReadonlyArray<{
+    readonly port: number;
+    readonly state: PortState;
+    readonly setting: PortSetting | null;
+  }>;
+  readonly platform: NodeJS.Platform;
   /** Host ports Caddy publishes (HTTP_PORT, HTTPS_PORT). */
   readonly caddyPorts: readonly number[];
   /** `/proc/sys/net/ipv4/ip_unprivileged_port_start`, Linux only. */
   readonly unprivilegedPortStart: number | null;
+  /** Caddy's local CA on this machine (caddy-dev and `up --prod`'s caddy share it). */
+  readonly localCa: LocalCaFacts;
+  /** Whether this host's resolver maps parcela.localhost to loopback. */
+  readonly siteResolves: boolean;
+  /** caddy-dev's request to `vp dev`, or null while either isn't running. */
+  readonly devUpstream: { readonly reachable: boolean; readonly detail: string } | null;
+  /** Where `vp run up` binds `vp dev` on this machine (dev-binding.ts). */
+  readonly devBinding: DevBinding;
+};
+
+export type LocalCaFacts = {
+  readonly file: string;
+  /** null while the CA doesn't exist yet. */
+  readonly commonName: string | null;
+  /** Each user store a browser reads; `fix` is the command that adds the CA to it. */
+  readonly stores: ReadonlyArray<{
+    readonly label: string;
+    readonly trusted: boolean;
+    readonly fix: string;
+  }>;
+  /** Why no store can be checked here (e.g. Linux without certutil), or null. */
+  readonly unsupported: string | null;
 };
 
 export type ComposeProvider = {
@@ -245,14 +277,25 @@ const PORT_DETAIL: Record<PortState, string> = {
   busy: "in use by another process",
 };
 
+/** What a busy port blocks, and how to move it. */
+const PORT_HINT: Record<PortSetting, string> = {
+  POSTGRES_PORT: "or change POSTGRES_PORT in .env",
+  HTTP_PORT:
+    "or change HTTP_PORT in .env; `vp run up` and `vp run up --prod` both publish it: `vp run down` stops either",
+  HTTPS_PORT:
+    "or change HTTPS_PORT in .env; `vp run up` and `vp run up --prod` both publish it: `vp run down` stops either",
+};
+
 function checkPorts(ports: DoctorFacts["ports"]): CheckResult[] {
-  return ports.map(({ port, state }) =>
+  return ports.map(({ port, state, setting }) =>
     state === "busy"
       ? {
           ok: false,
           label: `port ${port}`,
           detail: PORT_DETAIL[state],
-          hint: `stop whatever listens on ${port}, or change POSTGRES_PORT / HTTP_PORT in .env`,
+          hint: setting
+            ? `stop whatever listens on ${port}, ${PORT_HINT[setting]}`
+            : `stop whatever listens on ${port} (the dev server's port; an earlier \`vp run up\` still running?)`,
         }
       : { ok: true, label: `port ${port}`, detail: PORT_DETAIL[state] },
   );
@@ -275,6 +318,87 @@ function checkUnprivilegedPorts(facts: DoctorFacts): CheckResult[] {
       ];
 }
 
+function checkLocalCa(localCa: LocalCaFacts): CheckResult[] {
+  const label = `local CA (${localCa.file})`;
+  if (localCa.commonName === null)
+    return [{ ok: true, label, detail: "not created yet: `vp run up` creates it and trusts it" }];
+  if (localCa.unsupported !== null)
+    return [
+      {
+        ok: false,
+        label,
+        detail: `${localCa.commonName}: trust not checked`,
+        hint: localCa.unsupported,
+      },
+    ];
+  return localCa.stores.map((store) =>
+    store.trusted
+      ? { ok: true, label, detail: `${localCa.commonName} trusted in the ${store.label}` }
+      : {
+          ok: false,
+          label,
+          detail: `${localCa.commonName} is not trusted in the ${store.label}: browsers warn`,
+          hint: `vp run up (it asks once), or: ${store.fix}`,
+        },
+  );
+}
+
+function checkSiteResolution(resolves: boolean): CheckResult {
+  const label = "parcela.localhost resolves to loopback";
+  return resolves
+    ? { ok: true, label, detail: "yes" }
+    : {
+        ok: true,
+        warning: true,
+        label,
+        detail:
+          "not by this host's resolver (browsers resolve *.localhost themselves; the ops scripts don't ask)",
+        hint: "for other tools, add `127.0.0.1 parcela.localhost` and `::1 parcela.localhost` to the hosts file (/etc/hosts; Windows: C:\\Windows\\System32\\drivers\\etc\\hosts)",
+      };
+}
+
+/** Why caddy-dev may not reach `vp dev`, per host OS (see dev-binding.ts). */
+const UPSTREAM_HINT: Partial<Record<NodeJS.Platform, string>> = {
+  win32:
+    "caddy-dev dials the vEthernet (WSL) address `vp dev` listens on: Windows Firewall must allow Node.js on that network, then restart vp run up",
+  linux:
+    "allow port 3000 from the container network (Docker: docker0; rootless Podman: pasta's host address) in ufw/firewalld",
+  darwin:
+    "`vp dev` listens on 127.0.0.1, where Podman's gvproxy and Docker Desktop forward host.containers.internal",
+};
+
+function checkDevUpstream(
+  platform: NodeJS.Platform,
+  upstream: DoctorFacts["devUpstream"],
+): CheckResult[] {
+  if (upstream === null) return [];
+  const label = "caddy-dev → vp dev";
+  if (upstream.reachable) return [{ ok: true, label, detail: upstream.detail }];
+  return [
+    {
+      ok: false,
+      label,
+      detail: upstream.detail,
+      hint: UPSTREAM_HINT[platform] ?? "make `vp dev` reachable from the caddy-dev container",
+    },
+  ];
+}
+
+function checkDevBinding(binding: DevBinding): CheckResult {
+  const label = "dev server address";
+  if (!binding.ok) return { ok: false, label, detail: binding.reason, hint: binding.reason };
+  const detail = `${binding.listen}:3000 (${binding.note})`;
+  return binding.lanReachable
+    ? {
+        ok: true,
+        warning: true,
+        label,
+        detail,
+        hint: "machines on that network reach port 3000 unless a firewall closes it (ufw deny 3000 / firewalld): rootless Podman can't reach the host's loopback",
+      }
+    : { ok: true, label, detail };
+}
+
 export function doctorChecks(facts: DoctorFacts): CheckResult[] {
   return [
     checkEngine(facts),
@@ -287,10 +411,15 @@ export function doctorChecks(facts: DoctorFacts): CheckResult[] {
     ...checkDatabase(facts.engine, facts.database),
     ...checkPorts(facts.ports),
     ...checkUnprivilegedPorts(facts),
+    ...checkLocalCa(facts.localCa),
+    checkSiteResolution(facts.siteResolves),
+    checkDevBinding(facts.devBinding),
+    ...checkDevUpstream(facts.platform, facts.devUpstream),
   ];
 }
 
 export function formatCheck(check: CheckResult): string {
-  const line = `${check.ok ? "✓" : "✗"} ${check.label}: ${check.detail}`;
+  const mark = !check.ok ? "✗" : check.warning ? "!" : "✓";
+  const line = `${mark} ${check.label}: ${check.detail}`;
   return check.hint ? `${line}\n    fix: ${check.hint}` : line;
 }

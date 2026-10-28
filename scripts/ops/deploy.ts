@@ -29,9 +29,10 @@ process.exit(
   await runDeploy({
     run,
     engine,
-    fetch: (url) => fetch(url),
+    fetch: (url, init) =>
+      fetch(url, init && { headers: { ...init.headers }, tls: init.tls && { ...init.tls } }),
     sleep,
-    httpPort: process.env.HTTP_PORT ?? "8080",
+    env: process.env,
     log: (line) => console.log(line),
   }),
 );

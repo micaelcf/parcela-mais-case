@@ -68,9 +68,12 @@ test.describe("behind Caddy", () => {
     const health = await request.get("/api/health");
     // Caddy marks proxied responses with `Via: 1.1 Caddy` (it sets `Server` only on its own).
     const proxied = /caddy/i.test(`${health.headers().via ?? ""} ${health.headers().server ?? ""}`);
+    // The dev Caddy trusts the client's X-Forwarded-For on purpose (like the dev server alone), and
+    // says so with `X-Parcela-Stack: dev`; only the production rule is under test here.
+    const devProxy = health.headers()["x-parcela-stack"] === "dev";
     test.skip(
-      !proxied,
-      `${baseURL} isn't the Caddy proxy (no "Via: … Caddy"): run with E2E_BASE_URL=http://localhost:8080 against vp run up --prod`,
+      !proxied || devProxy,
+      `${baseURL} isn't the production proxy: run with E2E_BASE_URL=https://parcela.localhost:8443 against vp run up --prod`,
     );
 
     let last: { status: number; body: unknown } | null = null;

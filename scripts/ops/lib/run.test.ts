@@ -58,6 +58,10 @@ describe("ops command runner (RF-710)", () => {
       ["git", "rev-parse", "HEAD"],
       ["bun", "scripts/ops/migrate.ts"],
       ["vp", "dev", "--port", "3000"],
+      // Trusting Caddy's local CA in the user's own stores (local-ca.ts).
+      ["certutil", "-user", "-verifystore", "Root", "02975DEDFEA488F18B4D2D8B4570FB6C23AB46DF"],
+      ["certutil", "-d", "sql:/home/me/.pki/nssdb", "-L", "-n", "parcela-mais-case dev"],
+      ["security", "find-certificate", "-a", "-Z", "-c", "parcela-mais-case dev"],
     ];
     for (const argv of allowed) await run(argv);
     expect(executed).toEqual(allowed);

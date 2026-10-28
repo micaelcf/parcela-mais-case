@@ -1,8 +1,44 @@
-{$APP_DOMAIN::80} {
-	encode zstd gzip
-	reverse_proxy app:3000 {
-		flush_interval -1
-		header_up X-Forwarded-For {remote_host}
-		header_up X-Real-IP {remote_host}
+# One Caddyfile for both stacks, driven only by env (compose.yaml: `caddy`; compose.dev.yaml: `caddy-dev`).
+# The container listens on the same HTTP/HTTPS ports it publishes. A `*.localhost` APP_DOMAIN gets a
+# certificate from Caddy's local CA (trusted on the host by `vp run up`); a public domain gets ACME
+# (HTTP_PORT=80, HTTPS_PORT=443); a bare `:<HTTP_PORT>` serves plain HTTP.
+{
+	http_port {$HTTP_PORT:8080}
+	https_port {$HTTPS_PORT:8443}
+	# The local CA is trusted on the host by scripts/ops/lib/local-ca.ts, never inside the container.
+	skip_install_trust
+	pki {
+		ca local {
+			# Root subject "parcela-mais-case dev - <year> ECC Root": recognisable in the OS store. One
+			# CA per machine: caddy-dev and the local prod-parity caddy share .local/caddy as /data.
+			name "parcela-mais-case dev"
+		}
 	}
+	servers {
+		# Unset (compose.yaml): nobody is trusted, so {client_ip} is the TCP peer (RF-506).
+		# compose.dev.yaml trusts private ranges: the dev stack keeps the client's X-Forwarded-For,
+		# as `vp dev` on :3000 does, which the E2E suite uses to isolate each test's rate limits.
+		trusted_proxies static {$CADDY_TRUSTED_PROXIES}
+	}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	# compose.dev.yaml sets CADDY_STACK_HEADER="X-Parcela-Stack dev" (proxy specs that need RF-506
+	# skip that stack); unset, the default `-X-Parcela-Stack` only deletes the header.
+	header {$CADDY_STACK_HEADER:-X-Parcela-Stack}
+	reverse_proxy {$CADDY_UPSTREAM} {
+		# Unbuffered: SSE streams.
+		flush_interval -1
+		# Without `+` these replace whatever the client sent (RF-506).
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Real-IP {client_ip}
+	}
+}
+
+# Caddy's automatic HTTP→HTTPS redirect never names https_port (it assumes that port is published as
+# 443), so `*.localhost` names get an explicit one. A public domain keeps the automatic redirect
+# (443); bare `localhost` stays unmatched so a bare `:<HTTP_PORT>` site still answers it.
+http://*.localhost {
+	redir https://{host}:{$HTTPS_PORT:8443}{uri} 308
 }

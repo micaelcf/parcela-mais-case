@@ -3,6 +3,8 @@ node_modules
 dist
 dist-ssr
 *.local
+# Caddy's dev CA (caddy-dev's /data) and the prod-parity CA copy: machine-local, private keys.
+.local/
 .env
 .nitro
 .tanstack

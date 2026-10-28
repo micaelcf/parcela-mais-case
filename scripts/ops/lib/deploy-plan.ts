@@ -1,15 +1,5 @@
-import { compose, type Engine, PROJECT_LABEL, pruneBuildCache } from "./engine";
-import { checkHealth, type HealthFetch, healthUrl, type Sleep } from "./health";
-import type { RunCommand } from "./run";
-
-export type DeployDeps = {
-  readonly run: RunCommand;
-  readonly engine: Engine;
-  readonly fetch: HealthFetch;
-  readonly sleep: Sleep;
-  readonly httpPort: string;
-  readonly log: (line: string) => void;
-};
+import { compose, PROJECT_LABEL, pruneBuildCache } from "./engine";
+import { checkProxyHealth, type ProxyDeps, readContainerCa } from "./proxy";
 
 /** `sha256:abc…` and `abc…` (full or truncated) name the same image. */
 function sameImage(a: string, b: string): boolean {
@@ -31,7 +21,7 @@ function lines(output: string): string[] {
 }
 
 /** Labelled project images that no current service container uses, then this project's build cache. */
-async function removeSupersededImages(deps: DeployDeps): Promise<boolean> {
+async function removeSupersededImages(deps: ProxyDeps): Promise<boolean> {
   const { run, engine, log } = deps;
   const inUse = await run(compose(engine, "--profile", "prod", "images", "-q"), { quiet: true });
   if (inUse.exitCode !== 0) return false;
@@ -62,7 +52,7 @@ async function removeSupersededImages(deps: DeployDeps): Promise<boolean> {
  * else, build with `GIT_SHA = HEAD`, start (migrate gates app/worker), require `/api/health` to
  * report that sha, and only then remove superseded images and the build cache. Returns the exit code.
  */
-export async function runDeploy(deps: DeployDeps): Promise<number> {
+export async function runDeploy(deps: ProxyDeps): Promise<number> {
   const { run, engine, log } = deps;
 
   const status = await run(["git", "status", "--porcelain"], { quiet: true });
@@ -96,17 +86,16 @@ export async function runDeploy(deps: DeployDeps): Promise<number> {
     return 1;
   }
 
-  const url = healthUrl(deps.httpPort);
-  const health = await checkHealth({ url, fetch: deps.fetch, sleep: deps.sleep });
+  const health = await checkProxyHealth(deps, () => readContainerCa(deps));
   if (!health.ok) {
-    log(`✗ ${url} is not healthy: ${health.reason}`);
+    log(`✗ ${health.reason}`);
     return 1;
   }
   if (health.sha !== sha) {
-    log(`✗ ${url} reports sha ${health.sha}, expected ${sha}`);
+    log(`✗ ${health.origin}/api/health reports sha ${health.sha}, expected ${sha}`);
     return 1;
   }
-  log(`✓ ${url} reports ${sha}`);
+  log(`✓ ${health.origin}/api/health reports ${sha}`);
 
   if (!(await removeSupersededImages(deps))) {
     log("✗ cleaning superseded images failed");

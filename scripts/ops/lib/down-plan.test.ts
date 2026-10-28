@@ -22,7 +22,7 @@ const DESTRUCTIVE =
   /^(-v|--volumes|--rmi|prune|rm|-a|--all|-H|--host|--url|--connection|--context)(=|$)/;
 
 describe("down plan", () => {
-  it("removes this project's containers and network, keeping its data and images", async () => {
+  it("removes this project's containers (caddy-dev included) and network, keeping its data and images", async () => {
     const { deps, executed, log } = recordingDeps(podman);
     expect(await runDown(deps, [])).toBe(0);
     expect(executed).toEqual([
@@ -31,6 +31,8 @@ describe("down plan", () => {
         "compose",
         "-f",
         "compose.yaml",
+        "-f",
+        "compose.dev.yaml",
         "-p",
         "parcela-mais-case",
         "--profile",
@@ -42,7 +44,7 @@ describe("down plan", () => {
     expect(log.join("\n")).toMatch(/data volume kept/);
   });
 
-  it("only stops the containers with --stop", async () => {
+  it("only stops the containers (caddy-dev included) with --stop", async () => {
     const { deps, executed } = recordingDeps(podman);
     expect(await runDown(deps, ["--stop"])).toBe(0);
     expect(executed).toEqual([
@@ -51,6 +53,8 @@ describe("down plan", () => {
         "compose",
         "-f",
         "compose.yaml",
+        "-f",
+        "compose.dev.yaml",
         "-p",
         "parcela-mais-case",
         "--profile",
@@ -64,10 +68,12 @@ describe("down plan", () => {
     for (const engine of [podman, { name: "docker", bin: "docker" } satisfies Engine]) {
       for (const mode of ["down", "stop"] as const) {
         for (const argv of downPlan(engine, mode)) {
-          expect(argv.slice(1, 6)).toEqual([
+          expect(argv.slice(1, 8)).toEqual([
             "compose",
             "-f",
             "compose.yaml",
+            "-f",
+            "compose.dev.yaml",
             "-p",
             "parcela-mais-case",
           ]);

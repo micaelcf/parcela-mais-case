@@ -3,7 +3,9 @@ import { describe, expect, it } from "vite-plus/test";
 import { runDeploy } from "./deploy-plan";
 import type { Engine } from "./engine";
 import type { HealthFetch } from "./health";
+import { CONTAINER_CA_ROOT } from "./local-ca";
 import { createRunner, type Env, type Exec } from "./run";
+import { TEST_ROOT_PEM } from "./test-ca.fixture";
 
 const HEAD = "4f2d9c1e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e";
 const CURRENT_IMAGE = `sha256:${"a".repeat(64)}`;
@@ -36,6 +38,7 @@ function fakeHost(scenario: Scenario = {}) {
         stdout: `${CURRENT_IMAGE.slice(7, 19)}\n${CURRENT_IMAGE.slice(7, 19)}\n`,
       };
     }
+    if (command.endsWith(`cat ${CONTAINER_CA_ROOT}`)) return { exitCode: 0, stdout: TEST_ROOT_PEM };
     if (argv[1] === "images")
       return { exitCode: 0, stdout: [CURRENT_IMAGE, OLD_IMAGE, OLDER_IMAGE].join("\n") };
     return { exitCode: 0, stdout: "" };
@@ -55,7 +58,7 @@ function fakeHost(scenario: Scenario = {}) {
     engine: scenario.engine ?? podman,
     fetch,
     sleep: async () => {},
-    httpPort: "8080",
+    env: {},
     log: (line: string) => log.push(line),
   };
   return { deps, calls, log };

@@ -8,8 +8,10 @@ import { parse as parseYaml } from "yaml";
 
 import { runDeploy } from "./deploy-plan";
 import type { Engine } from "./engine";
+import { CONTAINER_CA_ROOT, DEV_CADDY_DATA } from "./local-ca";
 import { prunePlan } from "./prune-plan";
-import { createRunner, type Exec } from "./run";
+import { createRunner, type Env, type Exec } from "./run";
+import { TEST_ROOT_PEM } from "./test-ca.fixture";
 import { devSetupPlan, runProdUp } from "./up-plan";
 
 const SHA = "4f2d9c1e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e";
@@ -78,12 +80,21 @@ function composeFiles(argv: readonly string[]): string[] {
   return argv.flatMap((arg, i) => (argv[i - 1] === "-f" ? [arg] : []));
 }
 
-/** Every compose invocation `vp run up --prod` and a healthy `vp run deploy` make. */
-async function prodComposeCalls(): Promise<string[][]> {
-  const calls: string[][] = [];
-  const exec: Exec = async (argv) => {
-    calls.push([...argv]);
-    const stdout = argv.join(" ") === "git rev-parse HEAD" ? `${SHA}\n` : "";
+/** Every compose invocation `vp run up --prod` and a healthy `vp run deploy` make, with its env. */
+async function prodComposeRuns(): Promise<{
+  up: Array<{ argv: string[]; env: Env }>;
+  deploy: Array<{ argv: string[]; env: Env }>;
+}> {
+  let calls: Array<{ argv: string[]; env: Env }> = [];
+  const exec: Exec = async (argv, options) => {
+    calls.push({ argv: [...argv], env: options.env ?? {} });
+    const command = argv.join(" ");
+    const stdout =
+      command === "git rev-parse HEAD"
+        ? `${SHA}\n`
+        : command.endsWith(`cat ${CONTAINER_CA_ROOT}`)
+          ? TEST_ROOT_PEM
+          : "";
     return { exitCode: 0, stdout, stderr: "" };
   };
   const deps = {
@@ -91,12 +102,23 @@ async function prodComposeCalls(): Promise<string[][]> {
     engine: podman,
     fetch: async () => ({ status: 200, json: async () => ({ status: "ok", sha: SHA }) }),
     sleep: async () => {},
-    httpPort: "8080",
+    env: {},
     log: () => {},
+    readFile: async () => TEST_ROOT_PEM,
+    trust: async () => true,
   };
   expect(await runProdUp(deps)).toBe(0);
+  const up = calls.filter(({ argv }) => argv[1] === "compose");
+  calls = [];
   expect(await runDeploy(deps)).toBe(0);
-  return calls.filter((argv) => argv[1] === "compose");
+  const deploy = calls.filter(({ argv }) => argv[1] === "compose");
+  return { up, deploy };
+}
+
+/** Every compose argv `vp run up --prod` and a healthy `vp run deploy` run. */
+async function prodComposeCalls(): Promise<string[][]> {
+  const { up, deploy } = await prodComposeRuns();
+  return [...up, ...deploy].map(({ argv }) => argv);
 }
 
 /** `${NAME}`, `${NAME-}`, `${NAME:-}`, `${NAME?msg}`, `${NAME:?msg}`: from env, no literal default. */
@@ -187,6 +209,66 @@ describe("compose stacks", () => {
       url.password,
       url.pathname.slice(1),
     ]);
+  });
+
+  it("runs Caddy on the ports it publishes, in both stacks", async () => {
+    const [devUp] = devSetupPlan(podman);
+    const prodFiles = composeFiles((await prodComposeCalls())[0] ?? []);
+    // The public proxy listens on every host address; caddy-dev only on loopback (off the LAN).
+    const stacks = [
+      { proxy: "caddy", bind: "", stack: loadStack(prodFiles) },
+      { proxy: "caddy-dev", bind: "127.0.0.1:", stack: loadStack(composeFiles(devUp)) },
+    ];
+    for (const { proxy, bind, stack } of stacks) {
+      const service = stack.get(proxy);
+      expect(service?.ports, proxy).toEqual([
+        `${bind}\${HTTP_PORT:-8080}:\${HTTP_PORT:-8080}`,
+        `${bind}\${HTTPS_PORT:-8443}:\${HTTPS_PORT:-8443}`,
+      ]);
+      // The Caddyfile's http_port/https_port: the same values the ports above publish.
+      expect(service?.environment.get("HTTP_PORT"), proxy).toBe("${HTTP_PORT:-8080}");
+      expect(service?.environment.get("HTTPS_PORT"), proxy).toBe("${HTTPS_PORT:-8443}");
+    }
+    expect(stacks[0]?.stack.has("caddy-dev")).toBe(false);
+  });
+
+  it("serves parcela.localhost over HTTPS by default; dev keeps its CA in a bind mount", () => {
+    const [devUp] = devSetupPlan(podman);
+    expect(devUp).toContain("caddy-dev");
+    const prod = loadStack(["compose.yaml"]);
+    for (const name of ["caddy", "app", "worker"])
+      expect(prod.get(name)?.environment.get("APP_DOMAIN"), name).toBe(
+        "${APP_DOMAIN:-parcela.localhost}",
+      );
+    expect(prod.get("caddy")?.environment.get("CADDY_TRUSTED_PROXIES")).toBeUndefined();
+
+    const dev = loadStack(composeFiles(devUp)).get("caddy-dev");
+    expect(dev?.environment.get("APP_DOMAIN")).toBe("parcela.localhost");
+    expect(dev?.environment.get("CADDY_UPSTREAM")).toBe(
+      "${DEV_UPSTREAM_HOST:-host.containers.internal}:3000",
+    );
+    const raw = parseYaml(readFileSync("compose.dev.yaml", "utf8")) as {
+      services: Record<string, { volumes?: string[]; extra_hosts?: string[] }>;
+    };
+    expect(raw.services["caddy-dev"]?.volumes).toContain(`./${DEV_CADDY_DATA}:/data`);
+    expect(raw.services["caddy-dev"]?.extra_hosts).toEqual([
+      "host.containers.internal:host-gateway",
+    ]);
+  });
+
+  it("prod-parity Caddy shares caddy-dev's CA directory; deploy keeps the named volume", async () => {
+    const raw = parseYaml(readFileSync("compose.yaml", "utf8")) as {
+      services: Record<string, { volumes?: string[] }>;
+      volumes: Record<string, unknown>;
+    };
+    expect(raw.services.caddy?.volumes).toContain("${CADDY_DATA:-caddy_data}:/data");
+    expect(Object.keys(raw.volumes)).toContain("caddy_data");
+
+    const { up, deploy } = await prodComposeRuns();
+    const caddyStarts = (runs: Array<{ argv: string[]; env: Env }>) =>
+      runs.filter(({ argv }) => argv.includes("up"));
+    expect(caddyStarts(up).map(({ env }) => env.CADDY_DATA)).toEqual([`./${DEV_CADDY_DATA}`]);
+    expect(caddyStarts(deploy).map(({ env }) => env.CADDY_DATA)).toEqual([undefined]);
   });
 
   it("never nests an interpolation inside a default", async () => {

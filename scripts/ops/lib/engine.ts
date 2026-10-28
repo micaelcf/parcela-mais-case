@@ -55,7 +55,7 @@ export function compose(engine: Engine, ...args: readonly string[]): string[] {
   return [engine.bin, "compose", "-f", "compose.yaml", "-p", PROJECT, ...args];
 }
 
-/** `compose` plus `compose.dev.yaml` (Postgres on the host port, dev password): `vp run up` only. */
+/** `compose` plus `compose.dev.yaml` (Postgres on the host port, dev password, caddy-dev): `vp run up`, `down`. */
 export function devCompose(engine: Engine, ...args: readonly string[]): string[] {
   const files = ["-f", "compose.yaml", "-f", "compose.dev.yaml"];
   return [engine.bin, "compose", ...files, "-p", PROJECT, ...args];

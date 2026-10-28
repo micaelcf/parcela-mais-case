@@ -34,6 +34,8 @@ export class RemoteCommandError extends Error {
 const ENGINES: Record<string, true> = { podman: true, docker: true };
 const LOCAL_GIT_VERBS: Record<string, true> = { status: true, "rev-parse": true };
 const TOOLCHAIN: Record<string, true> = { bun: true, vp: true };
+/** Trust store tools (`local-ca.ts`): they only read or write the current user's own stores. */
+const TRUST_TOOLS: Record<string, true> = { certutil: true, security: true };
 const REMOTE_ENV_VARS = ["DOCKER_HOST", "CONTAINER_HOST"] as const;
 const REMOTE_ENGINE_FLAGS = ["-H", "--host", "--url", "--connection"] as const;
 /** `podman -c <name>` is `--connection`; only meaningful before the subcommand. */
@@ -76,7 +78,7 @@ export function remoteCommandReason(argv: readonly string[], env: Env): string |
       ? null
       : "only `git status` and `git rev-parse` are allowed";
   }
-  if (TOOLCHAIN[name] === true) return null;
+  if (TOOLCHAIN[name] === true || TRUST_TOOLS[name] === true) return null;
   return `\`${name}\` is not an allowed ops command`;
 }
 

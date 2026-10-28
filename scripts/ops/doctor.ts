@@ -2,9 +2,11 @@
 /**
  * `vp run doctor`: read-only readiness report (RF-704). Runs only version/listing commands, a
  * child `bun` that validates each env file against the server env schema, read-only SQL (in a
- * read-only session) and TCP probes. Writes nothing.
+ * read-only session), TCP probes, trust-store lookups and one HTTP probe from inside caddy-dev.
+ * Writes nothing.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { lookup } from "node:dns/promises";
 import { connect } from "node:net";
 import { join } from "node:path";
 
@@ -20,12 +22,19 @@ import {
   doctorChecks,
   type EnvFileFacts,
   formatCheck,
+  type LocalCaFacts,
+  type PortSetting,
   type PortState,
   publishedHostPorts,
 } from "./lib/doctor-checks";
-import { COMPOSE_PROJECT_LABEL, detectEngine } from "./lib/engine";
+import { devBinding } from "./lib/dev-binding";
+import { gatherDevNetworkFacts } from "./lib/dev-network";
+import { COMPOSE_PROJECT_LABEL, detectEngine, devCompose } from "./lib/engine";
+import { DEFAULT_APP_DOMAIN } from "./lib/health";
+import { DEV_CA_ROOT, describeCa, trustPlan, trustStatus } from "./lib/local-ca";
 import { createRunner, type RunCommand } from "./lib/run";
 import { createShellExec } from "./lib/shell-exec";
+import { gatherTrustFacts } from "./lib/trust-facts";
 
 const ENV_FILES = [".env.local", ".env"] as const;
 const MIGRATIONS_FOLDER = "drizzle";
@@ -144,11 +153,14 @@ async function databaseFacts(url: string): Promise<DatabaseFacts> {
   }
 }
 
-/** A TCP connect to localhost (either loopback family) that succeeds means something listens. */
-async function listening(port: number): Promise<boolean> {
-  const attempt = (family: 4 | 6) => {
+/**
+ * A TCP connect that succeeds means something listens: on `host`, or on localhost (either
+ * loopback family) when no host is given.
+ */
+async function listening(port: number, host?: string): Promise<boolean> {
+  const attempt = (target: { host: string; family?: 4 | 6 }) => {
     const { promise, resolve } = Promise.withResolvers<boolean>();
-    const socket = connect({ host: "localhost", port, family });
+    const socket = connect({ ...target, port });
     socket.setTimeout(1_000);
     socket.once("connect", () => {
       socket.destroy();
@@ -161,10 +173,16 @@ async function listening(port: number): Promise<boolean> {
     socket.once("error", () => resolve(false));
     return promise;
   };
-  return (await attempt(6)) || (await attempt(4));
+  if (host !== undefined) return attempt({ host });
+  return (
+    (await attempt({ host: "localhost", family: 6 })) ||
+    (await attempt({ host: "localhost", family: 4 }))
+  );
 }
 
-async function portFacts(ports: readonly number[]): Promise<DoctorFacts["ports"]> {
+async function portFacts(
+  ports: ReadonlyArray<{ port: number; setting: PortSetting | null; host?: string }>,
+): Promise<DoctorFacts["ports"]> {
   const projectPs = await output(run, [
     engine.bin,
     "ps",
@@ -175,17 +193,51 @@ async function portFacts(ports: readonly number[]): Promise<DoctorFacts["ports"]
   ]);
   const projectPorts = publishedHostPorts(projectPs ?? "");
   return Promise.all(
-    ports.map(async (port) => {
-      const state: PortState = !(await listening(port))
-        ? "free"
-        : projectPorts.has(port)
-          ? "project"
-          : "busy";
-      return { port, state };
+    ports.map(async ({ port, setting, host }) => {
+      const busy = (await listening(port)) || (host !== undefined && (await listening(port, host)));
+      const state: PortState = !busy ? "free" : projectPorts.has(port) ? "project" : "busy";
+      return { port, state, setting };
     }),
   );
 }
 
+async function localCaFacts(file: string): Promise<LocalCaFacts> {
+  if (!existsSync(file)) return { file, commonName: null, stores: [], unsupported: null };
+  const ca = describeCa(readFileSync(file, "utf8"));
+  const plan = trustPlan(
+    ca,
+    gatherTrustFacts(file, (command) => which(command)),
+  );
+  return {
+    file,
+    commonName: ca.commonName,
+    stores: await trustStatus(run, plan),
+    unsupported: "unsupported" in plan ? plan.unsupported : null,
+  };
+}
+
+async function siteResolves(): Promise<boolean> {
+  const addresses = await lookup(DEFAULT_APP_DOMAIN, { all: true }).catch(() => []);
+  return (
+    addresses.length > 0 &&
+    addresses.every(({ address }) => address === "::1" || address.startsWith("127."))
+  );
+}
+
+/** From inside caddy-dev, the request Caddy makes to `vp dev` (only while both run). */
+async function devUpstreamFacts(): Promise<DoctorFacts["devUpstream"]> {
+  const running = await output(run, devCompose(engine, "ps", "-q", "caddy-dev"));
+  if (!running || !binding.ok || !(await listening(3000, binding.listen))) return null;
+  const probe =
+    'wget -q -T 10 -O /dev/null "http://$CADDY_UPSTREAM/api/health" 2>&1 && echo "http://$CADDY_UPSTREAM"';
+  const result = await run(devCompose(engine, "exec", "-T", "caddy-dev", "sh", "-c", probe), {
+    quiet: true,
+  });
+  const detail = `${result.stdout}${result.stderr}`.trim() || `exit ${result.exitCode}`;
+  return { reachable: result.exitCode === 0, detail };
+}
+
+const binding = devBinding(gatherDevNetworkFacts(engine));
 const rootPackage = readJson("package.json");
 const env = await envFileFacts();
 const databaseUrl =
@@ -205,13 +257,22 @@ const facts: DoctorFacts = {
     : "unknown (package.json devEngines)",
   envFiles: env.files,
   database: databaseUrl ? await databaseFacts(databaseUrl) : null,
-  ports: await portFacts([3000, Number(process.env.POSTGRES_PORT ?? 5432), httpPort]),
+  ports: await portFacts([
+    { port: 3000, setting: null, host: binding.ok ? binding.listen : undefined },
+    { port: Number(process.env.POSTGRES_PORT ?? 5432), setting: "POSTGRES_PORT" },
+    { port: httpPort, setting: "HTTP_PORT" },
+    { port: httpsPort, setting: "HTTPS_PORT" },
+  ]),
   platform: process.platform,
   caddyPorts: [httpPort, httpsPort],
   unprivilegedPortStart:
     process.platform === "linux"
       ? Number(readFileSync("/proc/sys/net/ipv4/ip_unprivileged_port_start", "utf8").trim())
       : null,
+  localCa: await localCaFacts(DEV_CA_ROOT),
+  siteResolves: await siteResolves(),
+  devUpstream: await devUpstreamFacts(),
+  devBinding: binding,
 };
 
 const checks = doctorChecks(facts);

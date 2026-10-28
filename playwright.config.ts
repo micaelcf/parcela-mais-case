@@ -1,11 +1,26 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { defineConfig, devices } from "@playwright/test";
 
 /**
  * End-to-end suite (RF-807): Playwright Test against an already running stack, Chromium only.
- * `E2E_BASE_URL` picks the stack: the dev stack (`vp run up`, simulation controls on) by default,
- * Caddy (`vp run up --prod`, http://localhost:8080) for the proxy spec.
+ * `E2E_BASE_URL` picks the stack: https://parcela.localhost:8443 by default, which is the dev stack
+ * (`vp run up`, simulation controls on) or, while it runs instead, the prod-parity one
+ * (`vp run up --prod`, where the proxy specs run). `vp dev` itself listens only on the address
+ * caddy-dev reaches (`vp run doctor` prints it), not on `localhost:3000`.
  */
-const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+const baseURL = process.env.E2E_BASE_URL ?? "https://parcela.localhost:8443";
+
+/** Caddy's local CA root, shared by both local stacks (scripts/ops/lib/local-ca.ts `DEV_CA_ROOT`). */
+const CADDY_ROOT = resolve(".local/caddy/caddy/pki/authorities/local/root.crt");
+
+// The browser trusts Caddy's CA through the OS store (`vp run up` adds it); Node never reads that
+// store, so the workers' `request` and `fetch` get it here. Workers start after this runs and
+// inherit the env; NODE_EXTRA_CA_CERTS is read once, at process start.
+if (!process.env.NODE_EXTRA_CA_CERTS && existsSync(CADDY_ROOT)) {
+  process.env.NODE_EXTRA_CA_CERTS = CADDY_ROOT;
+}
 
 export default defineConfig({
   testDir: "test/e2e",

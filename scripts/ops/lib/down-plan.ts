@@ -1,4 +1,4 @@
-import { compose, type Engine } from "./engine";
+import { devCompose, type Engine } from "./engine";
 import type { RunCommand } from "./run";
 
 /** `down` removes the containers and network; `stop` only stops them. Neither touches data. */
@@ -24,12 +24,13 @@ export function parseDownArgs(
 }
 
 /**
- * Takes this compose project down without losing anything: dev Postgres and, when running, the
- * prod-parity services (`--profile prod`). Never `-v` or `--rmi`: the database volume and the
+ * Takes this compose project down without losing anything: dev Postgres and caddy-dev (both from
+ * `compose.dev.yaml`, so `--stop` reaches caddy-dev too) and, when running, the prod-parity
+ * services (`--profile prod`). Never `-v` or `--rmi`: the database volume, caddy's CA and the
  * built images stay, so `vp run up` resumes with the same data. `vp run prune` is the reset.
  */
 export function downPlan(engine: Engine, mode: DownMode): string[][] {
-  return [compose(engine, "--profile", "prod", ...MODE_ARGS[mode])];
+  return [devCompose(engine, "--profile", "prod", ...MODE_ARGS[mode])];
 }
 
 export async function runDown(

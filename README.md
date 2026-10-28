@@ -2,12 +2,17 @@ Welcome to your new TanStack Start app!
 
 # Getting Started
 
-To run this application:
+Run the whole dev stack with one command. You need Bun and Podman (or Docker):
 
 ```bash
 bun install
-bun --bun run dev
+cp .env.example .env.local
+vp run up
 ```
+
+`vp run up` starts Postgres and Caddy in containers, migrates the database, and runs the app and the worker in your terminal. When it prints the URL, open **https://parcela.localhost:8443**. The backoffice is at `/backoffice`; with the `.env.example` hash, sign in as `operador` / `senha-de-teste` (`up` prints both).
+
+Caddy serves the site with a certificate from its own local CA. On the first run, `up` adds that CA to your user's trust store, and Windows or macOS asks you once to confirm. If you decline, the app still runs and `up` prints the command to trust the CA later. `vp run doctor` checks the CA, the ports (8080, 8443) and Caddy's route to the dev server. Ctrl-C stops the app and the worker; `vp run down` stops the containers. See `.ef/pre-approval-journey/contract/ops.md` for the prod-parity stack and per-OS details.
 
 # Building For Production
 

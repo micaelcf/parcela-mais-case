@@ -1,5 +1,5 @@
-# Dev-only override, loaded by `vp run up` (and the `doctor` hint) on top of compose.yaml:
-#   <engine> compose -f compose.yaml -f compose.dev.yaml -p parcela-mais-case up -d --wait postgres
+# Dev-only override, loaded by `vp run up` (and `doctor`, `down`) on top of compose.yaml:
+#   <engine> compose -f compose.yaml -f compose.dev.yaml -p parcela-mais-case up -d --wait postgres caddy-dev
 # `vp run up --prod` and `vp run deploy` never load it, so the prod stack publishes only Caddy.
 services:
   postgres:
@@ -8,3 +8,39 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parcela}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
+
+  # https://parcela.localhost:8443 → the `vp dev` server on the host (port 3000), with a certificate
+  # from Caddy's local CA. The CA lives in .local/caddy (a bind mount, not a volume), so it survives
+  # `vp run prune` and the OS trust prompt happens once per machine; `vp run up --prod` mounts the
+  # same directory into the prod `caddy` (never at the same time: same ports).
+  caddy-dev:
+    image: docker.io/library/caddy:2-alpine
+    # Loopback only: the dev app (and its documented password) stays off the LAN on every engine.
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"
+      - "127.0.0.1:${HTTPS_PORT:-8443}:${HTTPS_PORT:-8443}"
+    environment:
+      APP_DOMAIN: parcela.localhost
+      # `vp run up` sets DEV_UPSTREAM_HOST where host.containers.internal isn't the host running
+      # `vp dev` (Podman on Windows: the WSL VM; the host is its gateway). See dev-binding.ts.
+      CADDY_UPSTREAM: ${DEV_UPSTREAM_HOST:-host.containers.internal}:3000
+      HTTP_PORT: ${HTTP_PORT:-8080}
+      HTTPS_PORT: ${HTTPS_PORT:-8443}
+      # Dev keeps the client's X-Forwarded-For, exactly like `vp dev` on :3000 (the E2E suite isolates
+      # each test's rate limits with it); the prod `caddy` trusts nobody (RF-506).
+      CADDY_TRUSTED_PROXIES: private_ranges
+      CADDY_STACK_HEADER: X-Parcela-Stack dev
+    # Docker has no host.containers.internal; Podman maps it to the same address as without this line.
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./.local/caddy:/data
+    healthcheck:
+      # In-container check: Caddy's admin API binds IPv4 loopback only, and busybox wget tries ::1 for "localhost".
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    labels:
+      com.parcela.project: parcela-mais-case
