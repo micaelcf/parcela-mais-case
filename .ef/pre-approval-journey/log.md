@@ -240,3 +240,10 @@ Verdict **FAIL**. Report: `agent://Stage5VerifyRound2` (copy `local://audit-roun
 - N5: `compose.yaml`/`.env.example`/`ops.md`/`bindings.md` say `POSTGRES_PASSWORD` stays required with `STACK_DATABASE_URL`.
 - QN1: RFC D11 correction (per-call failure ≈ 0.62, P(≥16/20) ≈ 7.0 %, computed) and owner question O10.
 - QN2: C164 now runs per `Accept-Encoding` (Chromium's `zstd, br, gzip, deflate`, `gzip`, `identity`) and records the `Content-Encoding` Caddy chose.
+
+## Stage 5 — verify round 3 (2026-10-28, reviewer, range `915c3ba..3980f27`)
+
+Verdict **PASS** (`local://audit-round-3.md`): N1–N5 fixed, QN1 recorded (O10), QN2 answered; every code fix has a regression test that fails on revert. New: N6 minor (a consultation-id prefix with all-digit later groups, e.g. `019a2b3c-1234-7123-8123`, refused as a CPF), N7 nits (C163 cited RF-103; startup-configuration row claimed `migrate.ts` imports `server-env.ts`; `frontend.md` "digit-free text").
+
+- Closed after the verdict: N6 — `classifySearchText` treats a UUID prefix past its first group holding a hex letter as text (CPF runs still checked first: `529-982-247-25` and an id prefix hiding 11 digits stay refused); C168 cases added, red on the old classifier per the reviewer's reproduction; `backoffice.spec.ts` 9 passed on the dev stack. N7 — docs corrected.
+- Next: contract mode (`API_HANDOFF.md`, fact-checked by a fresh reviewer).

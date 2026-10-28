@@ -16,7 +16,7 @@ Proof: `vp test src/lib/validation/standard-schema.test.ts -t "re-homes required
 **C3** · RF-103 — with `NODE_ENV=production`, a body validation failure returns 422 `application/problem+json` with `code: "VALIDATION"` and `fields: [{ path: "cpf", message }]`
 Proof: `vp test src/server/infra/http/errors.plugin.test.ts -t "keeps field details in production"`
 
-**C163** · RF-103 — an unexpected error → 500 `application/problem+json` `{ code: "INTERNAL" }` whose body carries none of the error's message (added 2026-10-28, audit N3: error-code coverage)
+**C163** · (no RF; error contract) — an unexpected error → 500 `application/problem+json` `{ code: "INTERNAL" }` whose body carries none of the error's message (added 2026-10-28, audit N3: error-code coverage)
 Proof: `vp test src/server/infra/http/errors.plugin.test.ts -t "answers an unexpected error with 500 INTERNAL and no internals"`
 
 **C4** · RF-708 — `GET /api/health` returns 200 `{ status: "ok", sha }` with `sha` equal to `GIT_SHA`
