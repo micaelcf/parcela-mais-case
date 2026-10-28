@@ -83,16 +83,21 @@ async function assertBelowPatientCap(tx: Tx, patientId: string): Promise<void> {
   }
 }
 
+/** The id of an earlier create with this key and body; reused key with another body → 422. */
+async function replayOf(tx: Tx, command: CreateCommand): Promise<string | undefined> {
+  const existing = await consultationRepository.findByIdempotencyKey(command.idempotencyKey, tx);
+  if (!existing) return undefined;
+  if (existing.requestHash === command.requestHash) return existing.id;
+  throw new DomainError(
+    "IDEMPOTENCY_KEY_REUSED",
+    "Esta chave de idempotência já foi usada com outros dados.",
+  );
+}
+
 async function createOnce(command: CreateCommand): Promise<string> {
   return db.transaction(async (tx) => {
-    const existing = await consultationRepository.findByIdempotencyKey(command.idempotencyKey, tx);
-    if (existing) {
-      if (existing.requestHash === command.requestHash) return existing.id;
-      throw new DomainError(
-        "IDEMPOTENCY_KEY_REUSED",
-        "Esta chave de idempotência já foi usada com outros dados.",
-      );
-    }
+    const replayed = await replayOf(tx, command);
+    if (replayed) return replayed;
 
     const scenario = command.scenario;
     if (scenario !== "NORMAL" && !env.SIMULATION_CONTROLS) {
@@ -100,6 +105,9 @@ async function createOnce(command: CreateCommand): Promise<string> {
     }
 
     const patientId = await command.lockPatient(tx);
+    // A same-key twin may have committed while we waited for the lock: a replay, never a cap hit.
+    const replayedUnderLock = await replayOf(tx, command);
+    if (replayedUnderLock) return replayedUnderLock;
     await assertBelowPatientCap(tx, patientId);
     const ageYears = ageOn(command.birthdate, toIsoDate(new Date()));
     if (ageYears === null) throw new Error("birthdate passed validation but is not a date");
