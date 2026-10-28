@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 
 import type { SimulationScenario } from "#/lib/enums";
+import type { AbuseMetrics } from "#/server/modules/backoffice/backoffice.dto";
 
 // Low caps so the abuse test can hit both limits. Set before any app module reads the env.
 process.env.RATE_LIMIT_IP_MAX = "5";
@@ -321,14 +322,23 @@ describe("backoffice metrics", () => {
     const anaId = await patientIdOf(anaFirst);
     const brunoId = await patientIdOf(brunoFirst);
 
-    // Outcomes (status and error code) are recorded after each response; wait until all three
-    // 429s are recorded with their codes, not just counted.
+    // Outcomes (status and error code) are recorded after each response, and the window ends at
+    // the app's clock while rows carry the database's: wait until every row this test asserts on
+    // is visible, not just the 429 count.
+    const ipRow = (value: AbuseMetrics, ip: string) =>
+      value.topIps.find((row) => row.ipHash === ipHashOf(ip));
+    const patientRow = (value: AbuseMetrics, patientId: string) =>
+      value.topPatients.find((row) => row.patientId === patientId);
     const metrics = await waitFor(
       () => getOk("/metrics/abuse", cookie, AbuseMetricsSchema),
       (value) =>
         value.tooManyRequests === 3 &&
         value.limitHits.IP_LIMIT + value.limitHits.PATIENT_LIMIT === 3 &&
-        value.topIps.some((row) => row.ipHash === ipHashOf(heavyIp) && row.tooManyRequests === 3),
+        ipRow(value, heavyIp)?.requests === 7 &&
+        ipRow(value, heavyIp)?.tooManyRequests === 3 &&
+        ipRow(value, otherIp)?.requests === 2 &&
+        patientRow(value, anaId)?.consultations === 2 &&
+        patientRow(value, brunoId)?.consultations === 2,
     );
     expect(metrics.limitHits).toEqual({ IP_LIMIT: 2, PATIENT_LIMIT: 1 });
     expect(metrics.tooManyRequests).toBe(3);
