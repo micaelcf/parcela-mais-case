@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
 
 import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
+import { discardSignupDraft } from "#/components/modules/signup/signup-draft";
 import { Button, buttonVariants } from "#/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#/components/ui/card";
 import { formatBRL } from "#/lib/money/money";
@@ -48,7 +49,11 @@ export function NoOfferPanel({ view, requoting, onRequote }: NoOfferPanelProps) 
             <p className="text-sm">
               Nenhuma financeira indicou um valor menor que poderia aprovar.
             </p>
-            <Link to="/cadastro/paciente" className={buttonVariants({ variant: "outline" })}>
+            <Link
+              to="/cadastro/paciente"
+              onClick={discardSignupDraft}
+              className={buttonVariants({ variant: "outline" })}
+            >
               Começar um novo cadastro
             </Link>
           </div>

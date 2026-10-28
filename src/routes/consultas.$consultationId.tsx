@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { chooseOffer, getConsultation, requoteConsultation } from "#/api/consultations";
 import { AppShell } from "#/components/AppShell";
 import { ConsultationJourney } from "#/components/modules/consultation/ConsultationJourney";
+import { discardSignupDraft } from "#/components/modules/signup/signup-draft";
 import { buttonVariants } from "#/components/ui/button";
 import { useConsultationStream } from "#/hooks/use-consultation-stream";
 import type {
@@ -88,7 +89,11 @@ function ConsultationNotFound() {
       <div className="mx-auto flex max-w-xl flex-col items-start gap-4">
         <h1 className="font-heading text-2xl font-semibold">Consulta não encontrada</h1>
         <p className="text-muted-foreground">Confira o endereço ou comece um novo cadastro.</p>
-        <Link to="/cadastro/paciente" className={buttonVariants({ size: "lg" })}>
+        <Link
+          to="/cadastro/paciente"
+          onClick={discardSignupDraft}
+          className={buttonVariants({ size: "lg" })}
+        >
           Novo cadastro
         </Link>
       </div>

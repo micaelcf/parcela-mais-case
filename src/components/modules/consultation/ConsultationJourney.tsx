@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { UserPlusIcon } from "lucide-react";
 
+import { discardSignupDraft } from "#/components/modules/signup/signup-draft";
 import { buttonVariants } from "#/components/ui/button";
 import type {
   ConsultationPublicView,
@@ -65,6 +66,8 @@ export function ConsultationJourney({
         {/* Back to the start: the signup layout mounts afresh (empty form, new idempotency key). */}
         <Link
           to="/cadastro/paciente"
+          // A new signup, not the resumption of one left half-done in this tab.
+          onClick={discardSignupDraft}
           className={buttonVariants({ variant: "outline", className: "self-start" })}
         >
           <UserPlusIcon aria-hidden data-icon="inline-start" />

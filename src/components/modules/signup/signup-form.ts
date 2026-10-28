@@ -278,13 +278,15 @@ export const signupFormOptions = formOptions({
   validators: { onBlur: signupValidator },
 });
 
-/** The single signup form instance (owned by the `/cadastro` layout). */
+/** The single signup form instance (owned by the `/cadastro` layout), from a draft when restored. */
 export function useSignupForm(handlers: {
   onSubmit: (values: SignupFormValues) => Promise<void>;
   onSubmitInvalid: () => void;
+  initialValues?: SignupFormValues;
 }) {
   return useAppForm({
     ...signupFormOptions,
+    defaultValues: handlers.initialValues ?? signupFormOptions.defaultValues,
     onSubmit: ({ value }) => handlers.onSubmit(value),
     onSubmitInvalid: () => handlers.onSubmitInvalid(),
   });

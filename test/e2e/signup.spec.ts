@@ -4,6 +4,7 @@ import { expect, test } from "./support/fixtures";
 import { birthdateForAge, centsInput, dateText, type Patient } from "./support/patient";
 import {
   CONSULTATION_URL,
+  createConsultation,
   fillContactStep,
   fillFinancialStep,
   fillPatientStep,
@@ -11,6 +12,9 @@ import {
   signupBody,
   signupStepper,
 } from "./support/signup";
+
+/** `signup-draft.ts`'s session storage key. */
+const DRAFT_KEY = "parcela:signup-draft";
 
 /** Every field's label by step; step 1's address fields show once the CEP is looked up. */
 const STEP_FIELDS = {
@@ -196,21 +200,91 @@ test.describe("signup", () => {
     await expect(page.getByLabel("Renda mensal")).toBeFocused();
   });
 
-  test("starts over on the first step after a reload on a later one", async ({ page, patient }) => {
+  test("resumes on the same step after a reload, values and address intact", async ({
+    page,
+    patient,
+  }) => {
+    await page.goto("/cadastro/paciente");
+    await fillPatientStep(page, patient);
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/contato$/);
+    // Typed, never left: the page going away still saves it.
+    await page.getByLabel("Celular com DDD").fill(patient.phone);
+
+    const lookups: string[] = [];
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname.startsWith("/api/addresses/"))
+        lookups.push(request.url());
+    });
+    await page.reload();
+    await expect(page).toHaveURL(/\/cadastro\/contato$/);
+    await expect(page.getByLabel("Celular com DDD")).toHaveValue("(11) 98765-4321");
+    await expect(signupStepper(page)).toContainText("Etapa 2 de 4");
+    // Nothing scolds the fields the patient hasn't touched since.
+    await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Voltar" }).click();
+    await expect(page.getByLabel("Nome completo")).toHaveValue(patient.fullName);
+    await expect(page.getByLabel("CPF", { exact: true })).toHaveValue(patient.cpfFormatted);
+    await expect(page.getByLabel("Data de nascimento")).toHaveValue(dateText(patient.birthdate));
+    // The address typed from the lookup comes back as typed: no new lookup refills it.
+    await expect(page.getByLabel("Rua")).toHaveValue(patient.address.street);
+    await expect(page.getByLabel("Número")).toHaveValue(patient.address.number);
+    expect(lookups).toEqual([]);
+  });
+
+  test("keeps each tab's draft to itself", async ({ page, patient }) => {
+    const other = await page.context().newPage();
+    for (const [tab, name] of [
+      [page, patient.fullName],
+      [other, `${patient.fullName} Segunda`],
+    ] as const) {
+      await tab.goto("/cadastro/paciente");
+      await tab.getByLabel("Nome completo").fill(name);
+      await tab.getByLabel("CPF", { exact: true }).focus();
+    }
+
+    for (const [tab, name] of [
+      [page, patient.fullName],
+      [other, `${patient.fullName} Segunda`],
+    ] as const) {
+      await tab.reload();
+      await expect(tab.getByLabel("Nome completo")).toHaveValue(name);
+    }
+    await other.close();
+  });
+
+  test("drops a draft last edited more than 30 minutes ago", async ({ page, patient }) => {
+    // Only Date moves (timers keep running): the last edit happens at `start`.
+    const start = Date.now();
+    await page.clock.setFixedTime(start);
     await page.goto("/cadastro/paciente");
     await fillPatientStep(page, patient);
     await page.getByRole("button", { name: "Próximo" }).click();
     await expect(page).toHaveURL(/\/cadastro\/contato$/);
 
+    // 31 minutes idle; the reload saves the draft once more, without extending it.
+    await page.clock.setFixedTime(start + 31 * 60_000);
     await page.reload();
     await expect(page).toHaveURL(/\/cadastro\/paciente$/);
     await expect(page.getByLabel("Nome completo")).toHaveValue("");
-    await expect(page.getByLabel("CPF", { exact: true })).toHaveValue("");
-    await expect(page.getByLabel("CEP", { exact: true })).toHaveValue("");
-    // Nothing scolds the fields the patient hasn't touched since.
     await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
-    await expect(page.locator("[data-slot=field-error]")).toHaveCount(0);
-    await expect(signupStepper(page)).toContainText("Etapa 1 de 4");
+    expect(await page.evaluate((key) => sessionStorage.getItem(key), DRAFT_KEY)).toBeNull();
+  });
+
+  test("starts empty from Novo cadastro, dropping a half-done draft", async ({
+    page,
+    request,
+    patient,
+  }) => {
+    await page.goto("/cadastro/paciente");
+    await page.getByLabel("Nome completo").fill(patient.fullName);
+    await page.getByLabel("CPF", { exact: true }).focus();
+
+    await page.goto(`/consultas/${await createConsultation(request, patient, "ALL_APPROVE")}`);
+    await page.getByRole("link", { name: "Novo cadastro", exact: true }).click();
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+    await expect(page.getByLabel("Nome completo")).toHaveValue("");
   });
 
   test("sends a later step opened directly to the first one", async ({ page }) => {
@@ -495,7 +569,10 @@ test.describe("signup", () => {
     await expect(page.getByLabel("Celular com DDD")).toHaveValue("(11) 98765-4321");
   });
 
-  test("stores nothing in the browser", async ({ page, patient }) => {
+  test("keeps the draft in this tab's session only, and drops it once sent", async ({
+    page,
+    patient,
+  }) => {
     const entered = [
       patient.fullName,
       patient.token,
@@ -511,31 +588,32 @@ test.describe("signup", () => {
       centsInput(patient.monthlyIncomeCents),
       centsInput(patient.treatmentAmountCents),
     ];
-    const storedValues = () =>
-      page.evaluate(() =>
-        [localStorage, sessionStorage].flatMap((storage) =>
-          Object.keys(storage).flatMap((key) => [key, storage.getItem(key) ?? ""]),
-        ),
-      );
-    const expectNothingEntered = async (when: string) => {
-      const stored = (await storedValues()).join("\n");
-      for (const value of entered) expect(stored, `${when}: ${value}`).not.toContain(value);
+    const stored = (storage: "localStorage" | "sessionStorage") =>
+      page.evaluate((name) => {
+        const store = window[name];
+        return Object.keys(store)
+          .flatMap((key) => [key, store.getItem(key) ?? ""])
+          .join("\n");
+      }, storage);
+    const expectNoneOf = async (storage: "localStorage" | "sessionStorage", when: string) => {
+      const text = await stored(storage);
+      for (const value of entered)
+        expect(text, `${storage} ${when}: ${value}`).not.toContain(value);
     };
 
     await reachReview(page, patient);
     await expect(page.getByRole("region", { name: "Paciente" })).toContainText(patient.fullName);
-    await expectNothingEntered("before reload");
+    await expectNoneOf("localStorage", "on the review");
+    expect(await stored("sessionStorage")).toContain(patient.fullName);
 
-    // A reload starts over: the review isn't reachable from an empty form.
-    await page.reload();
-    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
-    await expect(page.getByLabel("Nome completo")).toBeVisible();
-    await expectNothingEntered("after reload");
+    await page.getByRole("button", { name: "Solicitar pré-aprovação" }).click();
+    await expect(page).toHaveURL(CONSULTATION_URL);
+    await expectNoneOf("sessionStorage", "once sent");
+    await expectNoneOf("localStorage", "once sent");
+
+    // Nothing to resume: the next signup in this tab starts empty.
+    await page.goto("/cadastro/paciente");
     await expect(page.getByLabel("Nome completo")).toHaveValue("");
-    await expect(page.getByLabel("CPF", { exact: true })).toHaveValue("");
-    await expect(page.getByLabel("Data de nascimento")).toHaveValue("");
-    await expect(page.getByLabel("CEP", { exact: true })).toHaveValue("");
-    await expect(page.getByLabel("Rua")).toHaveCount(0);
   });
 
   test("hides the scenario picker when controls are off", async ({ page, patient }) => {

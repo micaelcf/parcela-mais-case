@@ -7,10 +7,9 @@ import {
   useChildMatches,
   useNavigate,
 } from "@tanstack/react-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { AddressLookupResult } from "#/api/addresses";
 import { createConsultation, getConfig } from "#/api/consultations";
 import { AppShell } from "#/components/AppShell";
 import {
@@ -18,6 +17,11 @@ import {
   SignupContext,
   STEP_HEADING_FOCUS,
 } from "#/components/modules/signup/signup-context";
+import {
+  discardSignupDraft,
+  loadSignupDraft,
+  saveSignupDraft,
+} from "#/components/modules/signup/signup-draft";
 import {
   ADDRESS_DETAIL_FIELDS,
   canReachStep,
@@ -34,7 +38,8 @@ import {
 } from "#/components/modules/signup/signup-form";
 import { SignupStepper } from "#/components/modules/signup/SignupStepper";
 import { StepperContent } from "#/components/ui/stepper";
-import { useCepLookup } from "#/hooks/use-cep-lookup";
+import { type SettledCepLookup, useCepLookup } from "#/hooks/use-cep-lookup";
+import { normalizeCep } from "#/lib/address/address";
 
 /** "Próximo" with a valid CEP whose lookup hasn't answered yet. */
 const AWAIT_ADDRESS = "Informe o CEP e aguarde o endereço";
@@ -51,9 +56,11 @@ export const Route = createFileRoute("/cadastro")({
 
 /**
  * Owns the one signup form and its idempotency key for the step routes, so moving between steps
- * keeps every value. Nothing is persisted: a reload starts over. A step opens only once every
- * earlier one is complete; arriving anywhere else (a reload, a typed URL, browser history) lands
- * on the first incomplete step.
+ * keeps every value. The values (and the CEP lookup behind the address) are also kept as this
+ * tab's draft (`signup-draft.ts`), saved whenever a field is left and when the page goes away, so
+ * a reload resumes where it was; a sent signup discards it. The idempotency key isn't kept: one per
+ * page load. A step opens only once every earlier one is complete; arriving anywhere else (a typed
+ * URL, browser history, an expired draft) lands on the first incomplete step.
  */
 function SignupLayout() {
   const { simulationControls } = Route.useLoaderData();
@@ -63,6 +70,10 @@ function SignupLayout() {
   const shownRouteId = useChildMatches({ select: (matches) => matches[0]?.routeId });
   const current = SIGNUP_STEPS.findIndex((step) => step.to === shownRouteId);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [draft] = useState(loadSignupDraft);
+  /** The latest lookup answer, saved with the draft while the CEP it answered is still typed. */
+  const lastLookup = useRef<SettledCepLookup | null>(draft?.cepLookup ?? null);
+  const sent = useRef(false);
   const focusTarget = useRef<string | null>(null);
   const [serverErrors, setServerErrors] = useState<Partial<Record<string, string>>>({});
   const [cepVerdictShown, setCepVerdictShown] = useState(false);
@@ -115,7 +126,9 @@ function SignupLayout() {
   }
 
   /** A CEP answer: the address fields refilled from it (or emptied for typing), untouched again. */
-  function applyLookup(result: AddressLookupResult) {
+  function applyLookup(settled: SettledCepLookup) {
+    lastLookup.current = settled;
+    const { result } = settled;
     if (result.kind !== "found" && result.kind !== "unavailable") return;
     const found = result.kind === "found" ? result.address : null;
     const values: Record<(typeof ADDRESS_DETAIL_FIELDS)[number], string> = {
@@ -144,6 +157,8 @@ function SignupLayout() {
       idempotencyKey,
     );
     if (result.ok) {
+      sent.current = true;
+      discardSignupDraft();
       await navigate({
         to: "/consultas/$consultationId",
         params: { consultationId: result.value.id },
@@ -167,11 +182,42 @@ function SignupLayout() {
     stopAtFirstBlocking(SIGNUP_FIELD_ORDER);
   }
 
-  const form = useSignupForm({ onSubmit: submit, onSubmitInvalid: submitInvalid });
+  const form = useSignupForm({
+    onSubmit: submit,
+    onSubmitInvalid: submitInvalid,
+    initialValues: draft?.values,
+  });
   const values = useStore(form.store, (state) => state.values);
-  const cepStatus = useCepLookup(values.cep, applyLookup);
+  const cepStatus = useCepLookup(values.cep, applyLookup, draft?.cepLookup ?? null);
   const addressShown = cepStatus === "found" || cepStatus === "unavailable";
   const completed = useMemo(() => completedSteps(values, addressShown), [values, addressShown]);
+
+  // When a value last changed: the draft's 30 minutes count from there, so saving it again (a blur,
+  // the page going away) never extends it. A restored draft keeps its time until the next edit.
+  const editedAt = useRef<number | null>(draft?.editedAt ?? null);
+  const valuesAtMount = useRef(values);
+  useEffect(() => {
+    if (values !== valuesAtMount.current) editedAt.current = Date.now();
+  }, [values]);
+
+  /** This tab's draft, from the form as it is now (nothing once the signup was sent). */
+  function saveDraft() {
+    if (sent.current) return;
+    const formValues = form.state.values;
+    const lookup = lastLookup.current;
+    saveSignupDraft({
+      values: formValues,
+      cepLookup: lookup?.cep === normalizeCep(formValues.cep) ? lookup : null,
+      editedAt: editedAt.current ?? Date.now(),
+    });
+  }
+  // A reload or a closed tab while typing in a field that was never left.
+  const saveOnPageHide = useEffectEvent(saveDraft);
+  useEffect(() => {
+    const onPageHide = () => saveOnPageHide();
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, []);
 
   /** What takes focus when step `index` is entered: its first field, or its heading. */
   function entryFocus(index: number): string {
@@ -236,6 +282,8 @@ function SignupLayout() {
           ) : null}
           <form
             noValidate
+            // React's onBlur bubbles (focusout): any field left saves the draft.
+            onBlur={saveDraft}
             onSubmit={(event) => {
               event.preventDefault();
               if (current < SIGNUP_STEPS.length - 1) void goForward(current, current + 1);
