@@ -1,3 +1,8 @@
+import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
+import { UserPlusIcon } from "lucide-react";
+
+import { buttonVariants } from "#/components/ui/button";
 import type {
   ConsultationPublicView,
   JourneyStatus,
@@ -43,19 +48,29 @@ export function ConsultationJourney({
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground">
-          {view.patientFirstName ? `${view.patientFirstName} · ` : null}valor solicitado{" "}
-          <strong className="text-foreground">{formatBRL(view.treatmentAmountCents)}</strong>
-        </p>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          {JOURNEY_HEADLINE[view.journeyStatus]}
-        </h1>
-        <p className="min-h-5 text-sm text-muted-foreground">
-          {pending > 0
-            ? `${pending} de ${view.attempts.length} financeiras ainda respondendo.`
-            : "Todas as financeiras responderam ou o prazo terminou."}
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-muted-foreground">
+            {view.patientFirstName ? `${view.patientFirstName} · ` : null}valor solicitado{" "}
+            <strong className="text-foreground">{formatBRL(view.treatmentAmountCents)}</strong>
+          </p>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            {JOURNEY_HEADLINE[view.journeyStatus]}
+          </h1>
+          <p className="min-h-5 text-sm text-muted-foreground">
+            {pending > 0
+              ? `${pending} de ${view.attempts.length} financeiras ainda respondendo.`
+              : "Todas as financeiras responderam ou o prazo terminou."}
+          </p>
+        </div>
+        {/* Back to the start: the signup layout mounts afresh (empty form, new idempotency key). */}
+        <Link
+          to="/cadastro/paciente"
+          className={cn(buttonVariants({ variant: "outline", className: "self-start" }))}
+        >
+          <UserPlusIcon aria-hidden data-icon="inline-start" />
+          Novo cadastro
+        </Link>
       </header>
 
       <section aria-labelledby="lenders-heading" className="flex flex-col gap-3">

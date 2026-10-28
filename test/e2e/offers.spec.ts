@@ -38,6 +38,17 @@ test.describe("offers", () => {
     await expect(alfa12).toContainText("Total R$ 11.691,36");
   });
 
+  test("starts a new signup from the offers screen", async ({ page, patient }) => {
+    await signUp(page, patient, "ALL_APPROVE");
+    await expect(offerRows(page, "ALFA")).toHaveCount(3);
+
+    await page.getByRole("link", { name: "Novo cadastro", exact: true }).click();
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+    // A fresh form: nothing from the previous patient carries over.
+    await expect(page.getByLabel("Nome completo")).toHaveValue("");
+    await expect(page.getByLabel("CPF", { exact: true })).toHaveValue("");
+  });
+
   test("flags a partial approval", async ({ page, patient }) => {
     await signUp(page, patient, "ALL_APPROVE");
     const beta = offerRows(page, "BETA");
