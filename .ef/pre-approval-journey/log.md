@@ -134,3 +134,10 @@ Written to `contract/` (8 files) and the requirement list to `checks.md`. RFC am
 - C10 at S1: `drizzle-kit generate` → "No schema changes, nothing to migrate".
 - C11 green; the integration teardown leaves no `test_%` database behind (checked with `psql`).
 - `LENDER_CODES` and the other enum value lists live in `src/lib/enums.ts` (isomorphic), consumed by `infra/db/enums.ts` (`pgEnum`); `lender.port.ts` imports them instead of declaring its own.
+
+### W1 (S2, S3) — landed `d115306`, `ae2c7a2`
+
+- Gates at the boundary: `vp check` clean (73 files), `tsc --noEmit` (TypeScript 7.0.2) clean, `vp test` 13 files / 44 tests green.
+- Proof titles renegotiated (claim unchanged): Vitest `-t` is a regex, so titles with `R$` matched nothing. C20 → "matches the PDF formula for 10.000 reais at 2,49% in 12x"; C26 → "Gama refuses under 25 or above 20.000 reais".
+- S3 choices: adapter HTTP plumbing in `integrations/lenders/lender-http.ts` (port file is contract-only, no re-exports); simulator answers an aborted request with an empty 499 instead of throwing; breaker "newest failure"/"newest call" both read `calledAt`, the 5-minute window cuts on `settledAt`; `DELTA_TIMES_OUT` only overrides Delta's latency (its rule still applies after the wait).
+- Owner decision mid-stage: TypeScript 7.0.2 (native `tsc`) everywhere; `vp run typecheck` added; the `tsr` CLI and `tsr.config.json` removed; `db:migrate` runs `scripts/ops/migrate.ts`; `db:push`/`db:pull` removed (migrations are the only schema path).
