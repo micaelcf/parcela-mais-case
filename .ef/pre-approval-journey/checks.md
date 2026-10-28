@@ -23,6 +23,18 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-108` — Replaying a submission with the same `Idempotency-Key` and body returns the original consultation
 - `RF-109` — Reusing an `Idempotency-Key` with a different body is rejected
 - `RF-110` — Resubmitting a known CPF reuses the same patient record
+- `RF-111` — Step 1 collects the patient's address after the birthdate, starting with the CEP
+- `RF-112` — A valid CEP fills the address automatically, and the address fields appear only after the CEP resolves
+- `RF-113` — An unknown CEP is reported on the CEP field
+- `RF-114` — When the CEP service is unavailable, the address can be typed manually
+- `RF-115` — The API validates and stores the address, and never exposes it publicly
+- `RF-116` — CEP lookups are capped per client IP
+- `RF-117` — Step 2 collects an optional patient e-mail
+- `RF-118` — Signup fields are validated on blur and on submit, never while typing
+- `RF-119` — The stepper makes the current step obvious
+- `RF-120` — A later step can't be shown with earlier steps incomplete
+- `RF-121` — The stepper header moves to any reachable step, forward as well as back
+- `RF-122` — A review step shows everything that will be sent before submitting
 - `RF-201` — Submitting returns the consultation id before any lender answers
 - `RF-202` — All four lenders are queried in parallel for each consultation
 - `RF-203` — The consultation page shows each lender's status as consultando, aprovada, recusada or indisponível
@@ -58,6 +70,9 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-408` — Re-choosing the same offer returns the same result
 - `RF-409` — Choosing a different offer after a choice is rejected
 - `RF-410` — Lender answers arriving after a choice are recorded without changing the choice
+- `RF-411` — Offers are grouped by lender in collapsible groups
+- `RF-412` — Choosing an offer asks for confirmation with a summary
+- `RF-413` — Every lender reference shows the lender's logo with its name
 - `RF-501` — Public consultation responses contain no CPF digits
 - `RF-502` — Public consultation responses contain no birthdate, phone or income
 - `RF-503` — The CPF is never stored in plaintext
@@ -163,18 +178,18 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 
 ## Slices
 
-| Slice | Outcome                                                                                              | Wave | Status | File                                                                     | Checks                                      |
-| ----- | ---------------------------------------------------------------------------------------------------- | ---- | ------ | ------------------------------------------------------------------------ | ------------------------------------------- |
-| S0    | toolchain, env, validation bridge and an empty `/api` serve and pass the gates                       | 0    | done   | [slices/S0-foundation.md](slices/S0-foundation.md)                       | C1–C8, C163, C172, C196                     |
-| S1    | schema, migrations, queue and integration harness run against real Postgres                          | 0    | done   | [slices/S1-schema-infra.md](slices/S1-schema-infra.md)                   | C9–C11                                      |
-| S2    | CPF validation, CPF/IP protection and exact Price are correct in isolation                           | 1    | done   | [slices/S2-cpf-pii-price.md](slices/S2-cpf-pii-price.md)                 | C12–C23, C174                               |
-| S3    | simulated lenders, adapters and breaker derivation                                                   | 1    | done   | [slices/S3-lender-integration.md](slices/S3-lender-integration.md)       | C24–C40                                     |
-| S4    | fan-out, deadline, live stream, one choice                                                           | 2    | done   | [slices/S4-orchestration.md](slices/S4-orchestration.md)                 | C41–C76, C158, C160, C170, C171, C173, C175 |
-| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor/down; local HTTPS                 | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88, C165–C167, C208–C216               |
-| S6    | requote, per-patient and per-IP caps, no PII in public payloads                                      | 3    | done   | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100, C161, C162, C169                  |
-| S7    | backoffice auth, metrics, lists, kill switch API                                                     | 4    | done   | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117, C159                             |
-| S8    | public journey UI + UI kit                                                                           | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144                                   |
-| S9    | backoffice UI                                                                                        | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168, C217                       |
-| S10   | E2E suite + browser smoke                                                                            | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157, C164                             |
-| S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs                        | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C195                                   |
-| S12   | stepper, blur/submit validation, optional e-mail, shadcn date picker, pacer search, directory routes | 8    | done   | [slices/S12-signup-ux.md](slices/S12-signup-ux.md)                       | C197–C207                                   |
+| Slice | Outcome                                                                                            | Wave | Status | File                                                                     | Checks                                      |
+| ----- | -------------------------------------------------------------------------------------------------- | ---- | ------ | ------------------------------------------------------------------------ | ------------------------------------------- |
+| S0    | toolchain, env, validation bridge and an empty `/api` serve and pass the gates                     | 0    | done   | [slices/S0-foundation.md](slices/S0-foundation.md)                       | C1–C8, C163, C172, C196                     |
+| S1    | schema, migrations, queue and integration harness run against real Postgres                        | 0    | done   | [slices/S1-schema-infra.md](slices/S1-schema-infra.md)                   | C9–C11                                      |
+| S2    | CPF validation, CPF/IP protection and exact Price are correct in isolation                         | 1    | done   | [slices/S2-cpf-pii-price.md](slices/S2-cpf-pii-price.md)                 | C12–C23, C174                               |
+| S3    | simulated lenders, adapters and breaker derivation                                                 | 1    | done   | [slices/S3-lender-integration.md](slices/S3-lender-integration.md)       | C24–C40                                     |
+| S4    | fan-out, deadline, live stream, one choice                                                         | 2    | done   | [slices/S4-orchestration.md](slices/S4-orchestration.md)                 | C41–C76, C158, C160, C170, C171, C173, C175 |
+| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor/down; local HTTPS               | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88, C165–C167, C208–C216               |
+| S6    | requote, per-patient and per-IP caps, no PII in public payloads                                    | 3    | done   | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100, C161, C162, C169                  |
+| S7    | backoffice auth, metrics, lists, kill switch API                                                   | 4    | done   | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117, C159                             |
+| S8    | public journey UI + UI kit; offers grouped by lender, choice dialog, lender logos                  | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144, C224–C228                        |
+| S9    | backoffice UI                                                                                      | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168, C217                       |
+| S10   | E2E suite + browser smoke                                                                          | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157, C164                             |
+| S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs                      | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C195                                   |
+| S12   | stepper, blur/submit validation, optional e-mail, date picker, pacer search, routes; review, reach | 8    | done   | [slices/S12-signup-ux.md](slices/S12-signup-ux.md)                       | C197–C207, C218–C223                        |

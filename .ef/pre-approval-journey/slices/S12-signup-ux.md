@@ -35,3 +35,23 @@ Proof: `vp run e2e`
 
 **C207** · RF-104 (RFC D28) — the calendar's month and year dropdowns stay open and focused when clicked (clicks inside the popover no longer reach `InputGroupAddon`, which focused the input and closed them)
 Proof: `vp run e2e test/e2e/signup.spec.ts -g "keeps the calendar's month and year dropdowns open when clicked"`
+
+Signup navigation round (added 2026-10-28, user report and request, RFC D32):
+
+**C218** · RF-120, RF-121 — a step is complete when its fields pass the form schema (step 1 only with the address shown); a step opens once every earlier step but the one being left is complete; the review collects no field
+Proof: `vp test src/components/modules/signup/signup-form.test.ts`
+
+**C219** · RF-120 — a reload on a later step lands on the first step, empty and without error messages
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "starts over on the first step after a reload on a later one"`
+
+**C220** · RF-120 — a later step (Financeiro, Revisão) opened directly lands on the first step
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "sends a later step opened directly to the first one"`
+
+**C221** · RF-121 — with every step filled, from step 1 the stepper jumps straight to Revisão with values intact and no request sent
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "jumps ahead from the stepper over complete steps"`
+
+**C222** · RF-121 — a stepper jump over an incomplete step stops there, focusing its first blocking field with its error shown
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "stops a stepper jump at an incomplete step, showing its errors"`
+
+**C223** · RF-122 — Revisão shows the formatted values grouped by step with "Editar" per group (each goes to its step), and the POST body equals what is shown
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "reviews exactly what it sends"`

@@ -21,8 +21,8 @@ Proof: `vp test src/lib/money/money.test.ts -t "formats cents and monthly rates 
 
 E2E proofs (written in S10, `vp run e2e <spec> -g "<title>"`, specs under `test/e2e/`):
 
-**C122** · RF-101 — the six fields span three steps (`/cadastro/paciente`, `/cadastro/contato`, `/cadastro/financeiro`); the submit button exists only on the third
-Proof: `vp run e2e test/e2e/signup.spec.ts -g "collects six fields across three steps"`
+**C122** · RF-101 — the fields span three steps (`/cadastro/paciente`, `/cadastro/contato`, `/cadastro/financeiro`), then the review `/cadastro/revisao`; the submit button exists only on the review (amended 2026-10-28, RFC D32)
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "collects fourteen fields across three steps, then reviews them"`
 
 **C123** · RF-102 — typing `529.982.247-24` shows "CPF inválido" linked to the CPF input by `aria-describedby`, and "Próximo" doesn't leave the step
 Proof: `vp run e2e test/e2e/signup.spec.ts -g "flags an invalid CPF on the field"`
@@ -89,3 +89,20 @@ Proof: `vp run e2e test/e2e/a11y.spec.ts -g "announces lender status changes"`
 
 **C144** · (no RF; D25 no SSR) the raw HTML served for `/cadastro/paciente` contains `<html lang="pt-BR">` and no form control
 Proof: `vp run e2e test/e2e/no-ssr.spec.ts -g "serves the shell without route content"`
+
+Offer screen round (added 2026-10-28, user request, RFC D32):
+
+**C224** · RF-411 — `groupOffersByLender` orders each group's rows by the sort and the groups by their best offer (ties in lender order); no offers → no groups
+Proof: `vp test src/components/modules/consultation/sort-offers.test.ts`
+
+**C225** · RF-411, RF-413 — offers appear in one open group per lender, each with the lender's logo and name, its offer count and best-value hint
+Proof: `vp run e2e test/e2e/offers.spec.ts -g "groups offers by lender"`
+
+**C226** · RF-411 — collapsing a lender group hides its rows; expanding shows them again
+Proof: `vp run e2e test/e2e/offers.spec.ts -g "collapses and expands a lender group"`
+
+**C227** · RF-412 — "Escolher" opens the confirmation dialog; "Cancelar" sends no choice request and nothing is chosen; only "Confirmar escolha" chooses (the existing choose tests go through it)
+Proof: `vp run e2e test/e2e/offers.spec.ts -g "cancels a choice without sending it"`
+
+**C228** · RF-809, RF-412, RF-122 — C142's keyboard journey now passes the review step and confirms the choice in the dialog by keyboard, with visible focus throughout
+Proof: `vp run e2e test/e2e/a11y.spec.ts -g "completes the journey by keyboard"`

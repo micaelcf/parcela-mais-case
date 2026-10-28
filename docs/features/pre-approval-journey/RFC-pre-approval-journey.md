@@ -545,6 +545,12 @@ The user asked for a full address in step 1, right after the birthdate. The CEP 
 
 **Evidence.** A on Windows (live runs: trust prompt accepted once, health over verified TLS, HMR over `wss`, redirect `:8080 → :8443`, LAN/Tailscale refused, full E2E over the address); C for macOS/Linux (unit-tested plans only).
 
+### D32. Signup navigation, review, and the offer screen (user request, 2026-10-28)
+
+**Decision.** (a) A signup step is reachable when every earlier step is complete (its fields pass the form schema; step 1 also needs the CEP answered). Arriving on an unreachable step by reload, URL or history redirects with `replace` to the first incomplete step, without errors; values still aren't persisted (RF-107), so a reload starts over. (b) The stepper header jumps to any reachable step; the step being left is checked on the way, like "Próximo", so the next step is always clickable and a jump stops at the first incomplete step with its errors. (c) A fourth step, Revisão, renders the summary from the exact request object the submit sends (`toSignupRequest`), so what the user confirms is what is sent; only it submits. (d) Lenders get placeholder logos (fictional SVG marks, theme tokens `--lender-*`), and `LenderIdentity` (logo + name, name as the accessible text) is the one way a lender is shown, public and backoffice. (e) Offers are grouped per lender in collapsibles, all open; the sort orders rows within groups and groups by their best offer (`groupOffersByLender`, pure). (f) Choosing is final, so "Escolher" opens a confirmation dialog summarizing the offer; only "Confirmar escolha" sends; a failed confirm keeps the dialog open after the usual toast.
+
+**Evidence.** A (E2E for each point, keyboard journey through the review and the dialog, browser checks in light and dark themes).
+
 ### Supporting decisions taken by the agent during the grill (vetoable)
 
 From grill §3 (renamed AD*n* = grill §3 D*n*). Normative unless vetoed.
