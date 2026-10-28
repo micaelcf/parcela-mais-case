@@ -96,8 +96,8 @@ src/
   router.tsx                                # createRouter({ routeTree, defaultSsr: false, … })
   routes/                                   # file routes: path, search validation, loader/beforeLoad, page composition
     __root.tsx                              # static shell (html lang="pt-BR", HeadContent, Scripts); no data
-    api/$.ts                                # server route: mounts src/server/app.ts (the only route touching server code at runtime)
-    index.tsx  cadastro/  consultas/  backoffice/   # directories for every path nested ≥ 2 levels (see frontend.md § Routes)
+    api.$.ts                                # server route: mounts src/server/app.ts (the only route touching server code at runtime)
+    index.tsx  consultas.$consultationId.tsx  cadastro/  backoffice/   # directories only for parents with ≥ 2 nested routes (see frontend.md § Routes)
   api/                                      # browser data access (the only frontend code that calls the API)
     eden.ts                                 # treaty<App>(location.origin).api
     consultations.ts  backoffice.ts         # typed fetchers/mutations used by loaders and event handlers

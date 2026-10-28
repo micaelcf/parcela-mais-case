@@ -5,12 +5,12 @@ pt-BR UI, no SSR, every datum from the API over HTTP.
 ## Shell
 
 - `src/start.ts`: `export const startInstance = createStart(() => ({ defaultSsr: false }))` (the Start entry the plugin discovers; `defaultSsr` is not a `createRouter` option in 1.169: amended 2026-10-28, implementation). `src/router.tsx` keeps `createRouter({ routeTree, scrollRestoration: true, … })`. The root `shellComponent` still emits the static document (`__root.tsx`: `<html lang="pt-BR">`, `HeadContent`, `Scripts`, theme init script). It must not read data.
-- `src/routes/api/$.ts`: `createFileRoute("/api/$")({ server: { handlers: { GET: handle, POST: handle, PUT: handle, DELETE: handle } } })` with `handle = ({ request }) => app.fetch(request)`. Server routes resolve before rendering, independent of `defaultSsr`.
+- `src/routes/api.$.ts`: `createFileRoute("/api/$")({ server: { handlers: { GET: handle, POST: handle, PUT: handle, DELETE: handle } } })` with `handle = ({ request }) => app.fetch(request)`. Server routes resolve before rendering, independent of `defaultSsr`.
 - Remove the template's demo files: `routes/about.tsx`, `components/{Header,Footer,ThemeToggle,demo.FormComponents}.tsx`, `hooks/demo.*`, `data/demo-table-data.ts`.
 
 ## Routes (TanStack file routes)
 
-**Convention (amended 2026-10-28, user rule; RFC D29):** any path nested two or more levels lives in a directory (`<segment>/route.tsx` for the layout, one file per child); flat `.` file names are only for single-level pages (`index.tsx`). See https://tanstack.com/router/latest/docs/routing/file-based-routing#directory-routes.
+**Convention (amended 2026-10-28, user rule; RFC D29):** a parent with **two or more** nested routes is a directory (`<segment>/route.tsx` for the layout when there is one, one file per child); a parent with a single nested route stays a flat `.` file (`api.$.ts`, `consultas.$consultationId.tsx`). See https://tanstack.com/router/latest/docs/routing/file-based-routing#directory-routes.
 
 | Route file                                 | Path                    | Purpose                                                                                                                                |
 | ------------------------------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -19,7 +19,7 @@ pt-BR UI, no SSR, every datum from the API over HTTP.
 | `cadastro/paciente.tsx`                    | `/cadastro/paciente`    | step 1: full name, CPF, birthdate, CEP-first address                                                                                   |
 | `cadastro/contato.tsx`                     | `/cadastro/contato`     | step 2: mobile phone, optional e-mail                                                                                                  |
 | `cadastro/financeiro.tsx`                  | `/cadastro/financeiro`  | step 3: monthly income, treatment amount, scenario picker (only if `GET /api/config` → `simulationControls`), submit                   |
-| `consultas/$consultationId.tsx`            | `/consultas/:id`        | journey: 4 lender cards (reserved height, no CLS), offers + sort toggle, choose, confirmation, no-offer explanation + requote          |
+| `consultas.$consultationId.tsx`            | `/consultas/:id`        | journey: 4 lender cards (reserved height, no CLS), offers + sort toggle, choose, confirmation, no-offer explanation + requote          |
 | `backoffice/route.tsx`                     | `/backoffice`           | layout; `beforeLoad` → `GET /api/backoffice/session`, 401 → redirect to login                                                          |
 | `backoffice/login.tsx`                     | `/backoffice/login`     | login form                                                                                                                             |
 | `backoffice/index.tsx`                     | `/backoffice`           | money pipeline + lender health                                                                                                         |

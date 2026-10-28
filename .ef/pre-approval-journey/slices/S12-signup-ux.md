@@ -30,5 +30,8 @@ Proof: `vp test src/lib/date/date-text.test.ts`, `vp run e2e test/e2e/signup.spe
 **C205** · RF-615 (RFC D30) — table search fires one request after typing pauses (400 ms, `@tanstack/react-pacer`), never per keystroke and never after the user left the page
 Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "searches once typing pauses, never per keystroke nor after leaving"`
 
-**C206** · (no RF; RFC D29) — every route nested two or more levels is a directory route; URLs unchanged (the whole E2E suite navigates them)
+**C206** · (no RF; RFC D29) — every parent with two or more nested routes is a directory route (`cadastro/`, `backoffice/`, `backoffice/consultas/`), single-child parents stay flat (`api.$.ts`, `consultas.$consultationId.tsx`); URLs unchanged (the whole E2E suite navigates them)
 Proof: `vp run e2e`
+
+**C207** · RF-104 (RFC D28) — the calendar's month and year dropdowns stay open and focused when clicked (clicks inside the popover no longer reach `InputGroupAddon`, which focused the input and closed them)
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "keeps the calendar's month and year dropdowns open when clicked"`

@@ -531,9 +531,9 @@ The user asked for a full address in step 1, right after the birthdate. The CEP 
 
 **Amendment (2026-10-28, user request).** The date picker is shadcn's base "Date Picker → Input" example as published (`InputGroup` + `InputGroupButton` + `Popover` + `Calendar`, registry primitives installed with the CLI), wrapped once in `src/components/ui/date-picker.tsx`; no custom calendar internals. Every reusable design-system piece lives in `src/components/ui/` (including the new `stepper.tsx`).
 
-### D29. Route files: directories for anything nested two or more levels (user rule, 2026-10-28)
+### D29. Route files: a directory for every parent with two or more nested routes (user rule, 2026-10-28)
 
-**Decision.** A path nested two or more levels uses TanStack directory routes (`cadastro/route.tsx`, `cadastro/paciente.tsx`, `backoffice/consultas/index.tsx`, `api/$.ts`); flat `.` names only for single-level pages. URLs are unchanged.
+**Decision.** A parent route with two or more nested routes uses TanStack directory routes (`cadastro/route.tsx` + `cadastro/paciente.tsx`…, `backoffice/route.tsx` + `backoffice/consultas/{index,$consultationId}.tsx`); a parent with a single nested route stays a flat `.` file (`api.$.ts`, `consultas.$consultationId.tsx`). URLs are unchanged. (First applied as "nested two or more levels deep"; corrected the same day to the user's intent: the count of nested routes, not depth.)
 
 ### D30. Signup form ergonomics (user request, 2026-10-28)
 
