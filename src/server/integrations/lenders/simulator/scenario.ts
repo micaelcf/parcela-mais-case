@@ -43,6 +43,9 @@ const NORMAL_LATENCY: Record<LenderCode, LatencyRange> = {
 
 type Override = Partial<ScenarioBehaviour>;
 
+/** Forced outcomes must answer before the deadline every time, so Delta's latency is capped at 8 s. */
+const DELTA_FORCED_LATENCY = { minMs: 4_000, maxMs: 8_000 };
+
 /** `boundaries.md` § Scenarios: every cell not listed follows the lender's `NORMAL` behaviour. */
 const OVERRIDES: Record<SimulationScenario, Partial<Record<LenderCode, Override>>> = {
   NORMAL: {},
@@ -50,15 +53,15 @@ const OVERRIDES: Record<SimulationScenario, Partial<Record<LenderCode, Override>
     ALFA: { outcome: "APPROVE" },
     BETA: { outcome: "APPROVE" },
     GAMA: { outcome: "APPROVE" },
-    DELTA: { outcome: "APPROVE", latency: { minMs: 4_000, maxMs: 8_000 } },
+    DELTA: { outcome: "APPROVE", latency: DELTA_FORCED_LATENCY },
   },
-  DELTA_FAILS: { DELTA: { outcome: "FAIL" } },
+  DELTA_FAILS: { DELTA: { outcome: "FAIL", latency: DELTA_FORCED_LATENCY } },
   DELTA_TIMES_OUT: { DELTA: { latency: { minMs: 12_000, maxMs: 15_000 } } },
   NONE_APPROVE: {
     ALFA: { outcome: "REFUSE" },
     BETA: { outcome: "REFUSE" },
     GAMA: { outcome: "REFUSE" },
-    DELTA: { outcome: "REFUSE" },
+    DELTA: { outcome: "REFUSE", latency: DELTA_FORCED_LATENCY },
   },
 };
 

@@ -12,6 +12,8 @@ describe("simulator scenarios", () => {
     expect(latency("GAMA", "NORMAL")).toEqual({ minMs: 1_000, maxMs: 3_000 });
     expect(latency("DELTA", "NORMAL")).toEqual({ minMs: 4_000, maxMs: 15_000 });
     expect(latency("DELTA", "ALL_APPROVE")).toEqual({ minMs: 4_000, maxMs: 8_000 });
+    expect(latency("DELTA", "DELTA_FAILS")).toEqual({ minMs: 4_000, maxMs: 8_000 });
+    expect(latency("DELTA", "NONE_APPROVE")).toEqual({ minMs: 4_000, maxMs: 8_000 });
     expect(latency("DELTA", "DELTA_TIMES_OUT")).toEqual({ minMs: 12_000, maxMs: 15_000 });
   });
 });
