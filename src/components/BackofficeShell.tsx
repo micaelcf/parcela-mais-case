@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ArrowLeftIcon, LogOutIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -66,7 +67,7 @@ export function BackofficeShell({
           ) : null}
           <Link
             to="/cadastro/paciente"
-            className={buttonVariants({ variant: "ghost", size: "sm", className: "ml-auto" })}
+            className={cn(buttonVariants({ variant: "ghost", size: "sm", className: "ml-auto" }))}
           >
             <ArrowLeftIcon aria-hidden data-icon="inline-start" />
             Ir para o cadastro

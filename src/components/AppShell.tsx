@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { LockKeyholeIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -28,7 +29,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               Pré-aprovação para tratamentos
             </span>
             {/* The backoffice redirects to its login when there's no session. */}
-            <Link to="/backoffice" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Link
+              to="/backoffice"
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
               <LockKeyholeIcon aria-hidden data-icon="inline-start" />
               Área da clínica
             </Link>

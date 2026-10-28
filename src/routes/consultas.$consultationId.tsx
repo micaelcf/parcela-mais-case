@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
+import { cn } from "cn";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -88,7 +89,7 @@ function ConsultationNotFound() {
       <div className="mx-auto flex max-w-xl flex-col items-start gap-4">
         <h1 className="font-heading text-2xl font-semibold">Consulta não encontrada</h1>
         <p className="text-muted-foreground">Confira o endereço ou comece um novo cadastro.</p>
-        <Link to="/cadastro/paciente" className={buttonVariants({ size: "lg" })}>
+        <Link to="/cadastro/paciente" className={cn(buttonVariants({ size: "lg" }))}>
           Novo cadastro
         </Link>
       </div>
