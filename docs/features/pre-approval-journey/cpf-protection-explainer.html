@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CPF protection · HMAC blind index + AES-256-GCM · pre-approval-journey</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #1b1f24;
+        --muted: #5b6573;
+        --border: #d8dee6;
+        --surface: #f5f7fa;
+        --accent: #2f6fde;
+        --ok: #1f8a4c;
+        --warn: #b7791f;
+        --bad: #c0392b;
+        --purple: #7b4fd6;
+        --teal: #0f8b8d;
+        --ok-bg: #e7f6ed;
+        --warn-bg: #fdf4e3;
+        --bad-bg: #fbeaea;
+        --accent-bg: #e8f0fd;
+        --purple-bg: #f1ebfc;
+        --teal-bg: #e3f4f4;
+        --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1216;
+          --fg: #e6e9ee;
+          --muted: #9aa4b2;
+          --border: #2a313b;
+          --surface: #171b21;
+          --accent: #6aa0ff;
+          --ok: #4cc27f;
+          --warn: #e0a84a;
+          --bad: #f07167;
+          --purple: #a98bf0;
+          --teal: #4fc3c5;
+          --ok-bg: #12261b;
+          --warn-bg: #2a2112;
+          --bad-bg: #2c1615;
+          --accent-bg: #142035;
+          --purple-bg: #1f1830;
+          --teal-bg: #10292a;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          15px/1.55 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      main {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+      }
+      h1 {
+        font-size: 28px;
+        margin: 0 0 6px;
+      }
+      h2 {
+        font-size: 21px;
+        margin: 44px 0 10px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      h3 {
+        font-size: 16px;
+        margin: 20px 0 8px;
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 14px;
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      code {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0 4px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 14px;
+      }
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 7px 9px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--surface);
+      }
+      .y {
+        color: var(--ok);
+        font-weight: 600;
+      }
+      .n {
+        color: var(--bad);
+        font-weight: 600;
+      }
+      .m {
+        color: var(--warn);
+        font-weight: 600;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .grid3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      @media (max-width: 760px) {
+        .grid2,
+        .grid3 {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .card h4 {
+        margin: 0 0 6px;
+        font-size: 15px;
+      }
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .tldr {
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        background: var(--accent-bg);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 16px 0;
+      }
+      .warnbox {
+        border-left: 4px solid var(--warn);
+        background: var(--warn-bg);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 0;
+      }
+      .badbox {
+        border-left: 4px solid var(--bad);
+        background: var(--bad-bg);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 0;
+      }
+      .okbox {
+        border-left: 4px solid var(--ok);
+        background: var(--ok-bg);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 0;
+      }
+      svg {
+        width: 100%;
+        height: auto;
+        display: block;
+        margin: 10px 0;
+      }
+      svg text {
+        fill: var(--fg);
+        font:
+          13px system-ui,
+          sans-serif;
+      }
+      svg .sub {
+        fill: var(--muted);
+        font-size: 11.5px;
+      }
+      svg .mono {
+        font-family: var(--mono);
+        font-size: 11.5px;
+      }
+      svg .box {
+        fill: var(--surface);
+        stroke: var(--border);
+        stroke-width: 1.5;
+      }
+      svg .k1 {
+        fill: var(--purple-bg);
+        stroke: var(--purple);
+        stroke-width: 1.5;
+      }
+      svg .k2 {
+        fill: var(--teal-bg);
+        stroke: var(--teal);
+        stroke-width: 1.5;
+      }
+      svg .db {
+        fill: var(--accent-bg);
+        stroke: var(--accent);
+        stroke-width: 1.5;
+      }
+      svg .badf {
+        fill: var(--bad-bg);
+        stroke: var(--bad);
+        stroke-width: 1.5;
+      }
+      svg .okf {
+        fill: var(--ok-bg);
+        stroke: var(--ok);
+        stroke-width: 1.5;
+      }
+      svg .edge {
+        stroke: var(--muted);
+        stroke-width: 1.6;
+        fill: none;
+        marker-end: url(#arr);
+      }
+      svg .num {
+        fill: var(--accent);
+      }
+      svg .numt {
+        fill: #fff;
+        font-weight: 700;
+        font-size: 11px;
+      }
+      .demo {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        background: var(--surface);
+      }
+      .demo label {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .demo input[type="text"] {
+        font: 16px var(--mono);
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--fg);
+        width: 240px;
+      }
+      .demo button {
+        font:
+          600 14px system-ui,
+          sans-serif;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        margin: 4px 6px 4px 0;
+      }
+      .demo button.ghost {
+        background: transparent;
+        color: var(--accent);
+      }
+      .demo button:focus-visible,
+      .demo input:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .out {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 6px 12px;
+        margin-top: 12px;
+        align-items: start;
+      }
+      .out .lbl {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .out .val {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        word-break: break-all;
+      }
+      .pill {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 1px 8px;
+        border-radius: 99px;
+        border: 1px solid currentColor;
+      }
+      .pill.ok {
+        color: var(--ok);
+      }
+      .pill.bad {
+        color: var(--bad);
+      }
+      .pill.warn {
+        color: var(--warn);
+      }
+      #rows td {
+        font-family: var(--mono);
+        font-size: 12px;
+        word-break: break-all;
+      }
+      .bar {
+        height: 18px;
+        border-radius: 4px;
+        background: var(--bad);
+      }
+      .bar.ok {
+        background: var(--ok);
+      }
+      .barrow {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 10px;
+        align-items: center;
+        margin: 6px 0;
+        font-size: 14px;
+      }
+      footer {
+        margin-top: 48px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>CPF protection, end to end</h1>
+      <p class="lead">
+        How <code>patient.cpf_hmac</code> and <code>patient.cpf_ciphertext</code> work together, why
+        each exists, and what an attacker gets in each failure. Source decision: <b>Q16</b> in
+        <code>grill-decisions-2026-10-27-pre-approval-journey.md</code>.
+      </p>
+
+      <div class="tldr">
+        <b>In one paragraph.</b> The CPF is stored twice, and neither copy is readable.
+        <b>The HMAC</b> (keyed, deterministic) lets the database answer
+        <i>"is this the same CPF?"</i>: unique index, upsert, backoffice search. It can't be
+        reversed. <b>The AES-256-GCM ciphertext</b> (randomized, reversible with the key) lets the
+        app recover the digits when it really needs them, which is only the authenticated backoffice
+        detail. It can't be compared. The public journey never shows any CPF digits. The two secret
+        keys live in the app's environment, never in the database. A leaked dump therefore has no
+        usable CPF <i>as long as the keys don't leak with it</i>.
+      </div>
+
+      <!-- ============================================================ -->
+      <h2>1 · The three jobs, and why one column can't do all of them</h2>
+      <p class="lead">
+        Each candidate storage scheme against the three things the system needs from the CPF.
+      </p>
+
+      <table>
+        <tr>
+          <th>Scheme</th>
+          <th>Find / dedupe by CPF<br /><span class="sub">unique index, upsert, search</span></th>
+          <th>Recover the digits<br /><span class="sub">backoffice detail</span></th>
+          <th>A leaked dump stays useless<br /><span class="sub">no CPF recoverable</span></th>
+        </tr>
+        <tr>
+          <td>Plaintext</td>
+          <td class="y">yes</td>
+          <td class="y">yes</td>
+          <td class="n">no, the dump <i>is</i> a CPF list</td>
+        </tr>
+        <tr>
+          <td>SHA-256(cpf)</td>
+          <td class="y">yes</td>
+          <td class="n">no</td>
+          <td class="n">no, brute-forced in seconds (§2)</td>
+        </tr>
+        <tr>
+          <td>bcrypt / argon2 with random salt</td>
+          <td class="n">no, same CPF → different hash, so no equality lookup</td>
+          <td class="n">no</td>
+          <td class="y">yes</td>
+        </tr>
+        <tr>
+          <td>AES-GCM only (random IV)</td>
+          <td class="n">no, same CPF → different ciphertext</td>
+          <td class="y">yes</td>
+          <td class="y">yes, while the key is safe</td>
+        </tr>
+        <tr>
+          <td>Deterministic encryption (fixed IV)</td>
+          <td class="y">yes</td>
+          <td class="y">yes</td>
+          <td class="m">partly; fixed-IV GCM is broken (nonce reuse), needs AES-SIV</td>
+        </tr>
+        <tr>
+          <td><b>HMAC-SHA256 (key A) + AES-256-GCM (key B)</b></td>
+          <td class="y">yes, via <code>cpf_hmac</code></td>
+          <td class="y">yes, via <code>cpf_ciphertext</code></td>
+          <td class="y">yes, while the keys are safe</td>
+        </tr>
+      </table>
+      <p>
+        Only the pair covers all three jobs, because each column is optimized for one property the
+        other must not have. Equality requires <b>determinism</b>, and safe encryption requires
+        <b>randomness</b>.
+      </p>
+
+      <!-- ============================================================ -->
+      <h2>2 · Why a plain hash is not protection: the CPF space is tiny</h2>
+      <p class="lead">
+        A CPF has 11 digits, but the last two are check digits computed from the first nine. There
+        are only <b>10⁹ possible CPFs</b>.
+      </p>
+
+      <div class="barrow">
+        <span>All possible CPFs</span>
+        <div class="mono">1,000,000,000 candidates</div>
+      </div>
+      <div class="barrow">
+        <span>Unsalted SHA-256 brute force</span>
+        <div>
+          <div class="bar" style="width: 4%"></div>
+          <span class="sub"
+            >public GPU benchmarks run SHA-256 at tens of billions of hashes/s, so the whole space
+            falls in about a second [B]</span
+          >
+        </div>
+      </div>
+      <div class="barrow">
+        <span>…if a mask like <code>***.456.789-**</code> were public</span>
+        <div>
+          <div class="bar" style="width: 1%"></div>
+          <span class="sub"
+            >1,000 candidates, falls in milliseconds even in a browser (live demo in §6), which is
+            why the public journey shows <b>no</b> CPF digits</span
+          >
+        </div>
+      </div>
+      <div class="barrow">
+        <span>HMAC-SHA256 without the key</span>
+        <div>
+          <div class="bar ok" style="width: 100%"></div>
+          <span class="sub"
+            >no shortcut: each guess needs the 256-bit secret key, and guessing the key means 2²⁵⁶
+            tries</span
+          >
+        </div>
+      </div>
+
+      <div class="badbox">
+        <b>Why this matters:</b> "we hash the CPF" sounds safe and isn't. Anyone with the dump can
+        enumerate the space and recompute every hash. The HMAC's <i>secret key</i> is what turns a
+        public function into one only the app can evaluate.
+      </div>
+      <div class="warnbox">
+        <b>The HMAC's real limit:</b> it stops offline brute force
+        <i>only while key A stays secret</i>. If <code>PII_HMAC_KEY</code> leaks together with a
+        dump, the attacker runs the same 10⁹ enumeration with the right key and recovers every CPF
+        in seconds. The key is the protection; the algorithm alone is not.
+      </div>
+
+      <!-- ============================================================ -->
+      <h2>3 · Write path: submitting the signup form</h2>
+      <p class="lead">
+        From the form to the row. Steps ① to ⑥ all run in the backend; the browser only sends the
+        form over HTTPS.
+      </p>
+
+      <svg viewBox="0 0 1000 380" role="img" aria-label="Write path diagram from form to database">
+        <defs>
+          <marker
+            id="arr"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)" />
+          </marker>
+        </defs>
+
+        <rect class="box" x="10" y="40" width="150" height="70" rx="10" />
+        <text x="85" y="68" text-anchor="middle" font-weight="600">Signup form</text>
+        <text x="85" y="88" text-anchor="middle" class="sub">"529.982.247-25"</text>
+
+        <rect class="box" x="200" y="40" width="170" height="70" rx="10" />
+        <text x="285" y="64" text-anchor="middle" font-weight="600">① Normalize</text>
+        <text x="285" y="82" text-anchor="middle" class="sub">digits only → "52998224725"</text>
+        <text x="285" y="98" text-anchor="middle" class="sub">② validate check digits</text>
+
+        <rect class="k1" x="410" y="10" width="250" height="80" rx="10" />
+        <text x="535" y="34" text-anchor="middle" font-weight="600">③ HMAC-SHA256 (key A)</text>
+        <text x="535" y="54" text-anchor="middle" class="mono">input = "cpf:v1:" + digits</text>
+        <text x="535" y="74" text-anchor="middle" class="sub">
+          deterministic · irreversible · 32 bytes
+        </text>
+
+        <rect class="k2" x="410" y="120" width="250" height="90" rx="10" />
+        <text x="535" y="144" text-anchor="middle" font-weight="600">④ AES-256-GCM (key B)</text>
+        <text x="535" y="164" text-anchor="middle" class="mono">iv = 12 random bytes</text>
+        <text x="535" y="182" text-anchor="middle" class="mono">AAD = cpf_hmac</text>
+        <text x="535" y="200" text-anchor="middle" class="sub">
+          randomized · reversible · authenticated
+        </text>
+
+        <rect class="db" x="720" y="40" width="270" height="170" rx="12" />
+        <text x="855" y="64" text-anchor="middle" font-weight="600">⑤ patient (upsert)</text>
+        <text x="735" y="92" class="mono">cpf_hmac bytea UNIQUE</text>
+        <text x="735" y="112" class="mono">cpf_ciphertext bytea</text>
+        <text x="735" y="132" class="mono">cpf_key_version smallint</text>
+        <text x="735" y="152" class="mono">name, phone, birthdate …</text>
+        <text x="735" y="180" class="sub">ON CONFLICT (cpf_hmac)</text>
+        <text x="735" y="196" class="sub">DO UPDATE contact fields only</text>
+
+        <path class="edge" d="M160,75 L198,75" />
+        <path class="edge" d="M370,70 L408,52" />
+        <path class="edge" d="M370,85 L408,160" />
+        <path class="edge" d="M535,90 L535,118" />
+        <path class="edge" d="M660,50 L718,80" />
+        <path class="edge" d="M660,165 L718,140" />
+
+        <rect class="box" x="10" y="250" width="980" height="118" rx="10" />
+        <text x="26" y="276" font-weight="600">
+          ⑥ What leaves this function, and what never does
+        </text>
+        <text x="26" y="300" class="sub">
+          • Stored: cpf_hmac (32 bytes) and cpf_ciphertext = iv(12) ‖ ciphertext(11) ‖ tag(16) = 39
+          bytes, plus cpf_key_version.
+        </text>
+        <text x="26" y="320" class="sub">
+          • Never stored: the digits, the formatted CPF, any mask, any unkeyed hash. Never logged:
+          the request body (CPF field redacted by the logger).
+        </text>
+        <text x="26" y="340" class="sub">
+          • Never sent back: the public response contains no CPF digits at all, only the first name
+          (§4). Keys A and B come from env (PII_HMAC_KEY, PII_ENCRYPTION_KEY),
+        </text>
+        <text x="26" y="358" class="sub">
+          are loaded once at boot by the PII module, and are never written to the DB, logs, or
+          responses.
+        </text>
+      </svg>
+
+      <div class="grid3">
+        <div class="card">
+          <h4>Why normalize first</h4>
+          <p>
+            <code>529.982.247-25</code> and <code>52998224725</code> are the same person. HMAC is
+            byte-exact, so without one canonical form the unique index lets duplicates through.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Why the <code>cpf:v1:</code> prefix</h4>
+          <p>
+            Domain separation. If the same key is ever used for another field (e.g. phone), equal
+            digits must not produce equal HMACs across fields. <code>v1</code> names the scheme for
+            a future migration.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Why AAD = <code>cpf_hmac</code></h4>
+          <p>
+            It binds the ciphertext to its own row. Someone with DB write access who swaps two
+            patients' ciphertexts gets a decryption failure, not a silently wrong CPF.
+          </p>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2>4 · Read paths: who needs what, and which key they touch</h2>
+
+      <svg viewBox="0 0 1000 300" role="img" aria-label="Three read paths">
+        <rect class="box" x="10" y="20" width="310" height="260" rx="12" />
+        <text x="165" y="46" text-anchor="middle" font-weight="600">Public journey (no login)</text>
+        <text x="26" y="74" class="sub">GET /api/consultations/:id (+ SSE)</text>
+        <rect class="okf" x="26" y="88" width="278" height="44" rx="8" />
+        <text x="165" y="115" text-anchor="middle">no key touched: no CPF is read</text>
+        <rect class="okf" x="26" y="146" width="278" height="44" rx="8" />
+        <text x="165" y="173" text-anchor="middle" class="mono">first name only, e.g. "Maria"</text>
+        <text x="26" y="214" class="sub">No CPF digits leave the server, not even a mask:</text>
+        <text x="26" y="232" class="sub">a public mask reveals 6 of 9 base digits and would</text>
+        <text x="26" y="250" class="sub">force decryption on an unauthenticated route.</text>
+        <text x="26" y="268" class="sub">The encryption key stays out of the public path.</text>
+
+        <rect class="box" x="345" y="20" width="310" height="260" rx="12" />
+        <text x="500" y="46" text-anchor="middle" font-weight="600">Backoffice search by CPF</text>
+        <text x="361" y="74" class="sub">operator types "529.982.247-25"</text>
+        <rect class="k1" x="361" y="88" width="278" height="44" rx="8" />
+        <text x="500" y="115" text-anchor="middle">normalize → HMAC with key A</text>
+        <rect class="db" x="361" y="146" width="278" height="44" rx="8" />
+        <text x="500" y="173" text-anchor="middle" class="mono">WHERE cpf_hmac = $1</text>
+        <text x="361" y="214" class="sub">Exact match through the unique index.</text>
+        <text x="361" y="232" class="sub">Nothing is decrypted to search.</text>
+        <text x="361" y="250" class="sub">Partial / prefix search is impossible by design:</text>
+        <text x="361" y="268" class="sub">it would need the plaintext.</text>
+
+        <rect class="box" x="680" y="20" width="310" height="260" rx="12" />
+        <text x="835" y="46" text-anchor="middle" font-weight="600">Backoffice patient detail</text>
+        <text x="696" y="74" class="sub">authenticated operator (Q12)</text>
+        <rect class="k2" x="696" y="88" width="278" height="44" rx="8" />
+        <text x="835" y="115" text-anchor="middle">decrypt with key B (AAD = cpf_hmac)</text>
+        <rect class="okf" x="696" y="146" width="278" height="44" rx="8" />
+        <text x="835" y="173" text-anchor="middle" class="mono">529.982.247-25</text>
+        <text x="696" y="214" class="sub">Full CPF only behind the session guard,</text>
+        <text x="696" y="232" class="sub">on the server, for one row at a time.</text>
+        <text x="696" y="250" class="sub">Decryption failure (bad tag/AAD) = 500 +</text>
+        <text x="696" y="268" class="sub">alert, never a fallback to "unknown".</text>
+      </svg>
+
+      <!-- ============================================================ -->
+      <h2>5 · Threat model: what each failure actually leaks</h2>
+
+      <table>
+        <tr>
+          <th>What the attacker got</th>
+          <th>What they can do</th>
+          <th>Verdict</th>
+        </tr>
+        <tr>
+          <td>DB dump / backup / managed-provider leak (most common)</td>
+          <td>
+            See <code>cpf_hmac</code> and <code>cpf_ciphertext</code>. Without key A they can't test
+            guesses against the HMAC; without key B they can't decrypt.
+          </td>
+          <td>
+            <span class="pill ok">CPF safe</span> names, phones, birthdates and incomes are
+            plaintext by Q16's choice
+          </td>
+        </tr>
+        <tr>
+          <td>Key A only (HMAC key)</td>
+          <td>
+            Brute-force all 10⁹ CPFs against the dump's HMACs, so every CPF is recoverable offline.
+          </td>
+          <td><span class="pill bad">CPF exposed</span> this is why key A is as secret as key B</td>
+        </tr>
+        <tr>
+          <td>Key B only (encryption key) + dump</td>
+          <td>Decrypt every ciphertext directly.</td>
+          <td><span class="pill bad">CPF exposed</span></td>
+        </tr>
+        <tr>
+          <td>App host compromised (env + live DB)</td>
+          <td>Everything: the app must be able to decrypt, so its host holds the keys.</td>
+          <td>
+            <span class="pill bad">out of scope</span> app-level encryption doesn't defend against
+            this
+          </td>
+        </tr>
+        <tr>
+          <td>DB write access, no keys</td>
+          <td>Swap ciphertexts between rows to misattribute a CPF.</td>
+          <td><span class="pill ok">detected</span> AAD = cpf_hmac makes decryption fail</td>
+        </tr>
+        <tr>
+          <td>Public consultation link forwarded (Q13)</td>
+          <td>See the patient's first name, the requested amount and the offers.</td>
+          <td>
+            <span class="pill ok">no CPF</span> no digits, no mask, no decryption on this path
+          </td>
+        </tr>
+      </table>
+
+      <div class="warnbox">
+        <b>Where the protection comes from:</b> keys separated from data. On the all-in-one VPS
+        (Q2b), the DB volume and the env file sit on the same disk, so a full-disk or full-host
+        compromise defeats it. It pays off once the dump and the keys can leak independently:
+        backups shipped elsewhere, or <code>DATABASE_URL</code> moved to a managed provider.
+      </div>
+
+      <!-- ============================================================ -->
+      <h2>6 · Live demo (runs entirely in this page with WebCrypto)</h2>
+      <p class="lead">
+        Keys are generated fresh in your browser every time the page loads. Nothing is sent
+        anywhere. The primitives (HMAC-SHA256, AES-256-GCM) are the same ones the backend uses
+        through <code>node:crypto</code>.
+      </p>
+
+      <div class="demo">
+        <label for="cpf">CPF</label><br />
+        <input
+          id="cpf"
+          type="text"
+          value="529.982.247-25"
+          autocomplete="off"
+          spellcheck="false"
+          aria-describedby="cpfHelp"
+        />
+        <button id="btnRun">Protect</button>
+        <button id="btnAgain" class="ghost">Protect again (same CPF)</button>
+        <button id="btnKeys" class="ghost">New keys</button>
+        <div id="cpfHelp" class="sub" style="color: var(--muted); font-size: 13px; margin-top: 4px">
+          Try it formatted, unformatted, or with a wrong check digit.
+        </div>
+
+        <div class="out" aria-live="polite">
+          <div class="lbl">① normalized</div>
+          <div class="val" id="oNorm">–</div>
+          <div class="lbl">② check digits</div>
+          <div class="val" id="oValid">–</div>
+          <div class="lbl">③ cpf_hmac (key A)</div>
+          <div class="val" id="oHmac">–</div>
+          <div class="lbl">④ cpf_ciphertext (key B)</div>
+          <div class="val" id="oCt">–</div>
+          <div class="lbl">a mask (NOT public)</div>
+          <div class="val" id="oMask">–</div>
+          <div class="lbl">decrypt (correct AAD)</div>
+          <div class="val" id="oDec">–</div>
+          <div class="lbl">decrypt (swapped row AAD)</div>
+          <div class="val" id="oSwap">–</div>
+        </div>
+        <p class="sub" style="color: var(--muted); font-size: 13px">
+          Press <i>Protect again</i>: the HMAC stays identical (that's what lets the unique index
+          work), while the ciphertext changes every time (fresh IV), so equal CPFs never look equal
+          in the encrypted column.
+        </p>
+
+        <h3>Upsert simulation: <code>INSERT … ON CONFLICT (cpf_hmac)</code></h3>
+        <table id="rows">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>cpf_hmac (first 16 hex)</th>
+              <th>cpf_ciphertext (first 16 hex)</th>
+              <th>submissions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <h3>Attack: why the public journey shows no mask</h3>
+        <p class="sub" style="color: var(--muted); font-size: 13px">
+          Suppose a mask (digits 4–9) had been shown publicly and the attacker also has the stored
+          value. They try all 1,000 values for digits 1–3.
+        </p>
+        <button id="btnAtkSha">Attack an unsalted SHA-256 column</button>
+        <button id="btnAtkHmac">Attack our HMAC column (no key A)</button>
+        <div class="out">
+          <div class="lbl">SHA-256 attack</div>
+          <div class="val" id="oAtkSha">–</div>
+          <div class="lbl">HMAC attack</div>
+          <div class="val" id="oAtkHmac">–</div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2>7 · Keys, versions and rotation</h2>
+      <div class="grid2">
+        <div class="card">
+          <h4>Two independent 256-bit keys</h4>
+          <p>
+            <code>PII_HMAC_KEY</code> (A) and <code>PII_ENCRYPTION_KEY</code> (B), base64 in env,
+            validated at boot by the env schema (wrong length = the process refuses to start).
+            Separate keys so each primitive's key serves one purpose. Reusing one key across HMAC
+            and AES gives up the clean security argument for both.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Rotating key B (encryption): cheap</h4>
+          <p>
+            <code>cpf_key_version</code> says which key decrypts each row. Add key v2, write new
+            rows with v2, re-encrypt old rows in batches (decrypt v1 → encrypt v2), then retire v1.
+            The HMAC column doesn't change, so lookups keep working the whole time.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Rotating key A (HMAC): expensive</h4>
+          <p>
+            Every <code>cpf_hmac</code> must be recomputed, which requires decrypting every CPF with
+            key B first, and the unique index is in play during the switch. Rotate only on suspected
+            compromise, never on a schedule.
+          </p>
+        </div>
+        <div class="card">
+          <h4>Losing a key</h4>
+          <p>
+            Losing B = every CPF is unrecoverable (the HMAC still dedupes, but nobody can read the
+            digits back). Losing A = no new row can match an old one. The keys need their own
+            backup, stored apart from DB backups.
+          </p>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <h2>8 · Where it lives in the code (one place)</h2>
+      <p>
+        Per the user's rule ("business logic and important rules centralized in one
+        module/service"), all of this sits in a single PII module. Callers never touch
+        <code>node:crypto</code> directly:
+      </p>
+      <table>
+        <tr>
+          <th>Responsibility</th>
+          <th>Owner</th>
+        </tr>
+        <tr>
+          <td>Normalize + check digits</td>
+          <td>CPF value object / schema refinement (shared by form and API)</td>
+        </tr>
+        <tr>
+          <td>
+            <code>blindIndex(cpf)</code>, <code>encrypt(cpf, aad)</code>, <code>decrypt(row)</code>
+          </td>
+          <td>
+            PII service, the only importer of <code>node:crypto</code> for PII;
+            <code>decrypt</code> is callable only from backoffice code paths
+          </td>
+        </tr>
+        <tr>
+          <td>Upsert by <code>cpf_hmac</code></td>
+          <td>Patient repository (database code, no crypto logic)</td>
+        </tr>
+        <tr>
+          <td>Deciding <i>who</i> may see the full CPF</td>
+          <td>Backoffice route guard (Q12) + response shaping (Q13)</td>
+        </tr>
+      </table>
+
+      <h3>Invariants the tests must hold</h3>
+      <table>
+        <tr>
+          <th>Invariant</th>
+          <th>Test</th>
+        </tr>
+        <tr>
+          <td>Formatting never changes identity</td>
+          <td><code>blindIndex("529.982.247-25") === blindIndex("52998224725")</code></td>
+        </tr>
+        <tr>
+          <td>Encryption is randomized</td>
+          <td>
+            Encrypting the same CPF twice yields different ciphertexts, and both decrypt to the same
+            digits
+          </td>
+        </tr>
+        <tr>
+          <td>Ciphertext is bound to its row</td>
+          <td>Decrypting with another row's <code>cpf_hmac</code> as AAD throws</td>
+        </tr>
+        <tr>
+          <td>Tampering is detected</td>
+          <td>Flipping one ciphertext byte throws (GCM tag)</td>
+        </tr>
+        <tr>
+          <td>No plaintext at rest</td>
+          <td>
+            After a submission, no column of <code>patient</code>/<code>consultation</code> contains
+            the 11 digits
+          </td>
+        </tr>
+        <tr>
+          <td>No CPF on the public API</td>
+          <td>
+            Public GET/SSE payloads contain no CPF digits, and the public read path never loads key
+            B
+          </td>
+        </tr>
+        <tr>
+          <td>Bad keys fail fast</td>
+          <td>Boot with a 16-byte key → env validation error, process exits</td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <h2>9 · Details decided during the grill (vetoable)</h2>
+      <p class="lead">
+        Q16 chose "CPF encrypted + HMAC index". These implementation details follow from it, and the
+        agent chose them. Say so if any should change.
+      </p>
+      <table>
+        <tr>
+          <th>Detail</th>
+          <th>Choice</th>
+          <th>Why</th>
+        </tr>
+        <tr>
+          <td>HMAC input</td>
+          <td><code>"cpf:v1:" + 11 digits</code></td>
+          <td>Domain separation + scheme version</td>
+        </tr>
+        <tr>
+          <td>AES-GCM AAD</td>
+          <td><code>cpf_hmac</code></td>
+          <td>Detects ciphertext swaps between rows</td>
+        </tr>
+        <tr>
+          <td>Ciphertext envelope</td>
+          <td>
+            <code>iv(12) ‖ ct(11) ‖ tag(16)</code> in one <code>bytea</code> +
+            <code>cpf_key_version smallint</code>
+          </td>
+          <td>One self-describing column; rotation without a schema change</td>
+        </tr>
+        <tr>
+          <td>Public CPF display</td>
+          <td>None: first name only</td>
+          <td>
+            A mask reveals 6 of 9 base digits (1,000 candidates left) and forces decryption on the
+            public path
+          </td>
+        </tr>
+        <tr>
+          <td>Upsert</td>
+          <td>
+            <code>ON CONFLICT (cpf_hmac)</code> updates contact fields only, never the ciphertext
+          </td>
+          <td>The CPF of an existing patient can't change</td>
+        </tr>
+      </table>
+
+      <footer>
+        Grades: the CPF space (10⁹) is A, it follows from the check-digit algorithm. GPU SHA-256
+        throughput is B, order of magnitude from public hashcat benchmarks. The other statements
+        follow from the primitives' definitions (HMAC: RFC 2104; GCM: NIST SP 800-38D). The demo
+        uses WebCrypto (<code>crypto.subtle</code>), the same algorithms as
+        <code>node:crypto</code> on the server.
+      </footer>
+    </main>
+
+    <script>
+      (() => {
+        const te = new TextEncoder(),
+          td = new TextDecoder();
+        const $ = (id) => document.getElementById(id);
+        const hex = (buf) =>
+          [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+        let hmacKey, aesKey;
+        const rows = []; // { hmacHex, ctHex, count }
+        let last = null; // { digits, hmacBytes, envelope }
+
+        async function newKeys() {
+          hmacKey = await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, [
+            "sign",
+          ]);
+          aesKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, [
+            "encrypt",
+            "decrypt",
+          ]);
+          rows.length = 0;
+          renderRows();
+          last = null;
+        }
+
+        const normalize = (s) => s.replace(/\D/g, "");
+        function validCpf(d) {
+          if (!/^\d{11}$/.test(d) || /^(\d)\1{10}$/.test(d)) return false;
+          const dv = (len) => {
+            let sum = 0;
+            for (let i = 0; i < len; i++) sum += Number(d[i]) * (len + 1 - i);
+            const r = (sum * 10) % 11;
+            return r === 10 ? 0 : r;
+          };
+          return dv(9) === Number(d[9]) && dv(10) === Number(d[10]);
+        }
+        const mask = (d) => `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**`;
+        const blindIndex = async (d) =>
+          new Uint8Array(await crypto.subtle.sign("HMAC", hmacKey, te.encode("cpf:v1:" + d)));
+        async function encrypt(d, aad) {
+          const iv = crypto.getRandomValues(new Uint8Array(12));
+          const ct = new Uint8Array(
+            await crypto.subtle.encrypt(
+              { name: "AES-GCM", iv, additionalData: aad },
+              aesKey,
+              te.encode(d),
+            ),
+          );
+          const env = new Uint8Array(iv.length + ct.length);
+          env.set(iv);
+          env.set(ct, iv.length);
+          return env; // iv(12) || ciphertext(11) || tag(16)
+        }
+        async function decrypt(env, aad) {
+          const iv = env.slice(0, 12),
+            ct = env.slice(12);
+          return td.decode(
+            await crypto.subtle.decrypt({ name: "AES-GCM", iv, additionalData: aad }, aesKey, ct),
+          );
+        }
+
+        function renderRows() {
+          const tb = document.querySelector("#rows tbody");
+          tb.innerHTML =
+            rows
+              .map(
+                (r, i) =>
+                  `<tr><td>${i + 1}</td><td>${r.hmacHex.slice(0, 16)}…</td><td>${r.ctHex.slice(0, 16)}…</td><td>${r.count}</td></tr>`,
+              )
+              .join("") ||
+            '<tr><td colspan="4" style="font-family:system-ui;color:var(--muted)">No rows yet: press Protect.</td></tr>';
+        }
+
+        async function run() {
+          const d = normalize($("cpf").value);
+          $("oNorm").textContent = d || "(empty)";
+          const ok = validCpf(d);
+          $("oValid").innerHTML = ok
+            ? '<span class="pill ok">valid</span>'
+            : '<span class="pill bad">invalid → 422, nothing hashed or stored</span>';
+          if (!ok) {
+            ["oHmac", "oCt", "oMask", "oDec", "oSwap"].forEach((id) => ($(id).textContent = "–"));
+            return;
+          }
+
+          const h = await blindIndex(d);
+          const env = await encrypt(d, h);
+          $("oHmac").textContent = hex(h);
+          $("oCt").textContent = `${hex(env)}  (${env.length} bytes = iv 12 + ct 11 + tag 16)`;
+          $("oMask").textContent = mask(d);
+          $("oDec").innerHTML =
+            `${await decrypt(env, h)} <span class="pill ok">tag verified</span>`;
+
+          // swap attack: decrypt this row's ciphertext under another CPF's HMAC as AAD
+          const other = await blindIndex("11144477735");
+          try {
+            await decrypt(env, other);
+            $("oSwap").innerHTML = '<span class="pill bad">decrypted (should not happen)</span>';
+          } catch {
+            $("oSwap").innerHTML =
+              '<span class="pill ok">rejected: OperationError (auth tag mismatch)</span>';
+          }
+
+          // upsert by blind index
+          const hh = hex(h);
+          const existing = rows.find((r) => r.hmacHex === hh);
+          if (existing)
+            existing.count++; // contact fields would update; ciphertext kept
+          else rows.push({ hmacHex: hh, ctHex: hex(env), count: 1 });
+          renderRows();
+          last = { digits: d, hmacBytes: h, envelope: env };
+        }
+
+        async function sha256Hex(s) {
+          return hex(await crypto.subtle.digest("SHA-256", te.encode(s)));
+        }
+
+        async function attackSha() {
+          if (!last) await run();
+          if (!last) return;
+          const d = last.digits,
+            stolen = await sha256Hex(d),
+            mid = d.slice(3, 9);
+          const t0 = performance.now();
+          let found = null,
+            tries = 0;
+          for (let p = 0; p < 1000 && !found; p++) {
+            const base = String(p).padStart(3, "0") + mid;
+            for (let c = 0; c < 100; c++) {
+              // check digits: only one pair is valid, but try all to be fair
+              const cand = base + String(c).padStart(2, "0");
+              if (!validCpf(cand)) continue;
+              tries++;
+              if ((await sha256Hex(cand)) === stolen) {
+                found = cand;
+                break;
+              }
+            }
+          }
+          const ms = (performance.now() - t0).toFixed(0);
+          $("oAtkSha").innerHTML = found
+            ? `<span class="pill bad">recovered ${found} in ${ms} ms after ${tries} guesses</span>`
+            : `not found (${tries} guesses, ${ms} ms)`;
+        }
+
+        async function attackHmac() {
+          if (!last) await run();
+          if (!last) return;
+          // The attacker has the dump (cpf_hmac) but not key A, so they must guess with their own key.
+          const attackerKey = await crypto.subtle.generateKey(
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["sign"],
+          );
+          const stolen = hex(last.hmacBytes),
+            mid = last.digits.slice(3, 9);
+          const t0 = performance.now();
+          let found = null,
+            tries = 0;
+          for (let p = 0; p < 1000 && !found; p++) {
+            const base = String(p).padStart(3, "0") + mid;
+            for (let c = 0; c < 100; c++) {
+              const cand = base + String(c).padStart(2, "0");
+              if (!validCpf(cand)) continue;
+              tries++;
+              const g = hex(
+                await crypto.subtle.sign("HMAC", attackerKey, te.encode("cpf:v1:" + cand)),
+              );
+              if (g === stolen) {
+                found = cand;
+                break;
+              }
+            }
+          }
+          const ms = (performance.now() - t0).toFixed(0);
+          $("oAtkHmac").innerHTML = found
+            ? `<span class="pill bad">recovered ${found}</span>`
+            : `<span class="pill ok">no match after all ${tries} candidates (${ms} ms): without key A no guess can be checked</span>`;
+        }
+
+        $("btnRun").addEventListener("click", run);
+        $("btnAgain").addEventListener("click", run);
+        $("btnKeys").addEventListener("click", async () => {
+          await newKeys();
+          await run();
+        });
+        $("btnAtkSha").addEventListener("click", attackSha);
+        $("btnAtkHmac").addEventListener("click", attackHmac);
+        $("cpf").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") run();
+        });
+        newKeys().then(run);
+      })();
+    </script>
+  </body>
+</html>
