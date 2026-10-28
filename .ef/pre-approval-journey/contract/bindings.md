@@ -29,7 +29,7 @@ UI: `@base-ui/react`, shadcn base style deps (`class-variance-authority`, `clsx`
 
 ## Path aliases and file naming
 
-- Canonical alias: **`#/*` → `./src/*`** (`package.json:5-7` imports + `tsconfig.json` paths). It resolves under Vite, Vitest, Node and Bun without tsconfig help.
+- Canonical alias: **`#/*` → `./src/*`** (`package.json:5-7` imports + `tsconfig.json` paths). Vite/Vitest resolve it through the bundler. Bun running TS directly (worker, migrate, ops scripts) resolves the extensionless `#/x` only through `tsconfig.json` `paths`, so the runtime image ships `tsconfig.json` (amended 2026-10-28, implementation: package `imports` alone gave "Cannot find module" in the container).
 - Exception: vendored shadcn files under `src/components/ui/**` keep the CLI's `@/` imports. Don't hand-edit them except to change tokens. No other file imports with `@/`.
 - Files: `kebab-case` with a role suffix that says what the file is: `*.table.ts`, `*.relations.ts`, `*.repository.ts`, `*.service.ts`, `*.routes.ts`, `*.dto.ts`, `*.adapter.ts`, `*.port.ts`, `*.job.ts`, `*.plugin.ts`, `*.test.ts`, `*.int.test.ts`. React components are `PascalCase.tsx`. Full layout in [layout.md](layout.md).
 - Formatting: oxfmt defaults (double quotes, semicolons, 2 spaces). `src/routeTree.gen.ts` is excluded from fmt and lint.

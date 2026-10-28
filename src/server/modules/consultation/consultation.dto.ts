@@ -77,6 +77,12 @@ function isPhone(value: string): boolean {
 
 export const ScenarioSchema = Type.Enum(SIMULATION_SCENARIOS);
 
+const TreatmentAmountCentsSchema = Type.Integer({
+  minimum: MIN_TREATMENT_CENTS,
+  maximum: MAX_TREATMENT_CENTS,
+  error: "O valor deve estar entre R$ 1.000,00 e R$ 50.000,00",
+});
+
 export const SignupRequestSchema = Type.Object({
   fullName: Type.Refine(Type.String(), isFullName, () => "Informe nome e sobrenome"),
   cpf: CpfSchema,
@@ -91,11 +97,7 @@ export const SignupRequestSchema = Type.Object({
     maximum: Number.MAX_SAFE_INTEGER,
     error: "Informe a renda mensal",
   }),
-  treatmentAmountCents: Type.Integer({
-    minimum: MIN_TREATMENT_CENTS,
-    maximum: MAX_TREATMENT_CENTS,
-    error: "O valor deve estar entre R$ 1.000,00 e R$ 50.000,00",
-  }),
+  treatmentAmountCents: TreatmentAmountCentsSchema,
   simulationScenario: Type.Optional(ScenarioSchema),
 });
 export type SignupRequest = Static<typeof SignupRequestSchema>;
@@ -111,6 +113,12 @@ export const ChooseRequestSchema = Type.Object({
   offerId: Type.String({ pattern: UUID.source, error: "Oferta inválida" }),
 });
 export type ChooseRequest = Static<typeof ChooseRequestSchema>;
+
+export const RequoteRequestSchema = Type.Object({
+  treatmentAmountCents: TreatmentAmountCentsSchema,
+  simulationScenario: Type.Optional(ScenarioSchema),
+});
+export type RequoteRequest = Static<typeof RequoteRequestSchema>;
 
 export const JOURNEY_STATUSES = ["QUOTING", "OFFERS", "NO_OFFER", "CHOSEN"] as const;
 export type JourneyStatus = (typeof JOURNEY_STATUSES)[number];
