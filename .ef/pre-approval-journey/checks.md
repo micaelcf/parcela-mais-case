@@ -81,6 +81,7 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-615` — Every backoffice table pages, sorts, filters and searches on the server
 - `RF-616` — Unknown sort or filter fields are rejected
 - `RF-617` — Table state is kept in the URL, except the CPF
+- `RF-618` — The backoffice is reachable from the public app, and back
 - `RF-701` — `vp run up` starts the dev environment
 - `RF-702` — `vp run up --prod` starts the production-parity stack
 - `RF-703` — The stack runs on both Podman and Docker
@@ -91,6 +92,8 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-708` — The health endpoint reports the deployed commit
 - `RF-709` — A healthy deploy removes this project's superseded images and build cache
 - `RF-710` — No ops script opens a connection to another host
+- `RF-711` — `vp run down` stops the local stack without losing data
+- `RF-712` — The dev server isn't reachable from other machines
 - `RF-801` — CPF validation has automated tests
 - `RF-802` — Price calculation has automated tests
 - `RF-803` — Orchestration has automated tests for the deadline
@@ -167,11 +170,11 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 | S2    | CPF validation, CPF/IP protection and exact Price are correct in isolation                           | 1    | done   | [slices/S2-cpf-pii-price.md](slices/S2-cpf-pii-price.md)                 | C12–C23, C174                               |
 | S3    | simulated lenders, adapters and breaker derivation                                                   | 1    | done   | [slices/S3-lender-integration.md](slices/S3-lender-integration.md)       | C24–C40                                     |
 | S4    | fan-out, deadline, live stream, one choice                                                           | 2    | done   | [slices/S4-orchestration.md](slices/S4-orchestration.md)                 | C41–C76, C158, C160, C170, C171, C173, C175 |
-| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor/down                              | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88, C165–C167, C208                    |
+| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor/down; local HTTPS                 | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88, C165–C167, C208–C216               |
 | S6    | requote, per-patient and per-IP caps, no PII in public payloads                                      | 3    | done   | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100, C161, C162, C169                  |
 | S7    | backoffice auth, metrics, lists, kill switch API                                                     | 4    | done   | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117, C159                             |
 | S8    | public journey UI + UI kit                                                                           | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144                                   |
-| S9    | backoffice UI                                                                                        | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168                             |
+| S9    | backoffice UI                                                                                        | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168, C217                       |
 | S10   | E2E suite + browser smoke                                                                            | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157, C164                             |
 | S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs                        | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C195                                   |
 | S12   | stepper, blur/submit validation, optional e-mail, shadcn date picker, pacer search, directory routes | 8    | done   | [slices/S12-signup-ux.md](slices/S12-signup-ux.md)                       | C197–C207                                   |

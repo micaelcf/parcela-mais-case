@@ -40,4 +40,7 @@ Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "searches by CPF without putti
 Proof: `vp test src/components/modules/backoffice/table-search.test.ts -t "keeps a CPF typed in the search box out of the URL"`
 
 **C154** · RF-611, RF-612 — the explorer lists consultations, and the detail page shows the formatted decrypted CPF
-Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "shows the decrypted CPF on the detail"`
+Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "shows the decrypted CPF and the address on the detail"`
+
+**C217** · RF-618 — the public header's "Área da clínica" leads to the backoffice login without a session; after login, the backoffice header's "Ir para o cadastro" leads back to the signup (added 2026-10-28, user request)
+Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "is reachable from the public header"`

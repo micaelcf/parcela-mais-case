@@ -30,6 +30,32 @@ Proof: `vp test scripts/ops/lib/compose-stack.test.ts -t "never nests an interpo
 **C208** · RF-711 — `vp run down` runs exactly `compose -f compose.yaml -p parcela-mais-case --profile prod down --remove-orphans` (`--stop` → `… stop`); no plan argument ever deletes volumes or images or leaves the project; `-v`, `--volumes`, `--rmi`, a host or any other option exits 2 with nothing run; a compose failure exits 1 (added 2026-10-28, user request)
 Proof: `vp test scripts/ops/lib/down-plan.test.ts`
 
+Local HTTPS (added 2026-10-28, user request, RFC D31):
+
+**C209** · RF-701, RF-702 — Caddy listens on the ports it publishes in both stacks; `parcela.localhost` over HTTPS is the default site; dev keeps its CA in the `.local/caddy` bind mount, which `up --prod` shares through `CADDY_DATA` and `deploy` never sets
+Proof: `vp test scripts/ops/lib/compose-stack.test.ts -t "Caddy"`
+
+**C210** · RF-701 — the trust plan per platform: Windows user Root store by fingerprint, macOS login keychain, Linux NSS user db plus every Firefox profile without sudo, the package hint without `certutil`; already trusted → silent and unchanged; a declined prompt warns with the manual command and doesn't fail
+Proof: `vp test scripts/ops/lib/local-ca.test.ts`
+
+**C211** · RF-701 — `up` starts Postgres and caddy-dev pointed at the dev server's address and checks health on loopback with SNI/Host `parcela.localhost` against the local CA
+Proof: `vp test scripts/ops/lib/up-plan.test.ts -t "dev stack"`
+
+**C212** · RF-701, RF-702 — `up` prints the dev password only when the configured hash verifies against the documented one (which `.env.example`'s hash does), never outside dev
+Proof: `vp test scripts/ops/lib/up-plan.test.ts -t "backoffice login lines"`
+
+**C213** · RF-712 — the dev server never listens on every interface; per OS and engine it binds the address the proxy reaches (only Linux + rootless Podman lands on a shared network, flagged), and the lender simulator URL follows it unless configured elsewhere
+Proof: `vp test scripts/ops/lib/dev-binding.test.ts`
+
+**C214** · RF-704 — `doctor` checks the CA's trust, Caddy's ports, `parcela.localhost` resolution, caddy-dev's route to the dev server and where it listens, and the Linux port floor for an opt-in `HTTPS_PORT=443`
+Proof: `vp test scripts/ops/lib/doctor-checks.test.ts`
+
+**C215** · RF-711 — `down` covers caddy-dev too
+Proof: `vp test scripts/ops/lib/down-plan.test.ts -t "caddy-dev"`
+
+**C216** · RF-701, RF-702, RF-712 — live on Windows + Podman: `vp run up` serves `https://parcela.localhost:8443` over TLS verified against the local CA, redirects `http://parcela.localhost:8080` to it, refuses the dev server and proxy on the LAN/VPN addresses, and the full E2E suite passes over it; `up --prod` reuses the CA without a new prompt and the proxy spec passes against it
+Proof: `vp run up`, then `bunx vp run e2e`; `vp run up --prod`, then `E2E_BASE_URL=https://parcela.localhost:8443 bunx vp run e2e test/e2e/proxy.spec.ts` (macOS/Linux unverified live)
+
 **C81** · RF-707 — with a deliberately failing migration committed in a scratch clone, `vp run deploy` exits non-zero and the `app` and `worker` containers are never started (`<engine> ps -a` shows them absent or `Created`)
 Proof: `log.md` § S5 "RF-707 failed-migration deploy run"
 
