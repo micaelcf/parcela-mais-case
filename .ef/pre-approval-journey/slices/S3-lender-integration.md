@@ -17,7 +17,7 @@ Proof: `vp test src/server/integrations/lenders/simulator/simulator.plugin.test.
 **C27** · RF-213 — Delta `NORMAL` with failure rate 0.3 over 200 calls: the HTTP 500 share is within [23 %, 37 %] and every other call approves 100 % of the amount
 Proof: `vp test src/server/integrations/lenders/simulator/simulator.plugin.test.ts -t "Delta fails about 30% of NORMAL calls"`
 
-**C28** · RF-210, RF-211, RF-212, RF-213 — latency range table (ms, before scaling): ALFA 500–1500, BETA 2000–5000, GAMA 1000–3000, DELTA 4000–15000 in `NORMAL`; DELTA 4000–8000 in `ALL_APPROVE`; DELTA 12000–15000 in `DELTA_TIMES_OUT`
+**C28** · RF-210, RF-211, RF-212, RF-213 — latency range table (ms, before scaling): ALFA 500–1500, BETA 2000–5000, GAMA 1000–3000, DELTA 4000–15000 in `NORMAL`; DELTA 4000–8000 in `ALL_APPROVE`, `DELTA_FAILS` and `NONE_APPROVE`; DELTA 12000–15000 in `DELTA_TIMES_OUT`
 Proof: `vp test src/server/integrations/lenders/simulator/scenario.test.ts -t "latency ranges follow the PDF"`
 
 **C29** · RF-210 — a measured Alfa call at `timeScale 0.1` answers in no less than 50 ms and no more than 200 ms

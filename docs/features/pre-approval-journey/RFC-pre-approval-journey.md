@@ -373,6 +373,8 @@ The PDF requires forcing each outcome on demand. Per-consultation state means si
 
 **Decision.** `simulation_scenario` ∈ {`NORMAL`, `ALL_APPROVE`, `DELTA_FAILS`, `DELTA_TIMES_OUT`, `NONE_APPROVE`}, carried in the job payload and read only by the simulated lenders. With `SIMULATION_CONTROLS=true` the form shows the picker. Otherwise the picker isn't rendered and the API rejects non-`NORMAL` values with 422. Dissent preserved: a simulation concern lives in the domain schema.
 
+**Amendment (2026-10-28, implementation).** A forced outcome caps Delta's latency at 4–8 s in `ALL_APPROVE`, `DELTA_FAILS` and `NONE_APPROVE` (only `DELTA_TIMES_OUT` exceeds the deadline). With Delta's NORMAL 4–15 s, about 45 % of forced 500s/refusals would land after the 10 s deadline and show as `TIMEOUT`, so the scenario couldn't hold 20/20 (RF-214). Normative: every forced outcome other than `DELTA_TIMES_OUT` answers before the deadline.
+
 ### D19. The lender simulator is mounted as an Elysia plugin, behind real per-lender HTTP adapters (grill Q19)
 
 The port/adapter boundary is real code (HTTP calls, aborts, status mapping). Going live is a base-URL and mapper change.

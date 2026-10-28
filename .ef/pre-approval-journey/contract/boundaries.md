@@ -59,9 +59,11 @@ Rate string `"0.024900"` → `N = 24900`, `D = 1_000_000` (BigInt). `PV` in cent
 | ----------------- | ---------------------------------- | ----------------------- | --------------------- | ------------------------------------- |
 | `NORMAL`          | rule                               | rule                    | rule                  | rule                                  |
 | `ALL_APPROVE`     | approve 100 %                      | approve 60 % (its rule) | approve 100 %         | approve 100 %, latency 4–8 s          |
-| `DELTA_FAILS`     | rule                               | rule                    | rule                  | 500 always                            |
+| `DELTA_FAILS`     | rule                               | rule                    | rule                  | 500 always, latency 4–8 s             |
 | `DELTA_TIMES_OUT` | rule                               | rule                    | rule                  | latency 12–15 s (beyond the deadline) |
-| `NONE_APPROVE`    | refuse, hint = `floor(amount / 2)` | `DECLINED`              | refuse `IDADE_MINIMA` | `reject`                              |
+| `NONE_APPROVE`    | refuse, hint = `floor(amount / 2)` | `DECLINED`              | refuse `IDADE_MINIMA` | `reject`, latency 4–8 s               |
+
+Amended 2026-10-28 (implementation): a forced outcome must reach the worker before the 10 s deadline on every run, or it can't hold 20/20 (RF-214); Delta's NORMAL 4–15 s would turn ~45 % of `DELTA_FAILS`/`NONE_APPROVE` answers into `TIMEOUT`. Every forced Delta outcome is capped at 8 s, like `ALL_APPROVE`.
 
 ## Throttle (`throttle.plugin.ts`)
 

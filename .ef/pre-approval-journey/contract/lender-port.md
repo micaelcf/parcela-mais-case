@@ -36,7 +36,8 @@ export interface LenderPort {
   preApprove(req: PreApprovalRequest, signal: AbortSignal): Promise<LenderResult>; // throws LenderCallError
 }
 
-export type LenderAdapterDeps = { baseUrl: string; fetch: typeof fetch };
+export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>; // not `typeof fetch`: Bun's typing adds `preconnect`
+export type LenderAdapterDeps = { baseUrl: string; fetch: FetchLike };
 export function createAlfaAdapter(deps: LenderAdapterDeps): LenderPort; // likewise Beta, Gama, Delta
 ```
 

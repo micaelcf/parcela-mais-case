@@ -101,7 +101,7 @@ export type Worker = { start(): Promise<void>; stop(): Promise<void> };
 export function createWorker(deps?: { lenderRegistry?: LenderRegistry }): Worker;
 ```
 
-`test/integration/setup/app-fetch.ts` (integration-test wiring, not a factory): `export const appFetch: typeof fetch` = `(input, init) => app.handle(new Request(input, init))`, and `export const testLenderRegistry = createLenderRegistry({ baseUrl: "http://localhost/api/simulator/lenders", fetch: appFetch })`.
+`test/integration/setup/app-fetch.ts` (integration-test wiring, not a factory): `export const appFetch: FetchLike` (from `#/server/integrations/lenders/lender.port`) = `(input, init) => app.handle(new Request(input, init))`, and `export const testLenderRegistry = createLenderRegistry({ baseUrl: "http://localhost/api/simulator/lenders", fetch: appFetch })`.
 
 `#/server/modules/lender/lender-setting.service.ts`:
 
