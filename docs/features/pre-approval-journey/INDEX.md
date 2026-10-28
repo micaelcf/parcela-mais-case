@@ -2,13 +2,13 @@
 
 A clinic enters a patient's data once, four simulated lenders are queried in parallel under a 10-second deadline, offers arrive live with Tabela Price installments, and the patient's choice is persisted. A protected backoffice tracks money volume, lender health, consultations and abuse. It deliberately stops at the choice: no proposal submission, analysis, signing, disbursement or ledger.
 
-| Field            | Value                                                                                                                            |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**       | `parcela-mais-case`: Stage 3: discovery closed; contract in `.ef/pre-approval-journey/`; implementation not started (2026-10-27) |
-| **Driver**       | Micael                                                                                                                           |
-| **Target repos** | `parcela-mais-case`                                                                                                              |
-| **Ticket**       | none                                                                                                                             |
-| **Scale**        | `standard`                                                                                                                       |
+| Field            | Value                                                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**       | `parcela-mais-case`: Stage 4: implementation in progress (checklist in `.ef/pre-approval-journey/`; waves 0–1 landed) (2026-10-28) |
+| **Driver**       | Micael                                                                                                                             |
+| **Target repos** | `parcela-mais-case`                                                                                                                |
+| **Ticket**       | none                                                                                                                               |
+| **Scale**        | `standard`                                                                                                                         |
 
 ---
 
@@ -73,9 +73,9 @@ A clinic enters a patient's data once, four simulated lenders are queried in par
 
 ## Per-repo status
 
-| Repo                | Stage                                                             | Last updated | Notes                 |
-| ------------------- | ----------------------------------------------------------------- | ------------ | --------------------- |
-| `parcela-mais-case` | 3: discovery closed; contract written; implementation not started | 2026-10-27   | Next: `/ef:implement` |
+| Repo                | Stage                                                 | Last updated | Notes                                 |
+| ------------------- | ----------------------------------------------------- | ------------ | ------------------------------------- |
+| `parcela-mais-case` | 4: implementation in progress (waves 0–1 of 6 landed) | 2026-10-28   | Next: `/ef:audit` after the last wave |
 
 The RFC header is normative; this table is a convenience copy.
 

@@ -233,9 +233,9 @@ Single release (see Release & phasing). All requirements are **P0**.
 
 ## Open questions
 
-| Question                                                                                          | Owner  | Needed by                            |
-| ------------------------------------------------------------------------------------------------- | ------ | ------------------------------------ |
-| Rate-limit thresholds for RF-504/RF-505 (provisional 5 / patient / 24 h; 30 / IP / hour) (RFC O2) | Micael | Before RF-504/RF-505 are accepted    |
-| E2E runner for RF-807 (RFC O4)                                                                    | Micael | Before the E2E phase                 |
-| Public hostname/TLS for the deployed stack (RFC O1)                                               | Micael | Before the first VPS deploy with TLS |
-| VPS OS and Podman mode (RFC O3)                                                                   | Micael | Before the first VPS deploy          |
+| Question                                                                                                           | Owner  | Needed by                            |
+| ------------------------------------------------------------------------------------------------------------------ | ------ | ------------------------------------ |
+| Rate-limit thresholds for RF-504/RF-505 (provisional 5 / patient / 24 h; 30 / IP / hour) (RFC O2)                  | Micael | Before RF-504/RF-505 are accepted    |
+| ~~E2E runner for RF-807 (RFC O4)~~ **Closed (2026-10-28, implementation):** Playwright Test standalone, see RFC O4 | Micael | Before the E2E phase                 |
+| Public hostname/TLS for the deployed stack (RFC O1)                                                                | Micael | Before the first VPS deploy with TLS |
+| VPS OS and Podman mode (RFC O3)                                                                                    | Micael | Before the first VPS deploy          |
