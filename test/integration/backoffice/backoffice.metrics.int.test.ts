@@ -321,10 +321,14 @@ describe("backoffice metrics", () => {
     const anaId = await patientIdOf(anaFirst);
     const brunoId = await patientIdOf(brunoFirst);
 
-    // Outcomes are recorded after each response; wait for all three 429s.
+    // Outcomes (status and error code) are recorded after each response; wait until all three
+    // 429s are recorded with their codes, not just counted.
     const metrics = await waitFor(
       () => getOk("/metrics/abuse", cookie, AbuseMetricsSchema),
-      (value) => value.tooManyRequests === 3,
+      (value) =>
+        value.tooManyRequests === 3 &&
+        value.limitHits.IP_LIMIT + value.limitHits.PATIENT_LIMIT === 3 &&
+        value.topIps.some((row) => row.ipHash === ipHashOf(heavyIp) && row.tooManyRequests === 3),
     );
     expect(metrics.limitHits).toEqual({ IP_LIMIT: 2, PATIENT_LIMIT: 1 });
     expect(metrics.tooManyRequests).toBe(3);
