@@ -216,6 +216,23 @@ test.describe("signup", () => {
     }
   });
 
+  test("keeps the calendar's month and year dropdowns open when clicked", async ({ page }) => {
+    // Clicks in the portalled calendar used to bubble (through React) to the input group, which
+    // focuses its input on any non-button click: the native dropdown closed as soon as it opened.
+    await page.goto("/cadastro/paciente");
+    await page.getByRole("button", { name: "Selecionar data" }).click();
+    const calendar = page.locator("[data-slot=calendar]");
+    await expect(calendar.getByRole("grid")).toBeVisible();
+
+    for (const dropdown of await calendar.locator("select").all()) {
+      await dropdown.click();
+      await expect(dropdown).toBeFocused();
+      await page.waitForTimeout(300);
+      await expect(dropdown).toBeFocused();
+      await expect(page.getByLabel("Data de nascimento")).not.toBeFocused();
+    }
+  });
+
   test("picks the birthdate from the calendar", async ({ page }) => {
     await page.goto("/cadastro/paciente");
     const birthdate = page.getByLabel("Data de nascimento");

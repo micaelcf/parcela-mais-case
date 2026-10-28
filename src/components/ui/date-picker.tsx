@@ -132,7 +132,10 @@ export function DatePicker({
           >
             <CalendarIcon />
           </PopoverTrigger>
-          {/* The calendar's `autoFocus` moves focus to the selected day (or today) instead. */}
+          {/* The calendar's `autoFocus` moves focus to the selected day (or today) instead. Clicks
+              inside the portalled popup still bubble through React to `InputGroupAddon`, which
+              focuses the input on any non-button click: that closed the month/year dropdowns
+              (native selects) the instant they opened, so they stop here. */}
           <PopoverContent
             ref={popupRef}
             initialFocus={false}
@@ -140,6 +143,7 @@ export function DatePicker({
             align="end"
             alignOffset={-8}
             sideOffset={10}
+            onClick={(event) => event.stopPropagation()}
           >
             <Calendar
               mode="single"
