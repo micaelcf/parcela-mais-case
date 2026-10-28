@@ -9,8 +9,10 @@ export type SignupContextValue = {
   simulationControls: boolean;
   /** Validates the step's fields; moves on only when they're all valid, else focuses the first invalid. */
   goNext: (from: number) => Promise<void>;
-  goBack: (from: number) => void;
-  /** Called by a field once mounted: true when it should take focus (its step was just entered, or it's the invalid one). */
+  /** Back to an earlier step, focusing its first field. */
+  goBackTo: (index: number) => void;
+  /** Called by a field (or a fieldless step's heading, as `STEP_HEADING_FOCUS`) once mounted: true
+   *  when it should take focus (its step was just entered, or it's the invalid one). */
   claimFocus: (name: string) => boolean;
   /** Messages by form field, shown until the field changes (they survive step changes): the API's
    *  422 ones, and "wait for the address" when "Próximo" meets a CEP still being looked up. */
@@ -36,3 +38,6 @@ export function useSignup(): SignupContextValue {
 export function fieldId(name: string): string {
   return `signup-${name}`;
 }
+
+/** The focus target of a step without fields (the review): its heading. */
+export const STEP_HEADING_FOCUS = "step-heading";

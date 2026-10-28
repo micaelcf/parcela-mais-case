@@ -20,6 +20,7 @@ import { Route as BackofficeLoginRouteImport } from './routes/backoffice/login'
 import { Route as CadastroContatoRouteImport } from './routes/cadastro/contato'
 import { Route as CadastroFinanceiroRouteImport } from './routes/cadastro/financeiro'
 import { Route as CadastroPacienteRouteImport } from './routes/cadastro/paciente'
+import { Route as CadastroRevisaoRouteImport } from './routes/cadastro/revisao'
 import { Route as ConsultasConsultationIdRouteImport } from './routes/consultas.$consultationId'
 import { Route as BackofficeConsultasIndexRouteImport } from './routes/backoffice/consultas/index'
 import { Route as BackofficeConsultasConsultationIdRouteImport } from './routes/backoffice/consultas/$consultationId'
@@ -79,6 +80,11 @@ const CadastroPacienteRoute = CadastroPacienteRouteImport.update({
   path: '/paciente',
   getParentRoute: () => CadastroRouteRoute,
 } as any)
+const CadastroRevisaoRoute = CadastroRevisaoRouteImport.update({
+  id: '/revisao',
+  path: '/revisao',
+  getParentRoute: () => CadastroRouteRoute,
+} as any)
 const ConsultasConsultationIdRoute = ConsultasConsultationIdRouteImport.update({
   id: '/consultas/$consultationId',
   path: '/consultas/$consultationId',
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/cadastro/contato': typeof CadastroContatoRoute
   '/cadastro/financeiro': typeof CadastroFinanceiroRoute
   '/cadastro/paciente': typeof CadastroPacienteRoute
+  '/cadastro/revisao': typeof CadastroRevisaoRoute
   '/consultas/$consultationId': typeof ConsultasConsultationIdRoute
   '/backoffice/': typeof BackofficeIndexRoute
   '/backoffice/consultas/$consultationId': typeof BackofficeConsultasConsultationIdRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/cadastro/contato': typeof CadastroContatoRoute
   '/cadastro/financeiro': typeof CadastroFinanceiroRoute
   '/cadastro/paciente': typeof CadastroPacienteRoute
+  '/cadastro/revisao': typeof CadastroRevisaoRoute
   '/consultas/$consultationId': typeof ConsultasConsultationIdRoute
   '/backoffice': typeof BackofficeIndexRoute
   '/backoffice/consultas/$consultationId': typeof BackofficeConsultasConsultationIdRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/cadastro/contato': typeof CadastroContatoRoute
   '/cadastro/financeiro': typeof CadastroFinanceiroRoute
   '/cadastro/paciente': typeof CadastroPacienteRoute
+  '/cadastro/revisao': typeof CadastroRevisaoRoute
   '/consultas/$consultationId': typeof ConsultasConsultationIdRoute
   '/backoffice/': typeof BackofficeIndexRoute
   '/backoffice/consultas/$consultationId': typeof BackofficeConsultasConsultationIdRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/cadastro/contato'
     | '/cadastro/financeiro'
     | '/cadastro/paciente'
+    | '/cadastro/revisao'
     | '/consultas/$consultationId'
     | '/backoffice/'
     | '/backoffice/consultas/$consultationId'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/cadastro/contato'
     | '/cadastro/financeiro'
     | '/cadastro/paciente'
+    | '/cadastro/revisao'
     | '/consultas/$consultationId'
     | '/backoffice'
     | '/backoffice/consultas/$consultationId'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/cadastro/contato'
     | '/cadastro/financeiro'
     | '/cadastro/paciente'
+    | '/cadastro/revisao'
     | '/consultas/$consultationId'
     | '/backoffice/'
     | '/backoffice/consultas/$consultationId'
@@ -282,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CadastroPacienteRouteImport
       parentRoute: typeof CadastroRouteRoute
     }
+    '/cadastro/revisao': {
+      id: '/cadastro/revisao'
+      path: '/revisao'
+      fullPath: '/cadastro/revisao'
+      preLoaderRoute: typeof CadastroRevisaoRouteImport
+      parentRoute: typeof CadastroRouteRoute
+    }
     '/consultas/$consultationId': {
       id: '/consultas/$consultationId'
       path: '/consultas/$consultationId'
@@ -333,12 +352,14 @@ interface CadastroRouteRouteChildren {
   CadastroContatoRoute: typeof CadastroContatoRoute
   CadastroFinanceiroRoute: typeof CadastroFinanceiroRoute
   CadastroPacienteRoute: typeof CadastroPacienteRoute
+  CadastroRevisaoRoute: typeof CadastroRevisaoRoute
 }
 
 const CadastroRouteRouteChildren: CadastroRouteRouteChildren = {
   CadastroContatoRoute: CadastroContatoRoute,
   CadastroFinanceiroRoute: CadastroFinanceiroRoute,
   CadastroPacienteRoute: CadastroPacienteRoute,
+  CadastroRevisaoRoute: CadastroRevisaoRoute,
 }
 
 const CadastroRouteRouteWithChildren = CadastroRouteRoute._addFileChildren(

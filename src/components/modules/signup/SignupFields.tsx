@@ -341,7 +341,8 @@ export function MoneyField({ label, description }: { label: string; description?
   );
 }
 
-const SCENARIO_COPY: Record<SimulationScenario, { label: string; description: string }> = {
+/** Each scenario's name and effect, as the picker and the review show them. */
+export const SCENARIO_COPY: Record<SimulationScenario, { label: string; description: string }> = {
   NORMAL: { label: "Normal", description: "As financeiras respondem com as regras de sempre." },
   ALL_APPROVE: { label: "Todas aprovam", description: "As quatro financeiras aprovam." },
   DELTA_FAILS: { label: "Delta falha", description: "Delta responde com erro." },

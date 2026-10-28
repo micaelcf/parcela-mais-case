@@ -48,7 +48,7 @@ export async function fillContactStep(page: Page, patient: Patient) {
   if (patient.email) await page.getByLabel("E-mail (opcional)").fill(patient.email);
 }
 
-/** The signup stepper: "Etapa N de 3" over the three steps (`listitem`s, in order). */
+/** The signup stepper: "Etapa N de 4" over the four steps (`listitem`s, in order). */
 export function signupStepper(page: Page) {
   return page.getByRole("navigation", { name: "Etapas do cadastro" });
 }
@@ -58,7 +58,15 @@ export async function fillFinancialStep(page: Page, patient: Patient) {
   await page.getByLabel("Valor do tratamento").fill(centsInput(patient.treatmentAmountCents));
 }
 
-/** Fills the three signup steps in the browser and submits; resolves to the new consultation id. */
+/** From the financial step: on to the review, then "Solicitar pré-aprovação". */
+export async function reviewAndSubmit(page: Page) {
+  await page.getByRole("button", { name: "Próximo" }).click();
+  await expect(page).toHaveURL(/\/cadastro\/revisao$/);
+  await page.getByRole("button", { name: "Solicitar pré-aprovação" }).click();
+  await expect(page).toHaveURL(CONSULTATION_URL);
+}
+
+/** Fills the signup steps in the browser, reviews and submits; resolves to the new consultation id. */
 export async function signUp(
   page: Page,
   patient: Patient,
@@ -73,8 +81,7 @@ export async function signUp(
   await expect(page).toHaveURL(/\/cadastro\/financeiro$/);
   await fillFinancialStep(page, patient);
   await scenarioRadio(page, scenario).check();
-  await page.getByRole("button", { name: "Solicitar pré-aprovação" }).click();
-  await expect(page).toHaveURL(CONSULTATION_URL);
+  await reviewAndSubmit(page);
   return CONSULTATION_URL.exec(page.url())![1];
 }
 

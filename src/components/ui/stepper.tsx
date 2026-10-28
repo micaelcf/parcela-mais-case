@@ -71,14 +71,22 @@ type StepperProps = {
   caption?: ReactNode;
   /** Screen-reader suffix of a completed step's name (e.g. "completed"). */
   completedLabel?: string;
-  /** A completed step was picked: completed steps are buttons, the others aren't interactive. */
+  /** A step was picked: the steps it takes (see `canSelect`) are buttons, the others aren't interactive. */
   onStepSelect?: (index: number) => void;
+  /**
+   * Which steps besides the active one `onStepSelect` takes, ahead of it too. Given, the others show
+   * disabled (with `lockedLabel`); omitted, the completed steps are taken.
+   */
+  canSelect?: (index: number) => boolean;
+  /** Screen-reader suffix of a step `canSelect` refuses (e.g. "complete the earlier steps first"). */
+  lockedLabel?: string;
   className?: string;
 };
 
 /**
- * A horizontal step list: each step's icon and title, completed steps checked (and clickable when
- * `onStepSelect` is given), the active one on a springing glider with `aria-current="step"`.
+ * A horizontal step list: each step's icon and title, completed steps checked, the steps
+ * `onStepSelect` takes as buttons (the completed ones, or those `canSelect` allows; the rest
+ * disabled), the active one on a springing glider with `aria-current="step"`.
  */
 export function Stepper({
   steps,
@@ -87,6 +95,8 @@ export function Stepper({
   caption,
   completedLabel,
   onStepSelect,
+  canSelect,
+  lockedLabel,
   className,
 }: StepperProps) {
   const trackRef = useRef<HTMLOListElement>(null);
@@ -134,6 +144,11 @@ export function Stepper({
         {steps.map((step, index) => {
           const status: StepStatus =
             index < current ? "complete" : index === current ? "active" : "upcoming";
+          const selectable =
+            onStepSelect !== undefined &&
+            index !== current &&
+            (canSelect ? canSelect(index) : index < current);
+          const locked = canSelect !== undefined && index !== current && !selectable;
           const Icon = step.icon;
           const body = (
             <>
@@ -163,6 +178,9 @@ export function Stepper({
                 {status === "complete" && completedLabel ? (
                   <span className="sr-only">{` (${completedLabel})`}</span>
                 ) : null}
+                {locked && lockedLabel ? (
+                  <span className="sr-only">{` (${lockedLabel})`}</span>
+                ) : null}
               </span>
             </>
           );
@@ -173,10 +191,11 @@ export function Stepper({
               key={step.title}
               data-step-index={index}
               data-status={status}
+              data-locked={locked || undefined}
               aria-current={status === "active" ? "step" : undefined}
               className="relative flex min-w-0"
             >
-              {status === "complete" && onStepSelect ? (
+              {selectable ? (
                 <button
                   type="button"
                   onClick={() => onStepSelect(index)}
@@ -188,7 +207,14 @@ export function Stepper({
                   {body}
                 </button>
               ) : (
-                <span className={segmentClass}>{body}</span>
+                <span
+                  className={cn(
+                    segmentClass,
+                    locked && "cursor-not-allowed opacity-50 transition-opacity duration-200",
+                  )}
+                >
+                  {body}
+                </span>
               )}
             </li>
           );

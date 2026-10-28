@@ -1,11 +1,14 @@
+import type { Page } from "@playwright/test";
+
 import { expect, test } from "./support/fixtures";
-import { birthdateForAge, centsInput, dateText } from "./support/patient";
+import { birthdateForAge, centsInput, dateText, type Patient } from "./support/patient";
 import {
   CONSULTATION_URL,
   fillContactStep,
   fillFinancialStep,
   fillPatientStep,
   scenarioRadio,
+  signupBody,
   signupStepper,
 } from "./support/signup";
 
@@ -25,11 +28,38 @@ const STEP_FIELDS = {
   ],
   "/cadastro/contato": ["Celular com DDD", "E-mail (opcional)"],
   "/cadastro/financeiro": ["Renda mensal", "Valor do tratamento"],
+  "/cadastro/revisao": [],
 } as const;
 const ALL_FIELDS = Object.values(STEP_FIELDS).flat();
 
+/** Fills the first two steps and moves on to the financial one. */
+async function reachFinancialStep(page: Page, patient: Patient) {
+  await page.goto("/cadastro/paciente");
+  await fillPatientStep(page, patient);
+  await page.getByRole("button", { name: "Próximo" }).click();
+  await expect(page).toHaveURL(/\/cadastro\/contato$/);
+  await fillContactStep(page, patient);
+  await page.getByRole("button", { name: "Próximo" }).click();
+  await expect(page).toHaveURL(/\/cadastro\/financeiro$/);
+}
+
+/** Fills every step and moves on to the review. */
+async function reachReview(page: Page, patient: Patient) {
+  await reachFinancialStep(page, patient);
+  await fillFinancialStep(page, patient);
+  await page.getByRole("button", { name: "Próximo" }).click();
+  await expect(page).toHaveURL(/\/cadastro\/revisao$/);
+}
+
+function isSignupPost(request: { method(): string; url(): string }) {
+  return request.method() === "POST" && request.url().endsWith("/api/consultations");
+}
+
 test.describe("signup", () => {
-  test("collects fourteen fields across three steps", async ({ page, patient }) => {
+  test("collects fourteen fields across three steps, then reviews them", async ({
+    page,
+    patient,
+  }) => {
     expect(ALL_FIELDS).toHaveLength(14);
     const submit = page.getByRole("button", { name: "Solicitar pré-aprovação" });
     const next = page.getByRole("button", { name: "Próximo" });
@@ -43,12 +73,13 @@ test.describe("signup", () => {
         if ((fields as readonly string[]).includes(label)) await expect(field).toBeVisible();
         else await expect(field).toHaveCount(0);
       }
-      if (path === "/cadastro/financeiro") {
+      if (path === "/cadastro/revisao") {
         await expect(submit).toBeVisible();
         await expect(next).toHaveCount(0);
       } else {
         await expect(submit).toHaveCount(0);
         if (path === "/cadastro/contato") await fillContactStep(page, patient);
+        if (path === "/cadastro/financeiro") await fillFinancialStep(page, patient);
         await next.click();
       }
     }
@@ -108,11 +139,12 @@ test.describe("signup", () => {
     const stepper = signupStepper(page);
     const steps = stepper.getByRole("listitem");
     const next = page.getByRole("button", { name: "Próximo" });
-    const titles = ["Paciente", "Contato", "Financeiro"];
+    const titles = ["Paciente", "Contato", "Financeiro", "Revisão"];
 
-    const expectActive = async (active: number) => {
-      await expect(stepper).toContainText(`Etapa ${active + 1} de 3`);
-      await expect(steps).toHaveCount(3);
+    /** `active` is the current step; the steps up to `reachable` can be picked, the rest can't. */
+    const expectActive = async (active: number, reachable: number) => {
+      await expect(stepper).toContainText(`Etapa ${active + 1} de 4`);
+      await expect(steps).toHaveCount(4);
       for (const [index, title] of titles.entries()) {
         const step = steps.nth(index);
         await expect(step).toContainText(title);
@@ -120,33 +152,187 @@ test.describe("signup", () => {
         await expect(step, title).toHaveAttribute("data-status", status);
         if (index === active) await expect(step, title).toHaveAttribute("aria-current", "step");
         else await expect(step, title).not.toHaveAttribute("aria-current");
-        // Only completed steps take you back; the others aren't buttons.
-        const back = step.getByRole("button", { name: `${title} (concluída)` });
-        await expect(back, title).toHaveCount(index < active ? 1 : 0);
+        // Completed steps take you back, reachable ones ahead; the others aren't buttons.
+        const name = index < active ? `${title} (concluída)` : title;
+        const button = step.getByRole("button", { name, exact: true });
+        const pickable = index !== active && index <= reachable;
+        await expect(button, title).toHaveCount(pickable ? 1 : 0);
+        if (index > reachable) {
+          await expect(step, title).toHaveAttribute("data-locked", "true");
+          await expect(step, title).toContainText("conclua as etapas anteriores");
+        } else {
+          await expect(step, title).not.toHaveAttribute("data-locked");
+        }
       }
     };
 
+    // The next step is always offered (picking it checks this one, as "Próximo" does).
     await page.goto("/cadastro/paciente");
-    await expectActive(0);
+    await expectActive(0, 1);
     await fillPatientStep(page, patient);
     await next.click();
     await expect(page).toHaveURL(/\/cadastro\/contato$/);
-    await expectActive(1);
+    await expectActive(1, 2);
     await fillContactStep(page, patient);
     await next.click();
     await expect(page).toHaveURL(/\/cadastro\/financeiro$/);
-    await expectActive(2);
+    await expectActive(2, 3);
 
     // A completed step goes back to it, focus on its first field.
     await stepper.getByRole("button", { name: "Contato (concluída)" }).click();
     await expect(page).toHaveURL(/\/cadastro\/contato$/);
-    await expectActive(1);
+    await expectActive(1, 2);
     await expect(page.getByLabel("Celular com DDD")).toBeFocused();
     await stepper.getByRole("button", { name: "Paciente (concluída)" }).click();
     await expect(page).toHaveURL(/\/cadastro\/paciente$/);
-    await expectActive(0);
+    await expectActive(0, 2);
     await expect(page.getByLabel("Nome completo")).toBeFocused();
     await expect(page.getByLabel("Nome completo")).toHaveValue(patient.fullName);
+
+    // Ahead past the complete steps, by keyboard.
+    await stepper.getByRole("button", { name: "Financeiro", exact: true }).press("Enter");
+    await expect(page).toHaveURL(/\/cadastro\/financeiro$/);
+    await expectActive(2, 3);
+    await expect(page.getByLabel("Renda mensal")).toBeFocused();
+  });
+
+  test("starts over on the first step after a reload on a later one", async ({ page, patient }) => {
+    await page.goto("/cadastro/paciente");
+    await fillPatientStep(page, patient);
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/contato$/);
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+    await expect(page.getByLabel("Nome completo")).toHaveValue("");
+    await expect(page.getByLabel("CPF", { exact: true })).toHaveValue("");
+    await expect(page.getByLabel("CEP", { exact: true })).toHaveValue("");
+    // Nothing scolds the fields the patient hasn't touched since.
+    await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+    await expect(page.locator("[data-slot=field-error]")).toHaveCount(0);
+    await expect(signupStepper(page)).toContainText("Etapa 1 de 4");
+  });
+
+  test("sends a later step opened directly to the first one", async ({ page }) => {
+    for (const path of ["/cadastro/financeiro", "/cadastro/revisao"]) {
+      await page.goto(path);
+      await expect(page, path).toHaveURL(/\/cadastro\/paciente$/);
+      await expect(page.getByLabel("Nome completo"), path).toBeVisible();
+      await expect(page.locator("[aria-invalid=true]"), path).toHaveCount(0);
+    }
+  });
+
+  test("jumps ahead from the stepper over complete steps", async ({ page, patient }) => {
+    const stepper = signupStepper(page);
+    await reachReview(page, patient);
+    await stepper.getByRole("button", { name: "Paciente (concluída)" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+
+    const requests: string[] = [];
+    page.on("request", (request) => {
+      if (isSignupPost(request)) requests.push(request.url());
+    });
+    await stepper.getByRole("button", { name: "Revisão", exact: true }).click();
+    await expect(page).toHaveURL(/\/cadastro\/revisao$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Revise os dados" })).toBeFocused();
+    const review = page.getByRole("region", { name: "Paciente" });
+    await expect(review).toContainText(patient.fullName);
+    await expect(review).toContainText(patient.cpfFormatted);
+    await expect(page.getByRole("region", { name: "Financeiro" })).toContainText(
+      `R$ ${centsInput(patient.treatmentAmountCents)}`,
+    );
+    expect(requests).toEqual([]);
+  });
+
+  test("stops a stepper jump at an incomplete step, showing its errors", async ({
+    page,
+    patient,
+  }) => {
+    const stepper = signupStepper(page);
+    await reachReview(page, patient);
+    await stepper.getByRole("button", { name: "Contato (concluída)" }).click();
+    const phone = page.getByLabel("Celular com DDD");
+    await expect(phone).toBeFocused();
+    await phone.fill("(11) 9876");
+
+    await stepper.getByRole("button", { name: "Revisão", exact: true }).click();
+    await expect(page).toHaveURL(/\/cadastro\/contato$/);
+    await expect(phone).toBeFocused();
+    await expect(phone).toHaveAttribute("aria-invalid", "true");
+    await expect(phone).not.toHaveAccessibleDescription("");
+
+    // Back on the first step, the review is out of reach until the contact is fixed.
+    await stepper.getByRole("button", { name: "Paciente (concluída)" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+    await expect(stepper.getByRole("button", { name: "Revisão" })).toHaveCount(0);
+    await expect(stepper.getByRole("listitem").nth(3)).toHaveAttribute("data-locked", "true");
+  });
+
+  test("reviews exactly what it sends", async ({ page, patient: base }) => {
+    const patient = {
+      ...base,
+      email: `${base.token}@exemplo.com`,
+      address: { ...base.address, complement: "Apto 12" },
+    };
+    await page.goto("/cadastro/paciente");
+    await fillPatientStep(page, patient);
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await fillContactStep(page, patient);
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await fillFinancialStep(page, patient);
+    await scenarioRadio(page, "ALL_APPROVE").check();
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/revisao$/);
+
+    const facts = async (group: string) =>
+      (
+        await page
+          .getByRole("region", { name: group })
+          .locator("dl > div")
+          .evaluateAll((items) =>
+            items.map((item) => [
+              item.querySelector("dt")?.textContent,
+              [...(item.querySelector("dd")?.childNodes ?? [])]
+                .map((node) => node.textContent)
+                .join(" | "),
+            ]),
+          )
+      ).map(([label, value]) => `${label}: ${value}`);
+    expect(await facts("Paciente")).toEqual([
+      `Nome completo: ${patient.fullName}`,
+      `CPF: ${patient.cpfFormatted}`,
+      `Data de nascimento: ${dateText(patient.birthdate)}`,
+      "Endereço: Avenida Paulista, 1578 – Apto 12 | Bela Vista, São Paulo/SP | CEP 01310-100",
+    ]);
+    expect(await facts("Contato")).toEqual([
+      "Celular: (11) 98765-4321",
+      `E-mail: ${patient.email}`,
+    ]);
+    expect(await facts("Financeiro")).toEqual([
+      `Renda mensal: R$ ${centsInput(patient.monthlyIncomeCents)}`,
+      `Valor do tratamento: R$ ${centsInput(patient.treatmentAmountCents)}`,
+      "Cenário de simulação: Todas aprovam",
+    ]);
+
+    // "Editar" goes to the group's step; the stepper brings the review back.
+    await page.getByRole("button", { name: "Editar Contato" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/contato$/);
+    await expect(page.getByLabel("Celular com DDD")).toBeFocused();
+    await signupStepper(page).getByRole("button", { name: "Revisão", exact: true }).click();
+    await page.getByRole("button", { name: "Editar Financeiro" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/financeiro$/);
+    await expect(page.getByLabel("Renda mensal")).toBeFocused();
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await page.getByRole("button", { name: "Editar Paciente" }).click();
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+    await expect(page.getByLabel("Nome completo")).toBeFocused();
+    await signupStepper(page).getByRole("button", { name: "Revisão", exact: true }).click();
+    await expect(page).toHaveURL(/\/cadastro\/revisao$/);
+
+    const signup = page.waitForRequest(isSignupPost);
+    await page.getByRole("button", { name: "Solicitar pré-aprovação" }).click();
+    expect((await signup).postDataJSON()).toEqual(signupBody(patient, "ALL_APPROVE"));
+    await expect(page).toHaveURL(CONSULTATION_URL);
   });
 
   test("keeps the e-mail optional", async ({ page, patient }) => {
@@ -161,10 +347,12 @@ test.describe("signup", () => {
     await fillContactStep(page, patient);
     await page.getByRole("button", { name: "Próximo" }).click();
     await fillFinancialStep(page, patient);
-
-    const signup = page.waitForRequest(
-      (request) => request.method() === "POST" && request.url().endsWith("/api/consultations"),
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await expect(page.getByRole("region", { name: "Contato" }).locator("dd").nth(1)).toHaveText(
+      "Não informado",
     );
+
+    const signup = page.waitForRequest(isSignupPost);
     await page.getByRole("button", { name: "Solicitar pré-aprovação" }).click();
     expect((await signup).postDataJSON()).not.toHaveProperty("email");
     await expect(page).toHaveURL(CONSULTATION_URL);
@@ -195,9 +383,9 @@ test.describe("signup", () => {
     await expect(email).not.toHaveAttribute("aria-invalid", "true");
     await page.getByRole("button", { name: "Próximo" }).click();
     await fillFinancialStep(page, patient);
-    const signup = page.waitForRequest(
-      (request) => request.method() === "POST" && request.url().endsWith("/api/consultations"),
-    );
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await expect(page.getByRole("region", { name: "Contato" })).toContainText("ana@clinica.com");
+    const signup = page.waitForRequest(isSignupPost);
     await page.getByRole("button", { name: "Solicitar pré-aprovação" }).click();
     expect((await signup).postDataJSON()).toMatchObject({ email: "ana@clinica.com" });
     await expect(page).toHaveURL(CONSULTATION_URL);
@@ -259,8 +447,8 @@ test.describe("signup", () => {
     await expect(birthdate).toHaveAccessibleDescription(/idade deve estar entre 18 e 80 anos/);
   });
 
-  test("flags amounts outside the bounds", async ({ page }) => {
-    await page.goto("/cadastro/financeiro");
+  test("flags amounts outside the bounds", async ({ page, patient }) => {
+    await reachFinancialStep(page, patient);
     const amount = page.getByLabel("Valor do tratamento");
     const hint = "Entre R$ 1.000,00 e R$ 50.000,00.";
     for (const [typed, valid] of [
@@ -334,26 +522,15 @@ test.describe("signup", () => {
       for (const value of entered) expect(stored, `${when}: ${value}`).not.toContain(value);
     };
 
-    await page.goto("/cadastro/paciente");
-    await fillPatientStep(page, patient);
-    await page.getByRole("button", { name: "Próximo" }).click();
-    await fillContactStep(page, patient);
-    await page.getByRole("button", { name: "Próximo" }).click();
-    await fillFinancialStep(page, patient);
-    await expect(page.getByLabel("Valor do tratamento")).toHaveValue(
-      centsInput(patient.treatmentAmountCents),
-    );
+    await reachReview(page, patient);
+    await expect(page.getByRole("region", { name: "Paciente" })).toContainText(patient.fullName);
     await expectNothingEntered("before reload");
 
+    // A reload starts over: the review isn't reachable from an empty form.
     await page.reload();
-    await expect(page.getByLabel("Renda mensal")).toBeVisible();
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+    await expect(page.getByLabel("Nome completo")).toBeVisible();
     await expectNothingEntered("after reload");
-    await expect(page.getByLabel("Renda mensal")).toHaveValue("");
-    await expect(page.getByLabel("Valor do tratamento")).toHaveValue("");
-    // Back to the earlier steps without the mouse: this check is about storage, not navigation.
-    await page.getByRole("button", { name: "Voltar" }).press("Enter");
-    await expect(page.getByLabel("Celular com DDD")).toHaveValue("");
-    await page.getByRole("button", { name: "Voltar" }).press("Enter");
     await expect(page.getByLabel("Nome completo")).toHaveValue("");
     await expect(page.getByLabel("CPF", { exact: true })).toHaveValue("");
     await expect(page.getByLabel("Data de nascimento")).toHaveValue("");
@@ -361,18 +538,24 @@ test.describe("signup", () => {
     await expect(page.getByLabel("Rua")).toHaveCount(0);
   });
 
-  test("hides the scenario picker when controls are off", async ({ page }) => {
+  test("hides the scenario picker when controls are off", async ({ page, patient }) => {
     let configServed = false;
     await page.route("**/api/config", async (route) => {
       configServed = true;
       await route.fulfill({ json: { simulationControls: false } });
     });
 
-    await page.goto("/cadastro/financeiro");
+    await reachFinancialStep(page, patient);
     await expect(page.getByLabel("Valor do tratamento")).toBeVisible();
     expect(configServed).toBe(true);
     await expect(page.getByRole("radiogroup")).toHaveCount(0);
     await expect(scenarioRadio(page, "ALL_APPROVE")).toHaveCount(0);
+    await expect(page.getByText("Cenário de simulação")).toHaveCount(0);
+
+    // Nor does the review mention it: the request leaves it out.
+    await fillFinancialStep(page, patient);
+    await page.getByRole("button", { name: "Próximo" }).click();
+    await expect(page.getByRole("region", { name: "Financeiro" })).toContainText("Renda mensal");
     await expect(page.getByText("Cenário de simulação")).toHaveCount(0);
   });
 });

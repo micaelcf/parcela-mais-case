@@ -109,7 +109,7 @@ export const signupValidator: StandardSchemaV1<SignupFormValues, SignupFormValue
   "~standard": { ...toStandardSchema(SignupFormSchema)["~standard"], types: undefined },
 };
 
-/** The three steps, in order, and the fields each one owns. */
+/** The steps, in order, and the fields each one owns; the last one, the review, owns none. */
 export const SIGNUP_STEPS = [
   {
     to: "/cadastro/paciente",
@@ -133,6 +133,7 @@ export const SIGNUP_STEPS = [
     title: "Financeiro",
     fields: ["monthlyIncome", "treatmentAmount", "simulationScenario"],
   },
+  { to: "/cadastro/revisao", title: "Revisão", fields: [] },
 ] as const satisfies ReadonlyArray<{
   to: string;
   title: string;
@@ -147,6 +148,31 @@ export const SIGNUP_FIELD_ORDER: readonly SignupFieldName[] = SIGNUP_STEPS.flatM
 /** The index of the step that shows `name`. */
 export function stepOfField(name: SignupFieldName): number {
   return SIGNUP_STEPS.findIndex((step) => step.fields.some((field) => field === name));
+}
+
+const formCheck = Compile(SignupFormSchema);
+const CEP_STEP = stepOfField("cep");
+
+/**
+ * Whether each step is complete: its fields pass validation and, for the CEP's step, the lookup has
+ * answered so the address shows. The review, owning no field, always is.
+ */
+export function completedSteps(values: SignupFormValues, addressShown: boolean): boolean[] {
+  const invalid = new Set(
+    collectIssues(SignupFormSchema, values, formCheck).map((issue) => issue.path[0]),
+  );
+  return SIGNUP_STEPS.map(
+    (step, index) =>
+      step.fields.every((field) => !invalid.has(field)) && (index !== CEP_STEP || addressShown),
+  );
+}
+
+/**
+ * Whether step `target` can be entered from step `from`: every step before it is complete, `from`
+ * aside (leaving it checks it, as "Próximo" does).
+ */
+export function canReachStep(completed: readonly boolean[], target: number, from: number): boolean {
+  return completed.slice(0, target).every((done, index) => done || index === from);
 }
 
 /**

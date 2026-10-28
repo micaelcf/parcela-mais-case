@@ -14,6 +14,7 @@ import {
   CONSULTATION_URL,
   fillContactStep,
   fillFinancialStep,
+  reviewAndSubmit,
   scenarioRadio,
 } from "./support/signup";
 
@@ -158,8 +159,7 @@ test.describe("patient address", () => {
     await page.getByRole("button", { name: "Próximo" }).click();
     await fillFinancialStep(page, patient);
     await scenarioRadio(page, "ALL_APPROVE").check();
-    await page.getByRole("button", { name: "Solicitar pré-aprovação" }).click();
-    await expect(page).toHaveURL(CONSULTATION_URL);
+    await reviewAndSubmit(page);
     const id = CONSULTATION_URL.exec(page.url())![1];
 
     await logIn(page);

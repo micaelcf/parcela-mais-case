@@ -1,20 +1,27 @@
 import { useStore } from "@tanstack/react-form";
 import {
   createFileRoute,
+  Navigate,
   Outlet,
   redirect,
   useChildMatches,
   useNavigate,
 } from "@tanstack/react-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { AddressLookupResult } from "#/api/addresses";
 import { createConsultation, getConfig } from "#/api/consultations";
 import { AppShell } from "#/components/AppShell";
-import { fieldId, SignupContext } from "#/components/modules/signup/signup-context";
+import {
+  fieldId,
+  SignupContext,
+  STEP_HEADING_FOCUS,
+} from "#/components/modules/signup/signup-context";
 import {
   ADDRESS_DETAIL_FIELDS,
+  canReachStep,
+  completedSteps,
   formFieldForRequestPath,
   isAddressDetailField,
   SIGNUP_FIELD_ORDER,
@@ -43,8 +50,10 @@ export const Route = createFileRoute("/cadastro")({
 });
 
 /**
- * Owns the one signup form and its idempotency key for the three step routes, so moving between
- * steps keeps every value. Nothing is persisted: a reload starts over.
+ * Owns the one signup form and its idempotency key for the step routes, so moving between steps
+ * keeps every value. Nothing is persisted: a reload starts over. A step opens only once every
+ * earlier one is complete; arriving anywhere else (a reload, a typed URL, browser history) lands
+ * on the first incomplete step.
  */
 function SignupLayout() {
   const { simulationControls } = Route.useLoaderData();
@@ -130,11 +139,6 @@ function SignupLayout() {
   }
 
   async function submit(values: SignupFormValues) {
-    // Browser history can reach the last step after the CEP changed: hold the stale address back.
-    if (!addressShown) {
-      submitInvalid();
-      return;
-    }
     const result = await createConsultation(
       toSignupRequest(values, simulationControls),
       idempotencyKey,
@@ -164,24 +168,50 @@ function SignupLayout() {
   }
 
   const form = useSignupForm({ onSubmit: submit, onSubmitInvalid: submitInvalid });
-  const cep = useStore(form.store, (state) => state.values.cep);
-  const cepStatus = useCepLookup(cep, applyLookup);
+  const values = useStore(form.store, (state) => state.values);
+  const cepStatus = useCepLookup(values.cep, applyLookup);
   const addressShown = cepStatus === "found" || cepStatus === "unavailable";
+  const completed = useMemo(() => completedSteps(values, addressShown), [values, addressShown]);
 
-  async function goNext(from: number) {
-    const step = SIGNUP_STEPS[from];
-    const next = SIGNUP_STEPS[from + 1];
-    await form.validate("blur");
-    if (stopAtFirstBlocking(step.fields)) return;
-    focusTarget.current = next.fields[0];
-    await navigate({ to: next.to });
+  /** What takes focus when step `index` is entered: its first field, or its heading. */
+  function entryFocus(index: number): string {
+    const fields: readonly SignupFieldName[] = SIGNUP_STEPS[index].fields;
+    return fields.at(0) ?? STEP_HEADING_FOCUS;
   }
 
-  /** Back to an earlier step (from "Voltar" or the stepper), focusing its first field. */
+  /**
+   * From step `from` on to the later step `to` ("Próximo", or the stepper): checks the steps in
+   * between and stops at the first one that blocks, showing its errors.
+   */
+  async function goForward(from: number, to: number) {
+    await form.validate("blur");
+    const between: readonly SignupFieldName[] = SIGNUP_STEPS.slice(from, to).flatMap(
+      (step) => step.fields,
+    );
+    if (stopAtFirstBlocking(between)) return;
+    focusTarget.current = entryFocus(to);
+    await navigate({ to: SIGNUP_STEPS[to].to });
+  }
+
+  /** Back to an earlier step ("Voltar", the stepper, a review's "Editar"), focusing its first field. */
   function goBackTo(index: number) {
-    const previous = SIGNUP_STEPS[index];
-    focusTarget.current = previous.fields[0];
-    void navigate({ to: previous.to });
+    focusTarget.current = entryFocus(index);
+    void navigate({ to: SIGNUP_STEPS[index].to });
+  }
+
+  function goToStep(index: number) {
+    if (index < current) goBackTo(index);
+    else void goForward(current, index);
+  }
+
+  const canReach = (index: number) => canReachStep(completed, index, current);
+  // Not reachable from what's filled in: off to the first incomplete step, as if just arrived.
+  if (current > 0 && !canReach(current)) {
+    return (
+      <AppShell>
+        <Navigate to={SIGNUP_STEPS[completed.indexOf(false)].to} replace />
+      </AppShell>
+    );
   }
 
   return (
@@ -190,8 +220,8 @@ function SignupLayout() {
         value={{
           form,
           simulationControls,
-          goNext,
-          goBack: (from) => goBackTo(from - 1),
+          goNext: (from) => goForward(from, from + 1),
+          goBackTo,
           claimFocus,
           serverErrors,
           clearServerError,
@@ -201,12 +231,14 @@ function SignupLayout() {
         }}
       >
         <div className="mx-auto flex max-w-xl flex-col gap-6">
-          {current >= 0 ? <SignupStepper current={current} onStepSelect={goBackTo} /> : null}
+          {current >= 0 ? (
+            <SignupStepper current={current} canReach={canReach} onStepSelect={goToStep} />
+          ) : null}
           <form
             noValidate
             onSubmit={(event) => {
               event.preventDefault();
-              if (current < SIGNUP_STEPS.length - 1) void goNext(current);
+              if (current < SIGNUP_STEPS.length - 1) void goForward(current, current + 1);
               else void form.handleSubmit();
             }}
           >

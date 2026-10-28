@@ -4,11 +4,11 @@ import { expect, journeyTest as test } from "./support/fixtures";
 import { LENDERS, lenderCard, offerRows } from "./support/journey";
 import type { Patient } from "./support/patient";
 import {
-  CONSULTATION_URL,
   fillContactStep,
   fillFinancialStep,
   fillPatientStep,
   FORCED_SCENARIOS,
+  reviewAndSubmit,
   scenarioRadio,
 } from "./support/signup";
 
@@ -30,8 +30,7 @@ async function runScenario(
   for (const forced of FORCED_SCENARIOS) await expect(scenarioRadio(page, forced)).toBeVisible();
 
   await scenarioRadio(page, scenario).check();
-  await page.getByRole("button", { name: "Solicitar pré-aprovação" }).click();
-  await expect(page).toHaveURL(CONSULTATION_URL);
+  await reviewAndSubmit(page);
 }
 
 const offersHeading = (page: Page) =>

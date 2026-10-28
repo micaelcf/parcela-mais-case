@@ -5,6 +5,8 @@ import { EMAIL_MESSAGE } from "#/lib/email/email";
 import { collectIssues } from "#/lib/validation/standard-schema";
 
 import {
+  canReachStep,
+  completedSteps,
   formFieldForRequestPath,
   SIGNUP_STEPS,
   SignupFormSchema,
@@ -167,6 +169,42 @@ describe("signup form", () => {
       "treatmentAmount",
     ]);
     expect(signupValidator["~standard"].validate(VALUES)).toEqual({ value: VALUES });
+  });
+});
+
+describe("signup steps", () => {
+  it("ends on a review that collects no field", () => {
+    expect(SIGNUP_STEPS.map((step) => step.title)).toEqual([
+      "Paciente",
+      "Contato",
+      "Financeiro",
+      "Revisão",
+    ]);
+    expect(SIGNUP_STEPS[3].fields).toEqual([]);
+  });
+
+  it("completes a step once its fields pass, the first one only with the address shown", () => {
+    expect(completedSteps(VALUES, true)).toEqual([true, true, true, true]);
+    expect(completedSteps(VALUES, false)).toEqual([false, true, true, true]);
+    expect(completedSteps({ ...VALUES, phone: "1234" }, true)).toEqual([true, false, true, true]);
+    expect(completedSteps({ ...VALUES, treatmentAmount: "" }, true)).toEqual([
+      true,
+      true,
+      false,
+      true,
+    ]);
+  });
+
+  it("opens a step once every earlier step but the one being left is complete", () => {
+    const contactMissing = [true, false, true, true];
+    expect(canReachStep(contactMissing, 1, 0)).toBe(true);
+    expect(canReachStep(contactMissing, 2, 0)).toBe(false);
+    expect(canReachStep(contactMissing, 3, 0)).toBe(false);
+    // Leaving the contact step checks it on the way, as "Próximo" does.
+    expect(canReachStep(contactMissing, 3, 1)).toBe(true);
+    // Arriving: every earlier step must be complete.
+    expect(canReachStep(contactMissing, 2, 2)).toBe(false);
+    expect(canReachStep([true, true, true, true], 3, 3)).toBe(true);
   });
 });
 
