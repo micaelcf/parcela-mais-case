@@ -9,9 +9,11 @@ const IP_MAX = Number(process.env.RATE_LIMIT_IP_MAX ?? 30);
 test.describe("behind Caddy", () => {
   test("ignores a forged X-Forwarded-For", async ({ request, baseURL }) => {
     const health = await request.get("/api/health");
+    // Caddy marks proxied responses with `Via: 1.1 Caddy` (it sets `Server` only on its own).
+    const proxied = /caddy/i.test(`${health.headers().via ?? ""} ${health.headers().server ?? ""}`);
     test.skip(
-      !/caddy/i.test(health.headers().server ?? ""),
-      `${baseURL} isn't the Caddy proxy (no "Server: Caddy"): run with E2E_BASE_URL=http://localhost:8080 against vp run up --prod`,
+      !proxied,
+      `${baseURL} isn't the Caddy proxy (no "Via: … Caddy"): run with E2E_BASE_URL=http://localhost:8080 against vp run up --prod`,
     );
 
     let last: { status: number; body: unknown } | null = null;
