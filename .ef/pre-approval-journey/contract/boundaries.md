@@ -69,7 +69,7 @@ Amended 2026-10-28 (implementation): a forced outcome must reach the worker befo
 
 `onBeforeHandle` on the two POST routes: insert a `request_throttle` row (`ip_hmac` from `client-ip.ts`, `route`), **before** body validation, then count rows for `(ip_hmac, route)` in the window. Over the limit → 429 `IP_LIMIT`. `onAfterResponse` writes `status_code`/`error_code` on that row. With no `X-Forwarded-For` (dev without Caddy) the IP is the literal `"local"`.
 
-Amended 2026-10-28 (implementation): in Elysia 2 `onBeforeHandle` runs **after** validation, so it can't count invalid requests. The guard is a `throttle` macro whose `transform` (pre-validation) inserts and counts, plus `afterResponse` for the outcome. A body that isn't valid JSON fails in the parser, before `transform`, and is not counted (accepted gap: RF-505 covers schema-invalid requests).
+Amended 2026-10-28 (implementation): in Elysia 2 `onBeforeHandle` runs **after** validation, so it can't count invalid requests. The guard is a `throttle` macro: its route-scoped `parse` hook inserts and counts before the body is read (so malformed JSON counts too), `transform` raises the stored `IP_LIMIT` before validation (errors thrown in `parse` arrive wrapped as `ParseError`), and `afterResponse` writes the outcome. Malformed JSON under the cap answers 422 `VALIDATION`.
 
 ## Realtime (`realtime/consultation-events.ts`)
 
