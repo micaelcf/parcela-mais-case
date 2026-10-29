@@ -153,7 +153,8 @@ test.describe("patient address", () => {
     await page.getByRole("option", { name: "RJ", exact: true }).click();
     await expect(state).toHaveText(/RJ/);
 
-    await page.getByRole("button", { name: "Próximo" }).click();
+    // Enter in a field moves on too, even with the UF picker (a button) between it and "Próximo".
+    await page.getByLabel("Bairro").press("Enter");
     await expect(page).toHaveURL(/\/cadastro\/contato$/);
     await fillContactStep(page, patient);
     await page.getByRole("button", { name: "Próximo" }).click();
