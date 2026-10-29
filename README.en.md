@@ -87,43 +87,100 @@ Every connection starts with the **full snapshot**; Postgres `NOTIFY` only says 
 
 ```mermaid
 erDiagram
-    PATIENT ||--o{ CONSULTATION : "makes"
-    CONSULTATION ||--|{ LENDER_ATTEMPT : "4 attempts"
-    LENDER_ATTEMPT ||--o{ OFFER : "1 per term"
-    CONSULTATION |o--o| OFFER : "chosen offer"
-    PATIENT {
-        uuid id
-        bytea cpf_ciphertext
-        bytea cpf_hmac
-        text full_name
-        date birthdate
-        text phone
-    }
-    CONSULTATION {
-        uuid id
-        text idempotency_key
-        bigint treatment_amount_cents
-        text quote_status
-        timestamptz deadline_at
-        uuid chosen_offer_id
-    }
-    LENDER_ATTEMPT {
-        uuid id
-        text lender
-        text status
-        text reason
-        bigint approved_cents
-        int latency_ms
-    }
-    OFFER {
-        uuid id
-        int term_months
-        bigint installment_cents
-        bigint total_cents
-    }
+  consultation {
+    uuid id PK
+    uuid patient_id
+    text idempotency_key
+    text request_hash
+    bigint monthly_income_cents
+    bigint treatment_amount_cents
+    date birthdate
+    smallint age_years
+    simulation_scenario simulation_scenario
+    quote_status quote_status
+    timestamp_with_time_zone deadline_at
+    timestamp_with_time_zone settled_at
+    uuid chosen_offer_id
+    timestamp_with_time_zone chosen_at
+    timestamp_with_time_zone created_at
+  }
+  lender_attempt {
+    uuid id PK
+    uuid consultation_id
+    lender_code lender
+    simulation_scenario simulation_scenario
+    attempt_status status
+    attempt_reason reason
+    bigint approved_cents
+    numeric76 monthly_rate
+    bigint max_approvable_cents
+    boolean breaker_probe
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone picked_at
+    timestamp_with_time_zone called_at
+    timestamp_with_time_zone settled_at
+    integer latency_ms
+  }
+  lender_setting {
+    lender_code lender PK
+    boolean enabled
+    timestamp_with_time_zone updated_at
+  }
+  lender_switch_log {
+    uuid id PK
+    lender_code lender
+    boolean enabled
+    text actor
+    timestamp_with_time_zone created_at
+  }
+  offer {
+    uuid id PK
+    uuid attempt_id
+    uuid consultation_id
+    lender_code lender
+    bigint approved_cents
+    bigint requested_cents
+    numeric76 monthly_rate
+    smallint term_months
+    bigint installment_cents
+    bigint total_cents
+    timestamp_with_time_zone created_at
+  }
+  patient {
+    uuid id PK
+    bytea cpf_hmac
+    bytea cpf_ciphertext
+    smallint cpf_key_version
+    text full_name
+    date birthdate
+    text phone
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+    text address_cep
+    text address_street
+    text address_number
+    text address_complement
+    text address_neighborhood
+    text address_city
+    text address_state
+    text email
+  }
+  request_throttle {
+    uuid id PK
+    bytea ip_hmac
+    text route
+    smallint status_code
+    text error_code
+    timestamp_with_time_zone created_at
+  }
+  consultation }o--o| offer : "chosen_offer_id -> id"
+  consultation }o--|| patient : "patient_id -> id"
+  lender_attempt }o--|| consultation : "consultation_id -> id"
+  offer }o--|| lender_attempt : "attempt_id -> id"
+  offer }o--|| consultation : "consultation_id -> id"
 ```
 
-Money is stored in **integer cents**; the installment uses the **Price formula** with _half-up_ rounding in the pricing service. The **CPF** is encrypted (AES-256-GCM) with an HMAC index for lookups; public responses carry no CPF and no other personal data. The backoffice also uses `lender_setting`, `lender_switch_log` and `request_throttle`.
+Money is stored in **integer cents**; the installment uses the **Price formula** with _half-up_ rounding in the pricing service. The **CPF** is encrypted (AES-256-GCM) with an HMAC index for lookups; public responses carry no CPF and no other personal data.
 
 ## Decisions and trade-offs
 
