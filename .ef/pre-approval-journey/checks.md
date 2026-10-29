@@ -114,6 +114,7 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-711` — `vp run down` stops the local stack without losing data
 - `RF-712` — The dev server isn't reachable from other machines
 - `RF-713` — Dev output tells the processes apart at a glance
+- `RF-714` — A fresh clone runs with one command
 - `RF-801` — CPF validation has automated tests
 - `RF-802` — Price calculation has automated tests
 - `RF-803` — Orchestration has automated tests for the deadline
@@ -191,7 +192,7 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 | S2    | CPF validation, CPF/IP protection and exact Price are correct in isolation                         | 1    | done   | [slices/S2-cpf-pii-price.md](slices/S2-cpf-pii-price.md)                 | C12–C23, C174                               |
 | S3    | simulated lenders, adapters and breaker derivation                                                 | 1    | done   | [slices/S3-lender-integration.md](slices/S3-lender-integration.md)       | C24–C40                                     |
 | S4    | fan-out, deadline, live stream, one choice                                                         | 2    | done   | [slices/S4-orchestration.md](slices/S4-orchestration.md)                 | C41–C76, C158, C160, C170, C171, C173, C175 |
-| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor/down; local HTTPS; tslog        | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88, C165–C167, C208–C216, C237         |
+| S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor/down; local HTTPS; tslog        | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88, C165–C167, C208–C216, C237, C244   |
 | S6    | requote, per-patient and per-IP caps, no PII in public payloads                                    | 3    | done   | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100, C161, C162, C169                  |
 | S7    | backoffice auth, metrics, lists, kill switch API                                                   | 4    | done   | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117, C159                             |
 | S8    | public journey UI + UI kit; offers grouped by lender, choice dialog, lender logos, theme toggle    | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144, C224–C232                        |

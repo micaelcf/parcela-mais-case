@@ -12,23 +12,23 @@ A clínica preenche o cadastro do paciente uma vez; o backend consulta **4 finan
 
 ## Como rodar
 
-Precisa de **Bun 1.4** e **Podman** (ou Docker) com compose.
+Precisa só de **Bun 1.4** e **Podman** (ou Docker) com compose. Um comando:
 
 ```bash
-bun install
-cp .env.example .env.local
-bunx vp run up        # Postgres + Caddy + migrações + app + worker
+bun run up
 ```
+
+Ele instala as dependências (sem custo quando já estão), cria o `.env.local` a partir do `.env.example` se ele não existir (com chaves de PII e segredo de sessão novos; nunca reescreve um existente) e sobe Postgres + Caddy + migrações + app + worker.
 
 Abra **https://parcela.localhost:8443**. Na primeira vez, o `up` instala a CA local do Caddy no seu usuário (o Windows/macOS pede uma confirmação). O `up` imprime a URL do backoffice e as credenciais de dev (`operador` / `parcela123`).
 
-| Comando                            | O que faz                                                      |
-| ---------------------------------- | -------------------------------------------------------------- |
-| `bunx vp run up --prod`            | Mesma stack em modo produção (imagem buildada, atrás do Caddy) |
-| `bunx vp run doctor`               | Diagnóstico sem alterar nada (portas, CA, banco, migrações)    |
-| `bunx vp run down`                 | Para os containers **sem apagar dados**                        |
-| `bunx vp run prune`                | Reset local completo (apaga o volume do banco)                 |
-| `bunx vp test` / `bunx vp run e2e` | Testes unitários + integração / E2E no navegador               |
+| Comando                        | O que faz                                                                    |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| `bun run up --prod`            | Mesma stack em modo produção (imagem buildada, atrás do Caddy)               |
+| `bun run doctor`               | Diagnóstico sem alterar nada (dependências, `.env.local`, portas, CA, banco) |
+| `bun run down`                 | Para os containers **sem apagar dados**                                      |
+| `bun run prune`                | Reset local completo (apaga o volume do banco)                               |
+| `bunx vp test` / `bun run e2e` | Testes unitários + integração / E2E no navegador                             |
 
 **Cenários forçados:** no passo _Financeiro_, o campo **Cenário de simulação** força `Todas aprovam`, `Delta falha`, `Delta estoura o tempo` ou `Nenhuma aprova` (ligado em dev por `SIMULATION_CONTROLS=true`).
 
@@ -148,7 +148,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>jornada · cenários · teclado · backoffice"]
 ```
 
-- **258 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **77** E2E no navegador.
+- **260 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **77** E2E no navegador.
 - Cobrem o que pode quebrar: dígitos do CPF, centavos da Price, financeira que não responde, erro 500, finalizador correndo contra worker atrasado, dupla escolha simultânea, CPF fora das respostas públicas e da URL.
 - **Bônus do case:** retomar após recarregar ✅ · acessibilidade de teclado e leitor de tela ✅ · logs e métricas por financeira (backoffice) ✅ · deploy público ⏭️
 
@@ -169,16 +169,16 @@ Construí o projeto em par com um agente de IA ([oh-my-pi](https://github.com/ca
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rodadas de perguntas"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contratos + 243 checks"]
+    D --> C["🔎 Discovery<br/>contratos + 244 checks"]
     C --> S["🧩 Implementação<br/>em fatias, com subagentes"]
     S --> A["🛡️ 3 auditorias adversariais<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>checado 3×"]
 ```
 
 ```mermaid
-pie title Quem decidiu (91 decisões)
+pie title Quem decidiu (92 decisões)
     "Eu" : 47
-    "Eu pedi, o agente desenhou" : 9
+    "Eu pedi, o agente desenhou" : 10
     "O agente recomendou, eu aceitei" : 18
     "O agente (implementação e auditoria)" : 17
 ```

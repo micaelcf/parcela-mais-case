@@ -12,23 +12,23 @@ The clinic fills in the patient's signup once; the backend queries **4 simulated
 
 ## Run it
 
-You need **Bun 1.4** and **Podman** (or Docker) with compose.
+You only need **Bun 1.4** and **Podman** (or Docker) with compose. One command:
 
 ```bash
-bun install
-cp .env.example .env.local
-bunx vp run up        # Postgres + Caddy + migrations + app + worker
+bun run up
 ```
+
+It installs the dependencies (free when they already are), creates `.env.local` from `.env.example` when there's none (with fresh PII keys and session secret; an existing one is never rewritten), and starts Postgres + Caddy + migrations + app + worker.
 
 Open **https://parcela.localhost:8443**. On the first run, `up` installs Caddy's local CA for your user (Windows/macOS ask once). `up` prints the backoffice URL and the dev credentials (`operador` / `parcela123`).
 
-| Command                            | What it does                                                  |
-| ---------------------------------- | ------------------------------------------------------------- |
-| `bunx vp run up --prod`            | The same stack in production mode (built image, behind Caddy) |
-| `bunx vp run doctor`               | Read-only diagnostics (ports, CA, database, migrations)       |
-| `bunx vp run down`                 | Stops the containers **without deleting data**                |
-| `bunx vp run prune`                | Full local reset (deletes the database volume)                |
-| `bunx vp test` / `bunx vp run e2e` | Unit + integration tests / browser E2E                        |
+| Command                        | What it does                                                            |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `bun run up --prod`            | The same stack in production mode (built image, behind Caddy)           |
+| `bun run doctor`               | Read-only diagnostics (dependencies, `.env.local`, ports, CA, database) |
+| `bun run down`                 | Stops the containers **without deleting data**                          |
+| `bun run prune`                | Full local reset (deletes the database volume)                          |
+| `bunx vp test` / `bun run e2e` | Unit + integration tests / browser E2E                                  |
 
 **Forced scenarios:** on the _Financeiro_ step, the **Cenário de simulação** field forces all approve, Delta fails, Delta times out, or none approve (on in dev via `SIMULATION_CONTROLS=true`).
 
@@ -148,7 +148,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>journey · scenarios · keyboard · backoffice"]
 ```
 
-- **258** unit and integration tests (Vitest, real Postgres, no factories) + **77** browser E2E tests.
+- **260** unit and integration tests (Vitest, real Postgres, no factories) + **77** browser E2E tests.
 - They cover what can break: CPF check digits, Price cents, a lender that never answers, HTTP 500, the finalizer racing a late worker, two simultaneous choices, the CPF kept out of public responses and URLs.
 - **Case bonuses:** resume after reload ✅ · keyboard and screen-reader accessibility ✅ · per-lender logs and metrics (backoffice) ✅ · public deploy ⏭️
 
@@ -169,16 +169,16 @@ I built this together with an AI agent ([oh-my-pi](https://github.com/can1357/oh
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rounds of questions"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contracts + 243 checks"]
+    D --> C["🔎 Discovery<br/>contracts + 244 checks"]
     C --> S["🧩 Implementation<br/>in slices, with subagents"]
     S --> A["🛡️ 3 adversarial audits<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>fact-checked 3×"]
 ```
 
 ```mermaid
-pie title Who decided (91 decisions)
+pie title Who decided (92 decisions)
     "Me" : 47
-    "I asked, the agent designed" : 9
+    "I asked, the agent designed" : 10
     "The agent recommended, I accepted" : 18
     "The agent (implementation and audits)" : 17
 ```

@@ -7,7 +7,7 @@ Este projeto foi construído em par com um agente de IA ([oh-my-pi](https://gith
 | Quem                | Significado                                                                                  | Linhas |
 | ------------------- | -------------------------------------------------------------------------------------------- | ------ |
 | **Micael**          | Eu escolhi: diretiva minha ou opção contra a recomendação do agente (ou com restrição minha) | 47     |
-| **Micael → agente** | Eu pedi o resultado; o agente desenhou o como e eu aprovei                                   | 9      |
+| **Micael → agente** | Eu pedi o resultado; o agente desenhou o como e eu aprovei                                   | 10     |
 | **Agente → aceito** | O agente recomendou; eu aceitei a opção recomendada sem mudar                                | 18     |
 | **Agente**          | Decisão do agente na implementação, auditoria ou revisão (bug, segurança)                    | 17     |
 
@@ -128,16 +128,17 @@ Este projeto foi construído em par com um agente de IA ([oh-my-pi](https://gith
 
 ### Rodada final: documentação e polimento
 
-| #   | Decisão                                                            | Quem            | Evidência                                                                                      |
-| --- | ------------------------------------------------------------------ | --------------- | ---------------------------------------------------------------------------------------------- |
-| 84  | Próximos passos: deploy público, breaker da Delta, observabilidade | Micael          | S ask#41 (escolhidos entre 8 opções do agente); README § próximos passos                       |
-| 85  | Próximos passos: Better Auth e financeiras reais com webhooks      | Micael          | S ask#41 (resposta própria, fora das opções)                                                   |
-| 86  | README em pt-BR com versão em inglês, diagramas e GIFs animados    | Micael          | S (pedido da documentação final); `README.md`, `README.en.md`                                  |
-| 87  | Resumo por tema no README + esta tabela em arquivo separado        | Micael          | S ask#41 (segunda pergunta)                                                                    |
-| 88  | Barra de seções do backoffice com ícones e indicador animado       | Micael → agente | S (pedido de ajustes de UI, com captura de tela); P:198 RF-619                                 |
-| 89  | Paginar sem rolar ao topo; estados de carregando, vazio e erro     | Micael → agente | S (bug que reportei); o agente achou a causa e fez as tabelas buscarem as linhas; P:199 RF-620 |
-| 90  | Tema claro mais suave, com hover visível                           | Micael → agente | S (pedido de ajustes de UI); `src/theme.css`                                                   |
-| 91  | GIFs gerados com Playwright + ffmpeg a partir de HTML versionado   | Agente          | `docs/assets/src/render.ts`                                                                    |
+| #   | Decisão                                                                                | Quem            | Evidência                                                                                      |
+| --- | -------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------- |
+| 84  | Próximos passos: deploy público, breaker da Delta, observabilidade                     | Micael          | S ask#41 (escolhidos entre 8 opções do agente); README § próximos passos                       |
+| 85  | Próximos passos: Better Auth e financeiras reais com webhooks                          | Micael          | S ask#41 (resposta própria, fora das opções)                                                   |
+| 86  | README em pt-BR com versão em inglês, diagramas e GIFs animados                        | Micael          | S (pedido da documentação final); `README.md`, `README.en.md`                                  |
+| 87  | Resumo por tema no README + esta tabela em arquivo separado                            | Micael          | S ask#41 (segunda pergunta)                                                                    |
+| 88  | Barra de seções do backoffice com ícones e indicador animado                           | Micael → agente | S (pedido de ajustes de UI, com captura de tela); P:198 RF-619                                 |
+| 89  | Paginar sem rolar ao topo; estados de carregando, vazio e erro                         | Micael → agente | S (bug que reportei); o agente achou a causa e fez as tabelas buscarem as linhas; P:199 RF-620 |
+| 90  | Tema claro mais suave, com hover visível                                               | Micael → agente | S (pedido de ajustes de UI); `src/theme.css`                                                   |
+| 91  | GIFs gerados com Playwright + ffmpeg a partir de HTML versionado                       | Agente          | `docs/assets/src/render.ts`                                                                    |
+| 92  | Um comando: `up` instala as dependências e cria o `.env.local`; `doctor` checa os dois | Micael → agente | S (pedido de comando único); P:218 RF-714                                                      |
 
 ## Não atribuído
 
