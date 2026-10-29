@@ -24,7 +24,7 @@ import { SIMULATION_SCENARIOS, type SimulationScenario } from "#/lib/enums";
 import { formatCentsInput, parseCentsInput } from "#/lib/money/money";
 
 import { useFieldContext } from "./form-context";
-import { maskCep } from "./masks";
+import { maskCep, maskMoney } from "./masks";
 import { fieldId, useSignup } from "./signup-context";
 
 /** Every message in a field's error list: schema issues, plain strings (server errors), nested lists. */
@@ -298,7 +298,7 @@ export function StateField({ label }: { label: string }) {
   );
 }
 
-/** A BRL amount typed as text (`10.000,00`), tidied into the pt-BR format when it loses focus. */
+/** A BRL amount, masked as typed (`1.234,5`) and padded into the pt-BR format when it loses focus. */
 export function MoneyField({ label, description }: { label: string; description?: string }) {
   const { field, ref, id, errorId, messages, invalid, change } = useTextField();
   const describedBy = invalid ? errorId : description ? `${id}-description` : undefined;
@@ -331,7 +331,7 @@ export function MoneyField({ label, description }: { label: string; description?
             if (tidy !== field.state.value) change(tidy);
             field.handleBlur();
           }}
-          onChange={(event) => change(event.target.value)}
+          onChange={(event) => change(maskMoney(event.target.value))}
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
           className="h-10 pl-10 tabular-nums"

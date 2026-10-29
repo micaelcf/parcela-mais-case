@@ -545,6 +545,25 @@ test.describe("signup", () => {
     }
   });
 
+  test("masks amounts as they are typed, then pads the cents when left", async ({
+    page,
+    patient,
+  }) => {
+    await reachFinancialStep(page, patient);
+    const income = page.getByLabel("Renda mensal");
+    await income.click();
+    await page.keyboard.type("12345");
+    // Still typing: grouped already, nothing flagged, cents not forced yet.
+    await expect(income).toBeFocused();
+    await expect(income).toHaveValue("12.345");
+    await page.keyboard.type(",5");
+    await expect(income).toHaveValue("12.345,5");
+
+    await income.blur();
+    await expect(income).toHaveValue("12.345,50");
+    await expect(income).not.toHaveAttribute("aria-invalid", "true");
+  });
+
   test("keeps values when moving back", async ({ page, patient }) => {
     await page.goto("/cadastro/paciente");
     await fillPatientStep(page, patient);

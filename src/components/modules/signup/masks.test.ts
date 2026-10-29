@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { maskCep, maskCpf, maskPhone } from "./masks";
+import { maskCep, maskCpf, maskMoney, maskPhone } from "./masks";
 
 describe("signup masks", () => {
   it("formats a CPF progressively and idempotently", () => {
@@ -36,5 +36,34 @@ describe("signup masks", () => {
     expect(maskCep("01310-100")).toBe("01310-100");
     expect(maskCep("01310-1009")).toBe("01310-100");
     expect(maskCep("01.310-100")).toBe("01310-100");
+  });
+
+  it("groups an amount's thousands while typing, with at most two cents digits", () => {
+    const typed = "1234567,891"
+      .split("")
+      .reduce<string[]>((shown, key) => [...shown, maskMoney(`${shown.at(-1) ?? ""}${key}`)], []);
+    expect(typed).toEqual([
+      "1",
+      "12",
+      "123",
+      "1.234",
+      "12.345",
+      "123.456",
+      "1.234.567",
+      "1.234.567,",
+      "1.234.567,8",
+      "1.234.567,89",
+      "1.234.567,89",
+    ]);
+  });
+
+  it("keeps a pasted or tidied amount's value, dropping stray characters", () => {
+    expect(maskMoney("R$ 10.000,00")).toBe("10.000,00");
+    expect(maskMoney("10.000,00")).toBe("10.000,00");
+    expect(maskMoney("10000")).toBe("10.000");
+    expect(maskMoney(",5")).toBe("0,5");
+    expect(maskMoney("007")).toBe("7");
+    expect(maskMoney("5a0b0")).toBe("500");
+    expect(maskMoney("")).toBe("");
   });
 });
