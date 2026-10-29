@@ -45,7 +45,10 @@ function DashboardPage() {
           <PeriodPicker
             value={period}
             onChange={(next) =>
-              void navigate({ search: { periodo: next === DEFAULT_PERIOD ? undefined : next } })
+              void navigate({
+                search: { periodo: next === DEFAULT_PERIOD ? undefined : next },
+                resetScroll: false,
+              })
             }
           />
         }

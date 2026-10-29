@@ -494,4 +494,114 @@ test.describe("backoffice", () => {
     await expect(page).toHaveURL(/\/backoffice\/consultas\/[\da-f-]+$/);
     expect(searched).toEqual([patient.token]);
   });
+
+  test("marks the current section in the section bar", async ({ page, request, patient }) => {
+    await createConsultation(request, patient, "ALL_APPROVE");
+    await logIn(page);
+    const sections = page.getByRole("navigation", { name: "Seções do backoffice" });
+    const expectCurrent = async (current: string) => {
+      for (const name of ["Painel", "Consultas", "Financeiras", "Abuso e limites"]) {
+        const link = sections.getByRole("link", { name, exact: true });
+        if (name === current) await expect(link, name).toHaveAttribute("aria-current", "page");
+        else await expect(link, name).not.toHaveAttribute("aria-current");
+      }
+    };
+    await expectCurrent("Painel");
+
+    await sections.getByRole("link", { name: "Consultas", exact: true }).click();
+    await expect(page).toHaveURL(/\/backoffice\/consultas$/);
+    await expectCurrent("Consultas");
+
+    // A consultation's detail is still under Consultas.
+    await page.getByRole("searchbox", { name: "Buscar", exact: true }).fill(patient.token);
+    await page.getByRole("searchbox", { name: "Buscar", exact: true }).press("Enter");
+    await explorerTable(page).getByRole("link", { name: patient.fullName }).click();
+    await expect(page).toHaveURL(/\/backoffice\/consultas\/[\da-f-]+$/);
+    await expectCurrent("Consultas");
+
+    await sections.getByRole("link", { name: "Financeiras", exact: true }).click();
+    await expect(page).toHaveURL(/\/backoffice\/financeiras$/);
+    await expectCurrent("Financeiras");
+
+    await sections.getByRole("link", { name: "Abuso e limites", exact: true }).click();
+    await expect(page).toHaveURL(/\/backoffice\/abuso$/);
+    await expectCurrent("Abuso e limites");
+
+    await sections.getByRole("link", { name: "Painel", exact: true }).click();
+    await expect(page).toHaveURL(/\/backoffice$/);
+    await expectCurrent("Painel");
+
+    // The login page has no section bar.
+    await page.getByRole("button", { name: "Sair" }).click();
+    await expect(page.getByLabel("Usuário")).toBeVisible();
+    await expect(sections).toHaveCount(0);
+  });
+
+  test("pages in place, keeping the rows on screen while the next page loads", async ({
+    page,
+    request,
+  }) => {
+    // At least two consultations exist, so a one-row page has a next page.
+    const patient = newPatient();
+    await createConsultation(request, patient, "ALL_APPROVE");
+    await createConsultation(request, patient, "ALL_APPROVE");
+    // A short window, so the page scrolls down to the explorer's paging.
+    await page.setViewportSize({ width: 1280, height: 420 });
+    await logIn(page);
+    await page.goto("/backoffice/consultas?pageSize=1");
+    const rows = explorerTable(page).getByRole("row");
+    await expect(rows).toHaveCount(2); // header + one row
+    const firstRow = (await rows.nth(1).textContent()) ?? "";
+    const heading = page.getByRole("heading", { name: "Consultas", exact: true, level: 1 });
+
+    // Marks on what sits above the table and on its header: a re-mount would drop them.
+    await heading.evaluate((element) => {
+      element.dataset.mark = "kept";
+    });
+    await explorerTable(page)
+      .locator("thead")
+      .evaluate((head) => {
+        head.dataset.mark = "kept";
+      });
+    await explorerPaging(page).scrollIntoViewIfNeeded();
+    const scrolled = await page.evaluate(() => window.scrollY);
+    expect(scrolled).toBeGreaterThan(0);
+
+    // Hold the next page's response until the loading state has been checked.
+    const { promise: released, resolve: release } = Promise.withResolvers<void>();
+    await page.route(/\/api\/backoffice\/consultations\?/, async (route) => {
+      await released;
+      await route.continue();
+    });
+    await explorerPaging(page).getByRole("button", { name: "Próxima página" }).click();
+    await expect(page).toHaveURL(/[?&]page=2(&|$)/);
+    await expect(page.getByRole("progressbar", { name: "Carregando consultas" })).toBeVisible();
+    await expect(explorerTable(page)).toHaveAttribute("aria-busy", "true");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(1)).toHaveText(firstRow);
+
+    release();
+    await expect(page.getByRole("progressbar", { name: "Carregando consultas" })).toBeHidden();
+    await expect(explorerPaging(page)).toContainText("página 2 de");
+    await expect(explorerTable(page)).not.toHaveAttribute("aria-busy");
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+    await expect(heading).toHaveAttribute("data-mark", "kept");
+    await expect(explorerTable(page).locator("thead")).toHaveAttribute("data-mark", "kept");
+  });
+
+  test("shows an empty state that clears the filters", async ({ page }) => {
+    await logIn(page);
+    const nothing = `nada${randomUUID().slice(0, 8)}`;
+    await page.goto(`/backoffice/consultas?status=OFFERS&q=${nothing}`);
+
+    const empty = explorerTable(page).getByText("Nenhuma consulta encontrada para estes filtros.");
+    await expect(empty).toBeVisible();
+    await expect(explorerPaging(page)).toContainText("0 consultas");
+    await explorerTable(page).getByRole("button", { name: "Limpar filtros" }).click();
+
+    await expect(page).toHaveURL(/\/backoffice\/consultas$/);
+    await expect(page.getByRole("searchbox", { name: "Buscar", exact: true })).toHaveValue("");
+    await expect(page.getByRole("combobox", { name: "Situação" })).toHaveText(/Todos/);
+    await expect(empty).toBeHidden();
+  });
 });

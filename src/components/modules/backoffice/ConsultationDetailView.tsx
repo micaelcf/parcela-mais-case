@@ -1,3 +1,5 @@
+import { InboxIcon } from "lucide-react";
+
 import {
   LENDER_NAME,
   REASON_TEXT,
@@ -30,6 +32,7 @@ import {
 } from "./backoffice-format";
 import { JourneyStatusBadge } from "./ConsultationTable";
 import { Section } from "./PageHeader";
+import { TableMessageRow } from "./TableMessageRow";
 
 const ATTEMPT_VARIANT: Record<AttemptStatus, "secondary" | "outline" | "destructive" | "default"> =
   {
@@ -210,11 +213,11 @@ export function ConsultationDetailView({ detail }: { detail: ConsultationDetail 
           </TableHeader>
           <TableBody>
             {detail.offers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-16 text-center text-muted-foreground">
-                  Nenhuma oferta.
-                </TableCell>
-              </TableRow>
+              <TableMessageRow
+                colSpan={7}
+                icon={<InboxIcon aria-hidden />}
+                title="Nenhuma oferta."
+              />
             ) : (
               detail.offers.map((offer) => (
                 <TableRow key={offer.id}>

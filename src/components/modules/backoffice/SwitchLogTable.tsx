@@ -4,7 +4,6 @@ import { LENDER_NAME } from "#/components/modules/consultation/lender-copy";
 import { LenderIdentity } from "#/components/modules/lender/LenderIdentity";
 import { Badge } from "#/components/ui/badge";
 import { LENDER_CODES } from "#/lib/enums";
-import type { ListResponse } from "#/lib/list/list-contract";
 import type { SwitchLogItem } from "#/server/modules/backoffice/backoffice.dto";
 
 import { formatDateTime } from "./backoffice-format";
@@ -15,6 +14,7 @@ import {
   type DataTableQuery,
   type DataTableQueryPatch,
 } from "./DataTable";
+import type { ServerList } from "./use-server-list";
 
 const column = createColumnHelper<DataTableFeatures, SwitchLogItem>();
 
@@ -64,7 +64,7 @@ export function SwitchLogTable({
   query,
   onQueryChange,
 }: {
-  list: ListResponse<SwitchLogItem>;
+  list: ServerList<SwitchLogItem>;
   query: DataTableQuery;
   onQueryChange: (patch: DataTableQueryPatch) => void;
 }) {
@@ -72,15 +72,17 @@ export function SwitchLogTable({
     <DataTable
       caption="Histórico de ativação das financeiras"
       columns={columns}
-      data={list.items}
+      list={list}
       getRowId={(row) => row.id}
-      page={list}
       query={query}
       onQueryChange={onQueryChange}
       search={{ label: "Buscar operador" }}
       filters={filters}
       noun={{ one: "alteração", other: "alterações" }}
-      emptyMessage="Nenhuma alteração registrada."
+      empty={{
+        none: "Nenhuma alteração registrada.",
+        filtered: "Nenhuma alteração encontrada para estes filtros.",
+      }}
     />
   );
 }

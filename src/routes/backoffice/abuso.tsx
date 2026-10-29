@@ -14,26 +14,23 @@ import {
   toListQuery,
 } from "#/components/modules/backoffice/table-search";
 import { ThrottleEventTable } from "#/components/modules/backoffice/ThrottleEventTable";
+import { useServerList } from "#/components/modules/backoffice/use-server-list";
 
 const validateSearch = listSearchValidator(ThrottleEventSearchSchema);
 
+// The events table loads its rows in the page (`useServerList`); the loader reads only the
+// metrics, so paging the table neither re-runs it nor moves the page.
 export const Route = createFileRoute("/backoffice/abuso")({
   validateSearch,
-  loaderDeps: ({ search }) => search,
-  loader: async ({ deps }) => {
-    const [metrics, events] = await Promise.all([
-      getAbuseMetrics(),
-      listThrottleEvents(toListQuery(deps)),
-    ]);
-    return { metrics, events };
-  },
+  loader: () => getAbuseMetrics(),
   component: AbusePage,
 });
 
 function AbusePage() {
-  const { metrics, events } = Route.useLoaderData();
+  const metrics = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const events = useServerList(toListQuery(search), listThrottleEvents);
 
   return (
     <>
@@ -61,6 +58,7 @@ function AbusePage() {
             onQueryChange={(patch) =>
               void navigate({
                 search: (previous) => parseListSearch(validateSearch, { ...previous, ...patch }),
+                resetScroll: false,
               })
             }
           />

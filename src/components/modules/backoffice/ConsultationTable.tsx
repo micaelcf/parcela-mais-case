@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { Badge } from "#/components/ui/badge";
 import { QUOTE_STATUSES, SIMULATION_SCENARIOS } from "#/lib/enums";
-import type { ListResponse } from "#/lib/list/list-contract";
 import { formatBRL } from "#/lib/money/money";
 import type { ConsultationListItem } from "#/server/modules/backoffice/backoffice.dto";
 import {
@@ -25,6 +24,7 @@ import {
   type DataTableQuery,
   type DataTableQueryPatch,
 } from "./DataTable";
+import type { ServerList } from "./use-server-list";
 
 const STATUS_VARIANT: Record<JourneyStatus, "default" | "secondary" | "outline" | "destructive"> = {
   QUOTING: "outline",
@@ -119,7 +119,7 @@ export function ConsultationTable({
   toolbar,
 }: {
   caption: string;
-  list: ListResponse<ConsultationListItem>;
+  list: ServerList<ConsultationListItem>;
   query: DataTableQuery;
   onQueryChange: (patch: DataTableQueryPatch) => void;
   /** The search box's label; distinct per table when both are on the page. */
@@ -130,15 +130,17 @@ export function ConsultationTable({
     <DataTable
       caption={caption}
       columns={columns}
-      data={list.items}
+      list={list}
       getRowId={(row) => row.id}
-      page={list}
       query={query}
       onQueryChange={onQueryChange}
       search={{ label: searchLabel, placeholder: "Nome do paciente ou ID" }}
       filters={filters}
       noun={{ one: "consulta", other: "consultas" }}
-      emptyMessage="Nenhuma consulta encontrada."
+      empty={{
+        none: "Nenhuma consulta ainda.",
+        filtered: "Nenhuma consulta encontrada para estes filtros.",
+      }}
       toolbar={toolbar}
     />
   );

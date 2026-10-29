@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { InboxIcon } from "lucide-react";
 
 import {
   Table,
@@ -13,6 +14,7 @@ import type { AbuseMetrics } from "#/server/modules/backoffice/backoffice.dto";
 
 import { formatCount, LIMIT_LABEL } from "./backoffice-format";
 import { MetricGrid, MetricTile } from "./MetricTile";
+import { TableMessageRow } from "./TableMessageRow";
 
 /** Limit hits and 429s in the window (RF-614). */
 export function AbuseTotals({ metrics }: { metrics: AbuseMetrics }) {
@@ -107,10 +109,6 @@ export function TopIpsTable({ rows }: { rows: AbuseMetrics["topIps"] }) {
 
 function EmptyRow({ colSpan }: { colSpan: number }) {
   return (
-    <TableRow>
-      <TableCell colSpan={colSpan} className="h-16 text-center text-muted-foreground">
-        Nada no período.
-      </TableCell>
-    </TableRow>
+    <TableMessageRow colSpan={colSpan} icon={<InboxIcon aria-hidden />} title="Nada no período." />
   );
 }

@@ -1,7 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table";
 
 import { Badge } from "#/components/ui/badge";
-import type { ListResponse } from "#/lib/list/list-contract";
 import {
   LIMIT_CODES,
   THROTTLE_ROUTES,
@@ -16,6 +15,7 @@ import {
   type DataTableQuery,
   type DataTableQueryPatch,
 } from "./DataTable";
+import type { ServerList } from "./use-server-list";
 
 type ThrottleRoute = (typeof THROTTLE_ROUTES)[number];
 
@@ -90,7 +90,7 @@ export function ThrottleEventTable({
   query,
   onQueryChange,
 }: {
-  list: ListResponse<ThrottleEventItem>;
+  list: ServerList<ThrottleEventItem>;
   query: DataTableQuery;
   onQueryChange: (patch: DataTableQueryPatch) => void;
 }) {
@@ -98,15 +98,17 @@ export function ThrottleEventTable({
     <DataTable
       caption="Requisições contadas pelos limites"
       columns={columns}
-      data={list.items}
+      list={list}
       getRowId={(row) => row.id}
-      page={list}
       query={query}
       onQueryChange={onQueryChange}
       search={{ label: "Buscar", placeholder: "Código ou rota" }}
       filters={filters}
       noun={{ one: "requisição", other: "requisições" }}
-      emptyMessage="Nenhuma requisição registrada."
+      empty={{
+        none: "Nenhuma requisição registrada.",
+        filtered: "Nenhuma requisição encontrada para estes filtros.",
+      }}
     />
   );
 }
