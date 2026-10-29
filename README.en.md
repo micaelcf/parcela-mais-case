@@ -148,7 +148,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>journey · scenarios · keyboard · backoffice"]
 ```
 
-- **260** unit and integration tests (Vitest, real Postgres, no factories) + **77** browser E2E tests.
+- **259** unit and integration tests (Vitest, real Postgres, no factories) + **77** browser E2E tests.
 - They cover what can break: CPF check digits, Price cents, a lender that never answers, HTTP 500, the finalizer racing a late worker, two simultaneous choices, the CPF kept out of public responses and URLs.
 - **Case bonuses:** resume after reload ✅ · keyboard and screen-reader accessibility ✅ · per-lender logs and metrics (backoffice) ✅ · public deploy ⏭️
 

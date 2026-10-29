@@ -148,7 +148,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>jornada · cenários · teclado · backoffice"]
 ```
 
-- **260 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **77** E2E no navegador.
+- **259 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **77** E2E no navegador.
 - Cobrem o que pode quebrar: dígitos do CPF, centavos da Price, financeira que não responde, erro 500, finalizador correndo contra worker atrasado, dupla escolha simultânea, CPF fora das respostas públicas e da URL.
 - **Bônus do case:** retomar após recarregar ✅ · acessibilidade de teclado e leitor de tela ✅ · logs e métricas por financeira (backoffice) ✅ · deploy público ⏭️
 
