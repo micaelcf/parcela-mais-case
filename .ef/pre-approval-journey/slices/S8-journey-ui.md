@@ -118,3 +118,9 @@ Proof: `vp run e2e test/e2e/theme.spec.ts -g "switches the theme from the top ba
 
 **C232** · RF-812 — the backoffice top bar has the same toggle
 Proof: `vp run e2e test/e2e/theme.spec.ts -g "offers the switch in the backoffice too"`
+
+**C245** · RF-220 — the live view polls `GET /consultations/:id` every 2 s after two refused or stalled (3 s without a first snapshot) connections, or 2 s past the deadline; a recovered stream stops it and drops a read in flight; it stops at `SETTLED`; a settled view opens nothing (added 2026-10-28, user request)
+Proof: `vp test src/hooks/consultation-feed.test.ts` (each rule survives a mutation check: removing it fails its test); `vp run e2e test/e2e/journey.spec.ts -g "keeps the cards updating by polling when the live stream fails"`
+
+**C246** · RF-813 — an unknown address shows "Erro 404: Página não encontrada" (focused) with "Voltar ao início"; an unknown consultation shows its own 404 with "Novo cadastro"; an API outage on load shows "Erro 503: Serviço indisponível", and "Tentar de novo" loads the consultation once the API is back; the status shown is the API's, 503 when unreachable, 500 otherwise (added 2026-10-28, user request)
+Proof: `vp run e2e test/e2e/errors.spec.ts`; `vp test src/components/modules/error/error-status.test.ts`

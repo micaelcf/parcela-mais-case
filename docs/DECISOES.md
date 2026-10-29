@@ -7,7 +7,7 @@ Este projeto foi construído em par com um agente de IA ([oh-my-pi](https://gith
 | Quem                | Significado                                                                                  | Linhas |
 | ------------------- | -------------------------------------------------------------------------------------------- | ------ |
 | **Micael**          | Eu escolhi: diretiva minha ou opção contra a recomendação do agente (ou com restrição minha) | 47     |
-| **Micael → agente** | Eu pedi o resultado; o agente desenhou o como e eu aprovei                                   | 10     |
+| **Micael → agente** | Eu pedi o resultado; o agente desenhou o como e eu aprovei                                   | 12     |
 | **Agente → aceito** | O agente recomendou; eu aceitei a opção recomendada sem mudar                                | 18     |
 | **Agente**          | Decisão do agente na implementação, auditoria ou revisão (bug, segurança)                    | 17     |
 
@@ -139,6 +139,8 @@ Este projeto foi construído em par com um agente de IA ([oh-my-pi](https://gith
 | 90  | Tema claro mais suave, com hover visível                                               | Micael → agente | S (pedido de ajustes de UI); `src/theme.css`                                                   |
 | 91  | GIFs gerados com Playwright + ffmpeg a partir de HTML versionado                       | Agente          | `docs/assets/src/render.ts`                                                                    |
 | 92  | Um comando: `up` instala as dependências e cria o `.env.local`; `doctor` checa os dois | Micael → agente | S (pedido de comando único); P:218 RF-714                                                      |
+| 93  | Fallback para polling quando o SSE não passa (falhas, conexão parada, prazo vencido)   | Micael → agente | S (pedido após a avaliação independente); P:134 RF-220; `src/hooks/consultation-feed.ts`       |
+| 94  | Páginas de erro com o status real e números interativos, no padrão do TanStack Router  | Micael → agente | S (pedido de _error boundaries_); P:237 RF-813; `src/components/modules/error/`                |
 
 ## Não atribuído
 

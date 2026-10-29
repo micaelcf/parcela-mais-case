@@ -55,6 +55,7 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-217` — An open circuit allows one probe call after 30 s
 - `RF-218` — Forced-scenario attempts never affect the circuit breaker
 - `RF-219` — A lender disabled by the kill switch is skipped without a call
+- `RF-220` — When the live stream is unusable, the consultation page keeps updating by polling
 - `RF-301` — When no lender approves, the screen explains each lender's outcome in non-sensitive terms
 - `RF-302` — When no lender approves, the screen suggests the highest amount any lender hinted it could approve
 - `RF-303` — Requote creates a new consultation for the same patient with a lower amount
@@ -127,6 +128,7 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-810` — Lender status changes are announced to screen readers
 - `RF-811` — Each lender call emits one structured log line without PII
 - `RF-812` — The user can switch between light and dark themes from the top bar
+- `RF-813` — A page that fails to load says what happened and offers a way on
 
 ## Contract
 
@@ -195,7 +197,7 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 | S5    | one-command stack on Podman/Docker; safe local deploy/prune/doctor/down; local HTTPS; tslog        | 2    | done   | [slices/S5-ops.md](slices/S5-ops.md)                                     | C77–C88, C165–C167, C208–C216, C237, C244   |
 | S6    | requote, per-patient and per-IP caps, no PII in public payloads                                    | 3    | done   | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100, C161, C162, C169                  |
 | S7    | backoffice auth, metrics, lists, kill switch API                                                   | 4    | done   | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117, C159                             |
-| S8    | public journey UI + UI kit; offers grouped by lender, choice dialog, lender logos, theme toggle    | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144, C224–C232                        |
+| S8    | public journey UI + UI kit; offers grouped by lender, choice dialog, lender logos, theme toggle    | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144, C224–C232, C245–C246             |
 | S9    | backoffice UI; section bar, in-place paging, table states                                          | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168, C217, C238–C241            |
 | S10   | E2E suite + browser smoke                                                                          | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157, C164                             |
 | S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs                      | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C195                                   |

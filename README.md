@@ -68,7 +68,7 @@ stateDiagram-v2
 - O `POST` responde **na hora** (`202 {id}`); cada financeira é um job próprio, então uma lenta não segura as outras.
 - O prazo é um **job agendado** para `criação + 10 s` (sobrevive a restart) e a leitura também finaliza se o prazo já passou.
 - **Sem retry** dentro dos 10 s; um **circuit breaker** por financeira e um **liga/desliga** no backoffice protegem a jornada.
-- Dá para escolher uma oferta **assim que ela chega**; respostas tardias são registradas sem mudar a escolha.
+- Dá para escolher uma oferta **assim que ela chega**; financeiras que respondem depois da escolha (ainda no prazo) são registradas sem mudar a escolha. No fim do prazo, a chamada que não respondeu é cortada e a financeira aparece como indisponível.
 - **Ninguém aprovou?** A tela explica cada motivo sem expor regras internas e sugere **simular com um valor menor** (nova consulta, mesmo paciente).
 
 ## Status ao vivo: por que SSE
@@ -78,10 +78,16 @@ stateDiagram-v2
 | Opção      | Por que sim / não                                                                                  |
 | ---------- | -------------------------------------------------------------------------------------------------- |
 | **SSE** ✅ | O fluxo é só servidor → navegador; HTTP comum, reconexão nativa, passa pelo proxy sem configuração |
-| Polling    | Simples, mas atrasa ou desperdiça requisições; fica como fallback (`GET /consultations/:id`)       |
+| Polling    | Simples, mas atrasa ou desperdiça requisições; entra como **fallback** quando o SSE não passa      |
 | WebSocket  | Bidirecional sem necessidade; mais infraestrutura para o mesmo resultado                           |
 
 Cada conexão começa com o **snapshot completo**; o `NOTIFY` do Postgres só avisa "releia"; uma releitura a cada **2 s** cobre um aviso perdido; a queda de conexão reconecta com **backoff** (0,5 → 1 → 2 → 4 s). Recarregar a página reconstrói tudo a partir da URL da consulta.
+
+**Fallback para polling:** se duas conexões seguidas falham, se uma conexão passa 3 s sem o primeiro snapshot (um proxy que segura o stream) ou se a consulta passa 2 s do prazo sem fechar, a tela lê `GET /consultations/:id` a cada 2 s e avisa "Conexão ao vivo instável". Quando o SSE volta, o polling para; uma leitura que já estava a caminho é descartada para não voltar a um estado antigo.
+
+## Páginas de erro
+
+Erros de carregamento caem no _error boundary_ do TanStack Router (`defaultErrorComponent` e `defaultNotFoundComponent`). A página mostra o **status HTTP real** (404, 429, 503…), explica em português o que houve e oferece **Tentar de novo** quando faz sentido: o botão chama `router.invalidate()`, que refaz os loaders (um `reset()` sozinho só redesenharia o erro). No backoffice, o erro aparece dentro do próprio layout. E os números do status são interativos: giram ao abrir, acompanham o mouse e dá para clicar até virar 200.
 
 ## Modelo de dados
 
@@ -205,8 +211,8 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>jornada · cenários · teclado · backoffice"]
 ```
 
-- **259 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **77** E2E no navegador.
-- Cobrem o que pode quebrar: dígitos do CPF, centavos da Price, financeira que não responde, erro 500, finalizador correndo contra worker atrasado, dupla escolha simultânea, CPF fora das respostas públicas e da URL.
+- **271 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **81** E2E no navegador.
+- Cobrem o que pode quebrar: dígitos do CPF, centavos da Price, financeira que não responde, erro 500, finalizador correndo contra worker atrasado, dupla escolha simultânea, SSE bloqueado caindo para polling, CPF fora das respostas públicas e da URL.
 - **Bônus do case:** retomar após recarregar ✅ · acessibilidade de teclado e leitor de tela ✅ · logs e métricas por financeira (backoffice) ✅ · deploy público ⏭️
 
 ## O que ficou de fora e próximos passos
@@ -219,6 +225,10 @@ flowchart LR
 
 Fora do escopo por decisão: etapas pós-escolha (contrato, pagamento) e retentativas nas financeiras.
 
+## A parte mais difícil
+
+A parte mais demorada foi a validação e o refinamento depois da primeira entrega. A história de sempre: tudo rodando, testes 100% verdes sem erros, specs verificadas e obedecidas. Abro o resultado no navegador: UI meia-boca (tenho que ter critério e gosto pra isso, kkk), multi-step form mais ou menos e mais um ponto ou outro ali de UI e UX. Penso nos edge cases e no que pode dar errado, falo pra IA verificar, resolver e testar; penso nas melhorias que vale a pena fazer agora e falo também. Basicamente é esse loop de testar, avaliar e falar o feedback que demora mais, o resto foi rápido. O coding agent realmente entregou tudo funcionando, aparentemente sem erros de funcionalidade ou coisas que quebram; o que eu fiz foi só refinar e tentar melhorar (quem vai dizer se está realmente bom ou não é você).
+
 ## Como usei IA
 
 Construí o projeto em par com um agente de IA ([oh-my-pi](https://github.com/can1357/oh-my-pi), modelo Claude), numa única sessão de ~30 h. Eu decidi stack, escopo e regras; o agente propôs alternativas, escreveu o código e os testes, e auditou o próprio trabalho.
@@ -228,16 +238,16 @@ Nada disso foi aleatório nem feito com prompts soltos: usei um _harness_ open s
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rodadas de perguntas"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contratos + 244 checks"]
+    D --> C["🔎 Discovery<br/>contratos + 246 checks"]
     C --> S["🧩 Implementação<br/>em fatias, com subagentes"]
     S --> A["🛡️ 3 auditorias adversariais<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>checado 3×"]
 ```
 
 ```mermaid
-pie title Quem decidiu (92 decisões)
+pie title Quem decidiu (94 decisões)
     "Eu" : 47
-    "Eu pedi, o agente desenhou" : 10
+    "Eu pedi, o agente desenhou" : 12
     "O agente recomendou, eu aceitei" : 18
     "O agente (implementação e auditoria)" : 17
 ```

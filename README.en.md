@@ -68,7 +68,7 @@ stateDiagram-v2
 - The `POST` answers **right away** (`202 {id}`); each lender is its own job, so a slow one never holds the others back.
 - The deadline is a **job scheduled** at `creation + 10 s` (survives restarts), and reads also finalize a consultation past its deadline.
 - **No retries** inside the 10 s; a per-lender **circuit breaker** and a backoffice **on/off switch** protect the journey.
-- An offer can be **chosen as soon as it arrives**; late answers are recorded without changing the choice.
+- An offer can be **chosen as soon as it arrives**; lenders that answer after the choice (still within the deadline) are recorded without changing it. At the deadline, a call still unanswered is cut off and the lender shows as unavailable.
 - **Nobody approved?** The screen explains each outcome without exposing internal rules and suggests **trying a lower amount** (a new consultation for the same patient).
 
 ## Live status: why SSE
@@ -78,10 +78,16 @@ stateDiagram-v2
 | Option     | Why / why not                                                                                     |
 | ---------- | ------------------------------------------------------------------------------------------------- |
 | **SSE** ✅ | The flow is server → browser only; plain HTTP, native reconnect, goes through the proxy unchanged |
-| Polling    | Simple, but laggy or wasteful; kept as the fallback (`GET /consultations/:id`)                    |
+| Polling    | Simple, but laggy or wasteful; takes over as the **fallback** when SSE doesn't get through        |
 | WebSocket  | Two-way for no reason; more infrastructure for the same result                                    |
 
 Every connection starts with the **full snapshot**; Postgres `NOTIFY` only says "re-read"; a re-read every **2 s** covers a lost notification; a dropped connection reconnects with **backoff** (0.5 → 1 → 2 → 4 s). Reloading the page rebuilds everything from the consultation URL.
+
+**Polling fallback:** when two connections in a row fail, when a connection goes 3 s without its first snapshot (a proxy holding the stream back), or when the consultation is 2 s past its deadline and still open, the page reads `GET /consultations/:id` every 2 s and says "Conexão ao vivo instável". Once SSE delivers again, polling stops; a read already on its way is dropped, so the page never goes back to an older state.
+
+## Error pages
+
+Loading errors land in TanStack Router's error boundary (`defaultErrorComponent` and `defaultNotFoundComponent`). The page shows the **real HTTP status** (404, 429, 503…), says what happened in Portuguese, and offers **Tentar de novo** when retrying makes sense: the button calls `router.invalidate()`, which re-runs the loaders (a bare `reset()` would only re-render the error). In the backoffice, the error stays inside its own layout. And the status digits are interactive: they spin up on load, lean toward the pointer, and can be clicked until they read 200.
 
 ## Data model
 
@@ -205,8 +211,8 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>journey · scenarios · keyboard · backoffice"]
 ```
 
-- **259** unit and integration tests (Vitest, real Postgres, no factories) + **77** browser E2E tests.
-- They cover what can break: CPF check digits, Price cents, a lender that never answers, HTTP 500, the finalizer racing a late worker, two simultaneous choices, the CPF kept out of public responses and URLs.
+- **271** unit and integration tests (Vitest, real Postgres, no factories) + **81** browser E2E tests.
+- They cover what can break: CPF check digits, Price cents, a lender that never answers, HTTP 500, the finalizer racing a late worker, two simultaneous choices, blocked SSE falling back to polling, the CPF kept out of public responses and URLs.
 - **Case bonuses:** resume after reload ✅ · keyboard and screen-reader accessibility ✅ · per-lender logs and metrics (backoffice) ✅ · public deploy ⏭️
 
 ## Left out and next steps
@@ -219,6 +225,10 @@ flowchart LR
 
 Out of scope by decision: post-choice stages (contract, payment) and lender retries.
 
+## The hardest part
+
+The part that took longest was validating and refining after the first delivery. The usual story: everything running, tests 100% green with no errors, specs checked and followed. I open the result in the browser: a so-so UI (I need judgement and taste for that, lol), a just-okay multi-step form, and a point or two of UI and UX here and there. I think about the edge cases and what could go wrong, tell the AI to check, fix and test it; I think about which improvements are worth making now and tell it that too. Basically, that loop of testing, judging and giving feedback is what takes longest; the rest was quick. The coding agent really did deliver everything working, apparently with no functional bugs or things that break; what I did was just refine and try to improve it (whether it's actually good or not is for you to say).
+
 ## How I used AI
 
 I built this together with an AI agent ([oh-my-pi](https://github.com/can1357/oh-my-pi), Claude model) in a single ~30 h session. I decided the stack, scope and rules; the agent proposed alternatives, wrote the code and tests, and audited its own work.
@@ -228,16 +238,16 @@ None of it was random or driven by loose prompts: I used an open-source harness 
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rounds of questions"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contracts + 244 checks"]
+    D --> C["🔎 Discovery<br/>contracts + 246 checks"]
     C --> S["🧩 Implementation<br/>in slices, with subagents"]
     S --> A["🛡️ 3 adversarial audits<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>fact-checked 3×"]
 ```
 
 ```mermaid
-pie title Who decided (92 decisions)
+pie title Who decided (94 decisions)
     "Me" : 47
-    "I asked, the agent designed" : 10
+    "I asked, the agent designed" : 12
     "The agent recommended, I accepted" : 18
     "The agent (implementation and audits)" : 17
 ```

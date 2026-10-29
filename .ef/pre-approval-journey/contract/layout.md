@@ -102,7 +102,7 @@ src/
     eden.ts                                 # treaty<App>(location.origin).api
     consultations.ts  backoffice.ts         # typed fetchers/mutations used by loaders and event handlers
   hooks/                                    # React hooks (shadcn `hooks` alias)
-    use-consultation-stream.ts              # SSE: abort on unmount, reconnect with backoff
+    use-consultation-stream.ts              # live view: SSE with backoff, polling fallback (consultation-feed.ts)
   components/                               # root = app shell and overall layout only
     ui/**                                   # vendored shadcn (Base UI), CLI-owned
     AppShell.tsx  BackofficeShell.tsx …     # public header/footer frame, backoffice nav frame
@@ -110,13 +110,14 @@ src/
       signup/                               # SignupStepPatient.tsx …, signup-form.ts (createFormHook)
       consultation/                         # LenderCard.tsx, OfferList.tsx, NoOfferPanel.tsx …
       backoffice/                           # DataTable.tsx, PipelineChart.tsx, LenderHealthTable.tsx …
+      error/                                # ErrorPage.tsx, StatusDigits.tsx, RouteError.tsx (router defaults), error-status.ts
   styles.css  theme.css                     # theme.css = the only token file (swappable)
 ```
 
 Data boundaries (TanStack Start, no SSR):
 
 - **Routes own data.** A route's `loader`/`beforeLoad` calls `api/*` and passes results down; `validateSearch` owns URL state. Components read `Route.useLoaderData()`/props and never import `api/eden.ts`.
-- **Exceptions, each named:** the live stream (`hooks/use-consultation-stream.ts`) and user-initiated mutations (submit, choose, requote, login, kill switch), which call `api/*` from event handlers and then `router.invalidate()` or `navigate`.
+- **Exceptions, each named:** the live stream (`hooks/use-consultation-stream.ts`, which also polls the read endpoint as its fallback) and user-initiated mutations (submit, choose, requote, login, kill switch), which call `api/*` from event handlers and then `router.invalidate()` or `navigate`.
 - Frontend code imports server code only as `import type` (`App`), plus `server/modules/*/*.dto.ts` (isomorphic DTOs) and `lib/**`.
 
 ## Isomorphic library (`src/lib/`)
