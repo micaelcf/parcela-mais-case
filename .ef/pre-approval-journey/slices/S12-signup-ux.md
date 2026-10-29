@@ -72,3 +72,6 @@ Proof: `vp run e2e test/e2e/signup.spec.ts -g "starts empty from Novo cadastro, 
 
 **C242** · RF-105, RF-118 — amounts mask as typed (`12345` → `12.345`, `,5` → `12.345,5`, thousands dots placed by the mask, at most two cents digits), nothing is flagged while typing, and leaving the field pads the cents (`12.345,50`) (added 2026-10-28, user report)
 Proof: `vp test src/components/modules/signup/masks.test.ts`; `vp run e2e test/e2e/signup.spec.ts -g "masks amounts as they are typed"`
+
+**C243** · RF-118, RF-809 — Enter in a field moves on like "Próximo" on every step (an incomplete step stops there with its first problem focused and shown); "Próximo" is the form's submit button and no field control is a submit button (added 2026-10-28, user report)
+Proof: `vp run e2e test/e2e/signup.spec.ts -g "moves on with Enter from a field on every step"`
