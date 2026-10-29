@@ -22,10 +22,11 @@ type SignupStepProps = {
 
 /**
  * One signup step: its content, "Voltar" after the first step, "Próximo" before the last, submit on
- * the last (the review).
+ * the last (the review). "Próximo" is the form's submit button, so Enter in a field moves on too
+ * (the layout's form `onSubmit` checks the step and goes forward, or sends on the review).
  */
 export function SignupStep({ index, title, description, children }: SignupStepProps) {
-  const { form, goNext, goBackTo, claimFocus } = useSignup();
+  const { form, goBackTo, claimFocus } = useSignup();
   const headingRef = useRef<HTMLHeadingElement>(null);
   // A field drops its errors when its step unmounts. Once this step's fields are mounted, validate
   // again (as a blur would) so the fields already left show theirs (after "Voltar", or when a
@@ -66,7 +67,7 @@ export function SignupStep({ index, title, description, children }: SignupStepPr
             )}
           </form.Subscribe>
         ) : (
-          <Button type="button" size="lg" onClick={() => void goNext(index)}>
+          <Button type="submit" size="lg">
             Próximo
           </Button>
         )}

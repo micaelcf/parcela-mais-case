@@ -7,8 +7,6 @@ import type { SignupForm } from "./signup-form";
 export type SignupContextValue = {
   form: SignupForm;
   simulationControls: boolean;
-  /** Validates the step's fields; moves on only when they're all valid, else focuses the first invalid. */
-  goNext: (from: number) => Promise<void>;
   /** Back to an earlier step, focusing its first field. */
   goBackTo: (index: number) => void;
   /** Called by a field (or a fieldless step's heading, as `STEP_HEADING_FOCUS`) once mounted: true

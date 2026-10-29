@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-form";
+import { useSelector } from "@tanstack/react-form";
 import {
   createFileRoute,
   Navigate,
@@ -187,7 +187,7 @@ function SignupLayout() {
     onSubmitInvalid: submitInvalid,
     initialValues: draft?.values,
   });
-  const values = useStore(form.store, (state) => state.values);
+  const values = useSelector(form.store, (state) => state.values);
   const cepStatus = useCepLookup(values.cep, applyLookup, draft?.cepLookup ?? null);
   const addressShown = cepStatus === "found" || cepStatus === "unavailable";
   const completed = useMemo(() => completedSteps(values, addressShown), [values, addressShown]);
@@ -266,7 +266,6 @@ function SignupLayout() {
         value={{
           form,
           simulationControls,
-          goNext: (from) => goForward(from, from + 1),
           goBackTo,
           claimFocus,
           serverErrors,

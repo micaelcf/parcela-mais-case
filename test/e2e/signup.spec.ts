@@ -60,6 +60,29 @@ function isSignupPost(request: { method(): string; url(): string }) {
 }
 
 test.describe("signup", () => {
+  test("moves on with Enter from a field on every step", async ({ page, patient }) => {
+    await page.goto("/cadastro/paciente");
+    // An incomplete step stops on Enter, like "Próximo": its first problem focused and shown.
+    const name = page.getByLabel("Nome completo");
+    await name.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/cadastro\/paciente$/);
+    await expect(name).toBeFocused();
+    await expect(name).toHaveAttribute("aria-invalid", "true");
+
+    await fillPatientStep(page, patient);
+    await page.getByLabel("Número").press("Enter");
+    await expect(page).toHaveURL(/\/cadastro\/contato$/);
+
+    await fillContactStep(page, patient);
+    await page.getByLabel("Celular com DDD").press("Enter");
+    await expect(page).toHaveURL(/\/cadastro\/financeiro$/);
+
+    await fillFinancialStep(page, patient);
+    await page.getByLabel("Valor do tratamento").press("Enter");
+    await expect(page).toHaveURL(/\/cadastro\/revisao$/);
+  });
+
   test("collects fourteen fields across three steps, then reviews them", async ({
     page,
     patient,
