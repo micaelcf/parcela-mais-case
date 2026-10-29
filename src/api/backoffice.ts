@@ -18,7 +18,7 @@ import type {
   ThrottleEventItem,
 } from "#/server/modules/backoffice/backoffice.dto";
 
-import { api, type Result, toProblem, toResult } from "./eden";
+import { api, ApiError, type Result, toResult } from "./eden";
 
 const backoffice = api.backoffice;
 
@@ -29,13 +29,12 @@ type EdenResponse<T> =
 /** A list endpoint's query (`api.md` § List contract): paging, sort, `q` and top-level filters. */
 type ListParams = Readonly<Record<string, string | number>>;
 
-/** A read for a loader: the body, a redirect to the login page on 401, a thrown error otherwise. */
+/** A read for a loader: the body, a redirect to the login page on 401, an `ApiError` otherwise. */
 async function read<T>(call: () => Promise<EdenResponse<T>>): Promise<T> {
-  const { data, error } = await call();
-  if (!error) return data;
-  const problem = toProblem(error);
-  if (problem.status === 401) throw redirect({ to: "/backoffice/login" });
-  throw new Error(problem.title);
+  const result = await toResult(call);
+  if (result.ok) return result.value;
+  if (result.problem.status === 401) throw redirect({ to: "/backoffice/login" });
+  throw new ApiError(result.problem);
 }
 
 /** Lender code → the URL segment of `PUT /backoffice/lenders/:lender/switch`. */
@@ -48,11 +47,10 @@ const LENDER_SLUG: Record<LenderCode, "alfa" | "beta" | "gama" | "delta"> = {
 
 /** The signed-in operator, or null without a valid session. */
 export async function getSession(): Promise<Session | null> {
-  const { data, error } = await backoffice.session.get();
-  if (!error) return data;
-  const problem = toProblem(error);
-  if (problem.status === 401) return null;
-  throw new Error(problem.title);
+  const result = await toResult(() => backoffice.session.get());
+  if (result.ok) return result.value;
+  if (result.problem.status === 401) return null;
+  throw new ApiError(result.problem);
 }
 
 export function login(body: LoginRequest): Promise<Result<unknown>> {
@@ -104,12 +102,11 @@ export function searchConsultationsByCpf(
 
 /** The consultation detail (decrypted CPF included), or null when it doesn't exist. */
 export async function getConsultationDetail(id: string): Promise<ConsultationDetail | null> {
-  const { data, error } = await backoffice.consultations({ id }).get();
-  if (!error) return data;
-  const problem = toProblem(error);
-  if (problem.status === 401) throw redirect({ to: "/backoffice/login" });
-  if (problem.status === 404 || problem.status === 422) return null;
-  throw new Error(problem.title);
+  const result = await toResult(() => backoffice.consultations({ id }).get());
+  if (result.ok) return result.value;
+  if (result.problem.status === 401) throw redirect({ to: "/backoffice/login" });
+  if (result.problem.status === 404 || result.problem.status === 422) return null;
+  throw new ApiError(result.problem);
 }
 
 export function listThrottleEvents(query: ListParams): Promise<ListResponse<ThrottleEventItem>> {

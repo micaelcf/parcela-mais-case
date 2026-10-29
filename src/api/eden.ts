@@ -34,10 +34,29 @@ const NETWORK_PROBLEM: Problem = {
   code: "NETWORK",
 };
 
-/** The problem body of an Eden error, or a generic one when the body isn't a problem. */
+/**
+ * The problem body of an Eden error. A body that isn't one (a proxy's 502, the dev server's 500)
+ * gets the generic connection problem with the response's own status.
+ */
 export function toProblem(error: { status: unknown; value: unknown } | null | undefined): Problem {
   if (error && Value.Check(ProblemSchema, error.value)) return error.value;
-  return NETWORK_PROBLEM;
+  return typeof error?.status === "number"
+    ? { ...NETWORK_PROBLEM, status: error.status }
+    : NETWORK_PROBLEM;
+}
+
+/**
+ * A failed read a page can't do without, thrown from a loader to the route's error page; it keeps
+ * the problem, so the page shows its status (0: the server couldn't be reached).
+ */
+export class ApiError extends Error {
+  readonly problem: Problem;
+
+  constructor(problem: Problem) {
+    super(problem.title);
+    this.name = "ApiError";
+    this.problem = problem;
+  }
 }
 
 /** Runs an Eden call, mapping thrown network failures and error responses to a `Result`. */

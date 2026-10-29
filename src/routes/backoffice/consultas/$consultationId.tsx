@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import { getConsultationDetail } from "#/api/backoffice";
 import { ConsultationDetailView } from "#/components/modules/backoffice/ConsultationDetailView";
 import { PageHeader } from "#/components/modules/backoffice/PageHeader";
+import { ErrorPage } from "#/components/modules/error/ErrorPage";
 import { buttonVariants } from "#/components/ui/button";
 
 export const Route = createFileRoute("/backoffice/consultas/$consultationId")({
@@ -16,9 +17,15 @@ export const Route = createFileRoute("/backoffice/consultas/$consultationId")({
   notFoundComponent: ConsultationNotFound,
 });
 
-function BackToList() {
+function BackToList({ primary = false }: { primary?: boolean }) {
   return (
-    <Link to="/backoffice/consultas" className={buttonVariants({ variant: "outline" })}>
+    <Link
+      to="/backoffice/consultas"
+      className={buttonVariants({
+        variant: primary ? "default" : "outline",
+        size: primary ? "lg" : "default",
+      })}
+    >
       <ArrowLeftIcon aria-hidden data-icon="inline-start" />
       Voltar para consultas
     </Link>
@@ -41,10 +48,11 @@ function ConsultationDetailPage() {
 
 function ConsultationNotFound() {
   return (
-    <PageHeader
+    <ErrorPage
+      status={404}
       title="Consulta não encontrada"
       description="Confira o endereço ou volte para a lista."
-      actions={<BackToList />}
+      action={<BackToList primary />}
     />
   );
 }

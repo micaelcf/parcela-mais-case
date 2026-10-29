@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 
+import { ShellContext } from "#/components/shell-context";
 import { ThemeToggle } from "#/components/ThemeToggle";
 import { Button, buttonVariants } from "#/components/ui/button";
 import { Toaster } from "#/components/ui/sonner";
@@ -54,55 +55,57 @@ export function BackofficeShell({
 }) {
   const { mode } = useThemeMode();
   return (
-    <div className="flex min-h-dvh flex-col bg-muted/30">
-      <a
-        href="#conteudo"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:ring-3 focus:ring-ring/50"
-      >
-        Ir para o conteúdo
-      </a>
-      {/* Pinned on wider screens; on a phone the wrapped header would eat too much of it. */}
-      <div className="z-40 md:sticky md:top-0">
-        <header className="border-b bg-background">
-          <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
-            <span className="font-heading text-lg font-semibold tracking-tight">
-              Parcela <span className="text-primary">Mais</span>{" "}
-              <span className="text-sm font-normal text-muted-foreground">Backoffice</span>
-            </span>
-            <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-              {operator ? (
-                <>
-                  <span className="text-muted-foreground">
-                    Operador: <span className="font-medium text-foreground">{operator}</span>
-                  </span>
-                  <Button variant="outline" size="sm" disabled={loggingOut} onClick={onLogout}>
-                    <LogOutIcon aria-hidden data-icon="inline-start" />
-                    Sair
-                  </Button>
-                </>
-              ) : null}
-              <Link
-                to="/cadastro/paciente"
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-              >
-                <ArrowLeftIcon aria-hidden data-icon="inline-start" />
-                Ir para o cadastro
-              </Link>
-              <ThemeToggle />
+    <ShellContext value="backoffice">
+      <div className="flex min-h-dvh flex-col bg-muted/30">
+        <a
+          href="#conteudo"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:ring-3 focus:ring-ring/50"
+        >
+          Ir para o conteúdo
+        </a>
+        {/* Pinned on wider screens; on a phone the wrapped header would eat too much of it. */}
+        <div className="z-40 md:sticky md:top-0">
+          <header className="border-b bg-background">
+            <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
+              <span className="font-heading text-lg font-semibold tracking-tight">
+                Parcela <span className="text-primary">Mais</span>{" "}
+                <span className="text-sm font-normal text-muted-foreground">Backoffice</span>
+              </span>
+              <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                {operator ? (
+                  <>
+                    <span className="text-muted-foreground">
+                      Operador: <span className="font-medium text-foreground">{operator}</span>
+                    </span>
+                    <Button variant="outline" size="sm" disabled={loggingOut} onClick={onLogout}>
+                      <LogOutIcon aria-hidden data-icon="inline-start" />
+                      Sair
+                    </Button>
+                  </>
+                ) : null}
+                <Link
+                  to="/cadastro/paciente"
+                  className={buttonVariants({ variant: "ghost", size: "sm" })}
+                >
+                  <ArrowLeftIcon aria-hidden data-icon="inline-start" />
+                  Ir para o cadastro
+                </Link>
+                <ThemeToggle />
+              </div>
             </div>
-          </div>
-        </header>
-        {operator ? <SectionBar /> : null}
+          </header>
+          {operator ? <SectionBar /> : null}
+        </div>
+        <main
+          id="conteudo"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 outline-none"
+        >
+          {children}
+        </main>
+        <Toaster position="top-center" richColors theme={mode} />
       </div>
-      <main
-        id="conteudo"
-        tabIndex={-1}
-        className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 outline-none"
-      >
-        {children}
-      </main>
-      <Toaster position="top-center" richColors theme={mode} />
-    </div>
+    </ShellContext>
   );
 }
 

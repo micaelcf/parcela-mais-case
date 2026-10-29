@@ -5,22 +5,21 @@ import type {
   SignupRequest,
 } from "#/server/modules/consultation/consultation.dto";
 
-import { api, type Result, toProblem, toResult } from "./eden";
+import { api, ApiError, type Result, toProblem, toResult } from "./eden";
 
 /** Public UI flags (`GET /api/config`). */
 export async function getConfig(): Promise<{ simulationControls: boolean }> {
-  const { data, error } = await api.config.get();
-  if (error) throw new Error(toProblem(error).title);
-  return data;
+  const result = await toResult(() => api.config.get());
+  if (!result.ok) throw new ApiError(result.problem);
+  return result.value;
 }
 
 /** The consultation view, or null when it doesn't exist. */
 export async function getConsultation(id: string): Promise<ConsultationPublicView | null> {
-  const { data, error } = await api.consultations({ id }).get();
-  if (!error) return data;
-  const problem = toProblem(error);
-  if (problem.status === 404 || problem.status === 422) return null;
-  throw new Error(problem.title);
+  const result = await toResult(() => api.consultations({ id }).get());
+  if (result.ok) return result.value;
+  if (result.problem.status === 404 || result.problem.status === 422) return null;
+  throw new ApiError(result.problem);
 }
 
 /** Every snapshot of one live connection; ends when the server closes the stream. */
@@ -29,7 +28,7 @@ export async function* consultationSnapshots(
   signal: AbortSignal,
 ): AsyncGenerator<ConsultationPublicView> {
   const { data, error } = await api.consultations({ id }).events.get({ fetch: { signal } });
-  if (error) throw new Error(toProblem(error).title);
+  if (error) throw new ApiError(toProblem(error));
   for await (const message of data) {
     if (message.event === "snapshot" && message.data) yield message.data;
   }

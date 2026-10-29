@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { UserPlusIcon } from "lucide-react";
+import { UserPlusIcon, WifiOffIcon } from "lucide-react";
 
 import { discardSignupDraft } from "#/components/modules/signup/signup-draft";
 import { buttonVariants } from "#/components/ui/button";
@@ -24,6 +24,8 @@ const JOURNEY_HEADLINE: Record<JourneyStatus, string> = {
 
 type ConsultationJourneyProps = {
   view: ConsultationPublicView;
+  /** The live stream is unusable and the view is refreshed by polling (`consultation-feed.ts`). */
+  polling: boolean;
   choosingOfferId: string | null;
   /** The user chose in this visit: the confirmation takes focus. */
   justChose: boolean;
@@ -35,6 +37,7 @@ type ConsultationJourneyProps = {
 
 export function ConsultationJourney({
   view,
+  polling,
   choosingOfferId,
   justChose,
   requoting,
@@ -62,6 +65,12 @@ export function ConsultationJourney({
               ? `${pending} de ${view.attempts.length} financeiras ainda respondendo.`
               : "Todas as financeiras responderam ou o prazo terminou."}
           </p>
+          {polling && view.quoteStatus !== "SETTLED" ? (
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <WifiOffIcon aria-hidden className="size-4" />
+              Conexão ao vivo instável: atualizando a cada 2 segundos.
+            </p>
+          ) : null}
         </div>
         {/* Back to the start: the signup layout mounts afresh (empty form, new idempotency key). */}
         <Link

@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 
-import { consultationSnapshots } from "#/api/consultations";
+import { consultationSnapshots, getConsultation } from "#/api/consultations";
 import type { ConsultationPublicView } from "#/server/modules/consultation/consultation.dto";
 
-import { createReconnectBackoff } from "./reconnect-backoff";
+import { type FeedTransport, startConsultationFeed } from "./consultation-feed";
 
 /**
- * Keeps a consultation view live over SSE until it settles. `initial` is the loader's view; when
- * the loader re-runs (after a mutation) its newer view replaces the current one. Every connection
- * opens with a full snapshot that replaces state; a drop before `SETTLED` reconnects with backoff.
+ * Keeps a consultation view live until it settles (`consultation-feed.ts`): SSE first, polling
+ * the read endpoint while the stream is unusable. `initial` is the loader's view; when the loader
+ * re-runs (after a mutation) its newer view replaces the current one.
  */
-export function useConsultationStream(initial: ConsultationPublicView): ConsultationPublicView {
+export function useConsultationStream(initial: ConsultationPublicView): {
+  view: ConsultationPublicView;
+  transport: FeedTransport;
+} {
   const [view, setView] = useState(initial);
+  const [transport, setTransport] = useState<FeedTransport>("stream");
   const [adopted, setAdopted] = useState(initial);
   if (initial !== adopted) {
     setAdopted(initial);
@@ -23,33 +27,16 @@ export function useConsultationStream(initial: ConsultationPublicView): Consulta
 
   useEffect(() => {
     if (settled) return;
-    const backoff = createReconnectBackoff();
-    let controller: AbortController | undefined;
-    let retry: number | undefined;
-    let stopped = false;
-
-    async function connect() {
-      controller?.abort();
-      controller = new AbortController();
-      try {
-        for await (const snapshot of consultationSnapshots(id, controller.signal)) {
-          backoff.reset();
-          setView(snapshot);
-          if (snapshot.quoteStatus === "SETTLED") return;
-        }
-      } catch {
-        // A dropped connection or a failed request: fall through to the reconnect.
-      }
-      if (!stopped) retry = window.setTimeout(connect, backoff.next());
-    }
-
-    void connect();
-    return () => {
-      stopped = true;
-      window.clearTimeout(retry);
-      controller?.abort();
-    };
+    // The feed only needs the id and the deadline, which don't change for this consultation.
+    return startConsultationFeed(
+      view,
+      {
+        stream: (signal) => consultationSnapshots(id, signal),
+        read: () => getConsultation(id),
+      },
+      { view: setView, transport: setTransport },
+    );
   }, [id, settled]);
 
-  return view;
+  return { view, transport };
 }

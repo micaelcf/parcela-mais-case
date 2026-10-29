@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { chooseOffer, getConsultation, requoteConsultation } from "#/api/consultations";
 import { AppShell } from "#/components/AppShell";
 import { ConsultationJourney } from "#/components/modules/consultation/ConsultationJourney";
+import { ErrorPage } from "#/components/modules/error/ErrorPage";
 import { discardSignupDraft } from "#/components/modules/signup/signup-draft";
 import { buttonVariants } from "#/components/ui/button";
 import { useConsultationStream } from "#/hooks/use-consultation-stream";
@@ -34,7 +35,7 @@ function ConsultationPage() {
 }
 
 function LiveConsultation({ initial }: { initial: ConsultationPublicView }) {
-  const view = useConsultationStream(initial);
+  const { view, transport } = useConsultationStream(initial);
   const router = useRouter();
   const navigate = useNavigate();
   const [choosingOfferId, setChoosingOfferId] = useState<string | null>(null);
@@ -74,6 +75,7 @@ function LiveConsultation({ initial }: { initial: ConsultationPublicView }) {
   return (
     <ConsultationJourney
       view={view}
+      polling={transport === "polling"}
       choosingOfferId={choosingOfferId}
       justChose={justChose}
       requoting={requoting}
@@ -85,10 +87,11 @@ function LiveConsultation({ initial }: { initial: ConsultationPublicView }) {
 
 function ConsultationNotFound() {
   return (
-    <AppShell>
-      <div className="mx-auto flex max-w-xl flex-col items-start gap-4">
-        <h1 className="font-heading text-2xl font-semibold">Consulta não encontrada</h1>
-        <p className="text-muted-foreground">Confira o endereço ou comece um novo cadastro.</p>
+    <ErrorPage
+      status={404}
+      title="Consulta não encontrada"
+      description="Confira o endereço ou comece um novo cadastro."
+      action={
         <Link
           to="/cadastro/paciente"
           onClick={discardSignupDraft}
@@ -96,7 +99,7 @@ function ConsultationNotFound() {
         >
           Novo cadastro
         </Link>
-      </div>
-    </AppShell>
+      }
+    />
   );
 }

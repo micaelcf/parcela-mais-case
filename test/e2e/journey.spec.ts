@@ -40,6 +40,23 @@ test.describe("consultation page", () => {
     });
   });
 
+  test("keeps the cards updating by polling when the live stream fails", async ({
+    page,
+    patient,
+  }) => {
+    // Every SSE connection is refused, as by a proxy that doesn't pass event streams.
+    await page.route("**/api/consultations/*/events", (route) =>
+      route.fulfill({ status: 503, contentType: "text/plain", body: "Service Unavailable" }),
+    );
+    await signUp(page, patient, "ALL_APPROVE");
+
+    const notice = page.getByText("Conexão ao vivo instável: atualizando a cada 2 segundos.");
+    await expect(notice).toBeVisible();
+    for (const { name } of LENDERS) await expect(lenderCard(page, name)).toContainText("aprovada");
+    // Settled: nothing left to refresh, so the notice goes.
+    await expect(notice).toHaveCount(0);
+  });
+
   test("updates cards live", async ({ page, patient }) => {
     await signUp(page, patient, "NORMAL");
     const url = page.url();
