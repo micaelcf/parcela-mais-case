@@ -46,6 +46,19 @@ const RootPackage = Compile(
   }),
 );
 const PgBossPackage = Compile(Type.Object({ pgboss: Type.Object({ schema: Type.Integer() }) }));
+const DeclaredPackages = Compile(
+  Type.Object({
+    dependencies: Type.Optional(Type.Record(Type.String(), Type.String())),
+    devDependencies: Type.Optional(Type.Record(Type.String(), Type.String())),
+  }),
+);
+
+/** Declared packages with no folder in node_modules (read-only: nothing is installed here). */
+function missingDependencies(rootPackage: unknown): string[] {
+  if (!DeclaredPackages.Check(rootPackage)) return [];
+  const declared = Object.keys({ ...rootPackage.dependencies, ...rootPackage.devDependencies });
+  return declared.filter((name) => !existsSync(join("node_modules", name, "package.json")));
+}
 
 // Runs in a child `bun` per env file: importing server-env.ts validates `process.env` at module
 // evaluation, so each file needs its own process (a static import here would validate ours).
@@ -257,6 +270,8 @@ const facts: DoctorFacts = {
     ? rootPackage.devEngines.packageManager.version
     : "unknown (package.json devEngines)",
   envFiles: env.files,
+  missingDependencies: missingDependencies(rootPackage),
+  envLocalExists: existsSync(".env.local"),
   database: databaseUrl ? await databaseFacts(databaseUrl) : null,
   ports: await portFacts([
     { port: 3000, setting: null, host: binding.ok ? binding.listen : undefined },

@@ -15,6 +15,8 @@ const ready: DoctorFacts = {
   bunVersion: "1.4.4",
   expectedBunVersion: "1.4.4",
   envFiles: [localEnv],
+  missingDependencies: [],
+  envLocalExists: true,
   database: {
     reachable: true,
     url: "postgres://parcela:parcela@localhost:5432/parcela",
@@ -79,6 +81,24 @@ describe("doctor readiness checks (RF-704)", () => {
       expect(check.hint, check.label).toMatch(/\S/);
       expect(formatCheck(check)).toMatch(/^✗ .+\n\s+fix: \S/);
     }
+  });
+
+  it("fails on missing dependencies and only warns about a missing .env.local", () => {
+    const checks = doctorChecks({
+      ...ready,
+      missingDependencies: ["tslog", "pg", "dotenv", "typebox"],
+      envLocalExists: false,
+    });
+    expect(checks.find((check) => check.label === "dependencies")).toEqual(
+      expect.objectContaining({
+        ok: false,
+        detail: "4 not installed (tslog, pg, dotenv, …)",
+        hint: expect.stringMatching(/bun run up/),
+      }),
+    );
+    // `up` creates .env.local, and `--prod` reads .env: a warning, not a failure.
+    const envLocal = checks.find((check) => check.label === ".env.local");
+    expect(envLocal && formatCheck(envLocal)).toMatch(/^! .env.local: missing\n\s+fix: bun run up/);
   });
 
   it("checks caddy's CA trust, its ports, parcela.localhost resolution and caddy-dev's route to vp dev", () => {

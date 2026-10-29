@@ -48,6 +48,10 @@ export type DoctorFacts = {
   /** `devEngines.packageManager.version` from package.json. */
   readonly expectedBunVersion: string;
   readonly envFiles: readonly EnvFileFacts[];
+  /** Packages package.json declares that have no folder in node_modules. */
+  readonly missingDependencies: readonly string[];
+  /** Whether `.env.local` exists (`vp run up` creates it from `.env.example` when it doesn't). */
+  readonly envLocalExists: boolean;
   /** null when no DATABASE_URL is configured anywhere. */
   readonly database: DatabaseFacts | null;
   /** `setting`: the .env key that moves the port; null for the dev server's fixed 3000. */
@@ -188,7 +192,7 @@ function checkEnvFiles(files: readonly EnvFileFacts[]): CheckResult[] {
         ok: false,
         label: "env file",
         detail: "neither .env.local nor .env exists",
-        hint: "cp .env.example .env.local (dev) and/or .env (up --prod, deploy)",
+        hint: "bun run up creates .env.local (dev); cp .env.example .env for up --prod / deploy",
       },
     ];
   }
@@ -234,7 +238,7 @@ function checkDatabase(engine: Engine, database: DatabaseFacts | null): CheckRes
         ok: false,
         label: "database",
         detail: "no DATABASE_URL in .env.local, .env or the environment",
-        hint: "cp .env.example .env.local",
+        hint: "bun run up creates .env.local with it",
       },
     ];
   }
@@ -399,11 +403,37 @@ function checkDevBinding(binding: DevBinding): CheckResult {
     : { ok: true, label, detail };
 }
 
+function checkDependencies(missing: readonly string[]): CheckResult {
+  if (missing.length === 0) return { ok: true, label: "dependencies", detail: "installed" };
+  const shown = missing.slice(0, 3).join(", ");
+  return {
+    ok: false,
+    label: "dependencies",
+    detail: `${missing.length} not installed (${shown}${missing.length > 3 ? ", …" : ""})`,
+    hint: "bun run up installs them first (or bun install)",
+  };
+}
+
+/** A warning, not a failure: `vp run up` creates it, and `--prod` reads `.env` instead. */
+function checkEnvLocal(exists: boolean): CheckResult {
+  return exists
+    ? { ok: true, label: ".env.local", detail: "present" }
+    : {
+        ok: true,
+        warning: true,
+        label: ".env.local",
+        detail: "missing",
+        hint: "bun run up creates it from .env.example, with fresh PII keys and session secret",
+      };
+}
+
 export function doctorChecks(facts: DoctorFacts): CheckResult[] {
   return [
     checkEngine(facts),
     ...checkComposeProvider(facts.engine, facts.composeVersion),
     checkBunVersion(facts.bunVersion, facts.expectedBunVersion),
+    checkDependencies(facts.missingDependencies),
+    checkEnvLocal(facts.envLocalExists),
     ...checkEnvFiles(facts.envFiles),
     ...facts.envFiles.flatMap(({ file, databaseUrl }) =>
       databaseUrl === undefined ? [] : [checkDatabaseUrlHost(file, databaseUrl)],
