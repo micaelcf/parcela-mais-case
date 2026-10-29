@@ -423,7 +423,7 @@ function checkEnvLocal(exists: boolean): CheckResult {
         warning: true,
         label: ".env.local",
         detail: "missing",
-        hint: "bun run up creates it from .env.example, with fresh PII keys and session secret",
+        hint: "bun run up creates it as a copy of .env.example (or cp .env.example .env.local)",
       };
 }
 

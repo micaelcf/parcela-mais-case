@@ -85,5 +85,5 @@ Logging (added 2026-10-28, user request, RFC D35):
 **C237** · RF-713 — each dev process gets its own prefix colour, and coloured or not every prefix ends in the same column
 Proof: `vp test scripts/ops/lib/up-plan.test.ts -t "give each process its own colour"`
 
-**C244** · RF-714 — the `.env.local` that `up` creates is `.env.example` with fresh PII keys and session secret, every other value and comment kept; doctor fails on missing dependencies and only warns about a missing `.env.local` (added 2026-10-28, user request)
-Proof: `vp test scripts/ops/lib/env-file.test.ts scripts/ops/lib/doctor-checks.test.ts`; live: in a folder with only `.env.example`, `bun scripts/ops/ensure-env.ts` twice → created once, then byte-identical; the created file validates against `server-env.ts`
+**C244** · RF-714 — `up` copies `.env.example` to `.env.local` only when it's missing and never rewrites it; doctor fails on missing dependencies and only warns about a missing `.env.local` (added 2026-10-28, user request)
+Proof: `vp test scripts/ops/lib/doctor-checks.test.ts`; live on a fresh `git clone`: `bun install`, `bun scripts/ops/ensure-env.ts` twice → created once, then byte-identical; doctor shows the new checks and the copied `.env.local` validates as a server env

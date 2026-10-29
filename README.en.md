@@ -18,7 +18,7 @@ You only need **Bun 1.4** and **Podman** (or Docker) with compose. One command:
 bun run up
 ```
 
-It installs the dependencies (free when they already are), creates `.env.local` from `.env.example` when there's none (with fresh PII keys and session secret; an existing one is never rewritten), and starts Postgres + Caddy + migrations + app + worker.
+It installs the dependencies (free when they already are), creates `.env.local` as a copy of `.env.example` when there's none (an existing one is never rewritten), and starts Postgres + Caddy + migrations + app + worker.
 
 Open **https://parcela.localhost:8443**. On the first run, `up` installs Caddy's local CA for your user (Windows/macOS ask once). `up` prints the backoffice URL and the dev credentials (`operador` / `parcela123`).
 

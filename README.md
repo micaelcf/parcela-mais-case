@@ -18,7 +18,7 @@ Precisa só de **Bun 1.4** e **Podman** (ou Docker) com compose. Um comando:
 bun run up
 ```
 
-Ele instala as dependências (sem custo quando já estão), cria o `.env.local` a partir do `.env.example` se ele não existir (com chaves de PII e segredo de sessão novos; nunca reescreve um existente) e sobe Postgres + Caddy + migrações + app + worker.
+Ele instala as dependências (sem custo quando já estão), cria o `.env.local` como cópia do `.env.example` se ele não existir (nunca reescreve um existente) e sobe Postgres + Caddy + migrações + app + worker.
 
 Abra **https://parcela.localhost:8443**. Na primeira vez, o `up` instala a CA local do Caddy no seu usuário (o Windows/macOS pede uma confirmação). O `up` imprime a URL do backoffice e as credenciais de dev (`operador` / `parcela123`).
 
