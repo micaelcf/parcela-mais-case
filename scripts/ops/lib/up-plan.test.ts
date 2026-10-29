@@ -103,7 +103,7 @@ describe("backoffice login lines", () => {
     expect(await backofficeLines({ origin, env: example, showDevPassword: true })).toEqual([
       "  backoffice: https://parcela.localhost:8443/backoffice",
       "  usuário: operador",
-      "  senha: senha-de-teste",
+      "  senha: parcela123",
     ]);
     const own = { ...example, BACKOFFICE_PASSWORD_HASH: "scrypt:16384:8:1:c2FsdA==:aGFzaA==" };
     expect((await backofficeLines({ origin, env: own, showDevPassword: true })).at(-1)).toBe(

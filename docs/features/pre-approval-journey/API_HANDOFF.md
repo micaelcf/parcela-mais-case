@@ -848,7 +848,7 @@ From the same IP, at the same moment, a requote with body `{}` got `422 VALIDATI
 POST /api/backoffice/session
 Content-Type: application/json
 
-{"username":"operador","password":"senha-de-teste"}
+{"username":"operador","password":"parcela123"}
 ```
 
 ```http

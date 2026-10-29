@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 /** The stack's operator credentials (the dev stack's defaults unless overridden). */
 export const OPERATOR = {
   username: process.env.E2E_BACKOFFICE_USERNAME ?? "operador",
-  password: process.env.E2E_BACKOFFICE_PASSWORD ?? "senha-de-teste",
+  password: process.env.E2E_BACKOFFICE_PASSWORD ?? "parcela123",
 };
 
 export async function fillLogin(page: Page, username: string, password: string) {

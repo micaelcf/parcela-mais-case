@@ -20,7 +20,7 @@ cp .env.example .env.local
 bunx vp run up        # Postgres + Caddy + migrations + app + worker
 ```
 
-Open **https://parcela.localhost:8443**. On the first run, `up` installs Caddy's local CA for your user (Windows/macOS ask once). `up` prints the backoffice URL and the dev credentials (`operador` / `senha-de-teste`).
+Open **https://parcela.localhost:8443**. On the first run, `up` installs Caddy's local CA for your user (Windows/macOS ask once). `up` prints the backoffice URL and the dev credentials (`operador` / `parcela123`).
 
 | Command                            | What it does                                                  |
 | ---------------------------------- | ------------------------------------------------------------- |

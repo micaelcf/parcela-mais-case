@@ -121,7 +121,7 @@ export function devOrigin(env: Env): string {
 }
 
 /** The dev operator password: what `.env.example`'s hash encodes and the tests log in with. */
-export const DEV_BACKOFFICE_PASSWORD = "senha-de-teste";
+export const DEV_BACKOFFICE_PASSWORD = "parcela123";
 
 /**
  * Where to log in. The password is printed only in dev, and only when the configured hash is the

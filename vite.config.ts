@@ -12,7 +12,7 @@ const GENERATED = ["src/routeTree.gen.ts"];
 /** CLI-owned shadcn components (bindings.md): not hand-edited, so not linted; still type-checked. */
 const VENDORED = ["src/components/ui/**"];
 
-/** Test-only values; never valid outside a test run. Password: "senha-de-teste". */
+/** Test-only values; never valid outside a test run. Password: "parcela123". */
 const testEnv = {
   NODE_ENV: "test",
   DATABASE_URL: "postgres://parcela:parcela@localhost:5432/parcela",
@@ -20,7 +20,7 @@ const testEnv = {
   PII_ENCRYPTION_KEY: "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI=",
   BACKOFFICE_USERNAME: "operador",
   BACKOFFICE_PASSWORD_HASH:
-    "scrypt:16384:8:1:cGFyY2VsYS10ZXN0LXNhbHQ=:kYUTfGWwMeDKXjxpWIvY/nTFRQqBWxfYHHysA+pxD5zKoT+kHW2oNgfQcx20aBvVJF5nxPQve7iot5I+NUudsQ==",
+    "scrypt:16384:8:1:bCVHjVF/JYmpACs5iIEN7Q==:fkN4/fbBeaopAdYzf/+TOrl0R7V/Xesu1B/7T0OXRH6ivf450EhCW9AATV+Eph72UZ8c5uJWyseoY/95kiqxmQ==",
   BACKOFFICE_SESSION_SECRET: "test-session-secret-at-least-32-chars!!",
   SIMULATION_CONTROLS: "true",
   SIMULATOR_TIME_SCALE: "0.2",

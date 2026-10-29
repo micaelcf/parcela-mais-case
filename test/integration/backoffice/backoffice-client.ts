@@ -6,12 +6,12 @@ import { appFetch } from "../setup/app-fetch";
 
 /**
  * Drives the backoffice API through the real app (`app.handle`) with the project's test
- * credentials (`vite.config.ts` testEnv: operador / senha-de-teste).
+ * credentials (`vite.config.ts` testEnv: operador / parcela123).
  */
 
 export const BACKOFFICE = "http://localhost/api/backoffice";
 export const USERNAME = "operador";
-export const PASSWORD = "senha-de-teste";
+export const PASSWORD = "parcela123";
 
 /** `name=value` of the `bo_session` Set-Cookie (throws when absent). */
 export function sessionCookieOf(response: Response): string {
