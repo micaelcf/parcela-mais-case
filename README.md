@@ -148,7 +148,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>jornada · cenários · teclado · backoffice"]
 ```
 
-- **256 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **74** E2E no navegador.
+- **256 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **75** E2E no navegador.
 - Cobrem o que pode quebrar: dígitos do CPF, centavos da Price, financeira que não responde, erro 500, finalizador correndo contra worker atrasado, dupla escolha simultânea, CPF fora das respostas públicas e da URL.
 - **Bônus do case:** retomar após recarregar ✅ · acessibilidade de teclado e leitor de tela ✅ · logs e métricas por financeira (backoffice) ✅ · deploy público ⏭️
 
@@ -169,18 +169,18 @@ Construí o projeto em par com um agente de IA ([oh-my-pi](https://github.com/ca
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rodadas de perguntas"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contratos + 240 checks"]
+    D --> C["🔎 Discovery<br/>contratos + 241 checks"]
     C --> S["🧩 Implementação<br/>em fatias, com subagentes"]
     S --> A["🛡️ 3 auditorias adversariais<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>checado 3×"]
 ```
 
 ```mermaid
-pie title Quem decidiu (83 decisões)
-    "Eu" : 43
-    "Eu pedi, o agente desenhou" : 6
+pie title Quem decidiu (91 decisões)
+    "Eu" : 47
+    "Eu pedi, o agente desenhou" : 9
     "O agente recomendou, eu aceitei" : 18
-    "O agente (implementação e auditoria)" : 16
+    "O agente (implementação e auditoria)" : 17
 ```
 
 - **Eu decidi:** stack (TanStack Start, Elysia, Bun, Vite+, TypeBox, pg-boss no lugar de Redis), Podman/Docker com um comando, comandos de ops sem conexão remota, sem SSR, regras centralizadas no domínio, circuit breaker + liga/desliga, testes em Postgres real, paginação _offset_ e a UX do cadastro (validação no _blur_, revisão, botões, tema); e os bugs que achei testando à mão.

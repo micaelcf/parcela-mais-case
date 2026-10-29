@@ -6,12 +6,12 @@ Este projeto foi construído em par com um agente de IA ([oh-my-pi](https://gith
 
 | Quem / Who          | Significa / Means                                                                                              | Linhas / Rows |
 | ------------------- | -------------------------------------------------------------------------------------------------------------- | ------------- |
-| **Micael**          | Eu escolhi: diretiva minha ou opção contra a recomendação do agente (ou com restrição minha) · _I chose it_    | 43            |
-| **Micael → agente** | Eu pedi o resultado; o agente desenhou o como e eu aprovei · _I asked for the outcome, the agent designed how_ | 6             |
+| **Micael**          | Eu escolhi: diretiva minha ou opção contra a recomendação do agente (ou com restrição minha) · _I chose it_    | 47            |
+| **Micael → agente** | Eu pedi o resultado; o agente desenhou o como e eu aprovei · _I asked for the outcome, the agent designed how_ | 9             |
 | **Agente → aceito** | O agente recomendou; eu aceitei a opção recomendada sem mudar · _The agent recommended, I accepted as is_      | 18            |
-| **Agente**          | Decisão do agente na implementação, auditoria ou revisão (bug, segurança) · _The agent's own call_             | 16            |
+| **Agente**          | Decisão do agente na implementação, auditoria ou revisão (bug, segurança) · _The agent's own call_             | 17            |
 
-**Evidência / Evidence:** `G` = [grill-decisions](features/pre-approval-journey/grill-decisions-2026-10-27-pre-approval-journey.md), `R` = [RFC](features/pre-approval-journey/RFC-pre-approval-journey.md), `P` = [PRD](features/pre-approval-journey/PRD-pre-approval-journey.md), `L` = [log](../.ef/pre-approval-journey/log.md) (número = linha), `S` = a sessão do oh-my-pi `01a17e94-4031` (`ask#n` = n-ésima pergunta estruturada do agente; `P#n` = n-ésimo prompt meu; "rec X → Y" = o agente recomendou X e eu escolhi Y).
+**Evidência / Evidence:** `G` = [grill-decisions](features/pre-approval-journey/grill-decisions-2026-10-27-pre-approval-journey.md), `R` = [RFC](features/pre-approval-journey/RFC-pre-approval-journey.md), `P` = [PRD](features/pre-approval-journey/PRD-pre-approval-journey.md), `L` = [log](../.ef/pre-approval-journey/log.md) (número = linha), `S` = a transcrição da sessão do oh-my-pi `01a17e94-4031`, fora do repositório (`ask#n` = n-ésima pergunta estruturada do agente; `P#n` = n-ésimo prompt meu; "rec X → Y" = o agente recomendou X e eu escolhi Y).
 
 ### Stack & tooling
 
@@ -126,10 +126,23 @@ Este projeto foi construído em par com um agente de IA ([oh-my-pi](https://gith
 | 82  | 3 rodadas de auditoria adversarial + 3 checagens do API handoff | Three adversarial audits plus three handoff fact-checks | Agente | L:196-249 (FAIL → FAIL → PASS); L:251-262; L:280                                                                                                       |
 | 83  | Bugs encontrados por Micael em testes manuais                   | Bugs Micael found while testing by hand                 | Micael | S P#21 (phone), P#25 (calendar dropdown flicker, L:288), P#35 (reload on step 2, forward navigation, L:300)                                            |
 
+### Rodada final: documentação e polimento · Final round
+
+| #   | Decisão (pt-BR)                                                    | Decision (English)                                            | Quem            | Evidência                                                                                      |
+| --- | ------------------------------------------------------------------ | ------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------- |
+| 84  | Próximos passos: deploy público, breaker da Delta, observabilidade | Next steps: public deploy, Delta breaker, observability       | Micael          | S ask#41 (escolhidos entre 8 opções do agente); README § próximos passos                       |
+| 85  | Próximos passos: Better Auth e financeiras reais com webhooks      | Next steps: Better Auth, real lenders with webhooks           | Micael          | S ask#41 (resposta própria, fora das opções)                                                   |
+| 86  | README em pt-BR com versão em inglês, diagramas e GIFs animados    | pt-BR README with an English twin, diagrams and animated GIFs | Micael          | S (pedido da documentação final); `README.md`, `README.en.md`                                  |
+| 87  | Resumo por tema no README + esta tabela em arquivo separado        | Summary by theme in the README + this table in its own file   | Micael          | S ask#41 (segunda pergunta)                                                                    |
+| 88  | Barra de seções do backoffice com ícones e indicador animado       | Backoffice section bar with icons and an animated indicator   | Micael → agente | S (pedido de ajustes de UI, com captura de tela); P:198 RF-619                                 |
+| 89  | Paginar sem rolar ao topo; estados de carregando, vazio e erro     | Page in place; loading, empty and error states                | Micael → agente | S (bug que reportei); o agente achou a causa e fez as tabelas buscarem as linhas; P:199 RF-620 |
+| 90  | Tema claro mais suave, com hover visível                           | Softer light theme with visible hovers                        | Micael → agente | S (pedido de ajustes de UI); `src/theme.css`                                                   |
+| 91  | GIFs gerados com Playwright + ffmpeg a partir de HTML versionado   | GIFs rendered with Playwright + ffmpeg from versioned HTML    | Agente          | `docs/assets/src/render.ts`                                                                    |
+
 ## Não atribuído · Not attributed
 
 - **Perguntas em aberto** (RFC O1–O3, O5–O10): ainda são minhas para decidir; os limites de taxa atuais (5 por paciente/24 h, 30 por IP/h) são valores provisórios do agente.
 - **Ideias da jornada de referência** (`jornada-credito-parcela-mais.html`: LISTEN/NOTIFY, SKIP LOCKED, sem PII no `localStorage`, HMAC do CPF): crédito da referência, não meu nem do agente.
-- **Duas abas = duas consultas** (linha 32): recomendação do agente sem resposta minha; a deduplicação ficou como próximo passo possível.
+- **Duas abas = duas consultas** (linha 32): recomendação do agente sem resposta minha; a deduplicação foi oferecida como próximo passo e não foi escolhida.
 - **Layout detalhado** (separação do worker, conteúdo de `server/lib`): propostas do agente que aprovei com "sim"; a linha 39 credita o layout geral a mim.
-- **Git:** todos os commits estão no meu nome, sem co-autoria de IA; o agente executou os commits durante a sessão. A autoria do git não separa humano de agente: esta tabela separa.
+- **Git:** os commits estão no meu nome; o agente os executou durante a sessão, sob minha revisão. Como a autoria do git não distingue humano de agente, esta tabela é o registro de quem decidiu.

@@ -55,3 +55,6 @@ Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "pages in place, keeping the r
 
 **C240** · RF-620 — a filter matching nothing shows the empty state, and "Limpar filtros" clears the URL, the search box and the filters
 Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "shows an empty state that clears the filters"`
+
+**C241** · RF-620 — a failed first load shows an error row whose "Tentar de novo" loads the rows; a failed later page keeps the rows on screen under a "Não foi possível atualizar a lista" alert
+Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "recovers from a failed list load"`

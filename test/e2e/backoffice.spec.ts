@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { Page, Request } from "@playwright/test";
+import type { Page, Request, Route } from "@playwright/test";
 
 import { fillLogin, logIn, OPERATOR } from "./support/backoffice";
 import { expect, test } from "./support/fixtures";
@@ -603,5 +603,36 @@ test.describe("backoffice", () => {
     await expect(page.getByRole("searchbox", { name: "Buscar", exact: true })).toHaveValue("");
     await expect(page.getByRole("combobox", { name: "Situação" })).toHaveText(/Todos/);
     await expect(empty).toBeHidden();
+  });
+
+  test("recovers from a failed list load, keeping the last rows when a refresh fails", async ({
+    page,
+    request,
+  }) => {
+    // At least two consultations, so one-row pages have a next page.
+    await createConsultation(request, newPatient(), "ALL_APPROVE");
+    await createConsultation(request, newPatient(), "ALL_APPROVE");
+    await logIn(page);
+    const list = /\/api\/backoffice\/consultations(\?|$)/;
+    const fail = (route: Route) =>
+      route.fulfill({ status: 500, json: { title: "Erro interno", status: 500 } });
+
+    // First load fails: an error row with a retry, which then loads the rows.
+    await page.route(list, fail);
+    await page.goto("/backoffice/consultas?pageSize=1");
+    await expect(explorerTable(page)).toContainText("Não foi possível carregar a lista");
+    await page.unroute(list, fail);
+    await explorerTable(page).getByRole("button", { name: "Tentar de novo" }).click();
+    const firstRow = explorerTable(page).getByRole("link").first();
+    await expect(firstRow).toBeVisible();
+    const shown = await firstRow.textContent();
+
+    // A later page fails: the alert says so and the rows already loaded stay on screen.
+    await page.route(list, fail);
+    await explorerPaging(page).getByRole("button", { name: "Próxima página", exact: true }).click();
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Não foi possível atualizar a lista" }),
+    ).toBeVisible();
+    await expect(explorerTable(page).getByRole("link").first()).toHaveText(shown ?? "");
   });
 });

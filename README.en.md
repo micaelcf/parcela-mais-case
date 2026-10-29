@@ -148,7 +148,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>journey · scenarios · keyboard · backoffice"]
 ```
 
-- **256** unit and integration tests (Vitest, real Postgres, no factories) + **74** browser E2E tests.
+- **256** unit and integration tests (Vitest, real Postgres, no factories) + **75** browser E2E tests.
 - They cover what can break: CPF check digits, Price cents, a lender that never answers, HTTP 500, the finalizer racing a late worker, two simultaneous choices, the CPF kept out of public responses and URLs.
 - **Case bonuses:** resume after reload ✅ · keyboard and screen-reader accessibility ✅ · per-lender logs and metrics (backoffice) ✅ · public deploy ⏭️
 
@@ -169,18 +169,18 @@ I built this together with an AI agent ([oh-my-pi](https://github.com/can1357/oh
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rounds of questions"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contracts + 240 checks"]
+    D --> C["🔎 Discovery<br/>contracts + 241 checks"]
     C --> S["🧩 Implementation<br/>in slices, with subagents"]
     S --> A["🛡️ 3 adversarial audits<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>fact-checked 3×"]
 ```
 
 ```mermaid
-pie title Who decided (83 decisions)
-    "Me" : 43
-    "I asked, the agent designed" : 6
+pie title Who decided (91 decisions)
+    "Me" : 47
+    "I asked, the agent designed" : 9
     "The agent recommended, I accepted" : 18
-    "The agent (implementation and audits)" : 16
+    "The agent (implementation and audits)" : 17
 ```
 
 - **I decided:** the stack (TanStack Start, Elysia, Bun, Vite+, TypeBox, pg-boss instead of Redis), Podman/Docker with one command, ops commands with no remote connections, no SSR, business rules centralized in the domain, circuit breaker + on/off switch, tests on real Postgres, _offset_ pagination and the signup UX (blur validation, review step, buttons, theme); plus the bugs I found testing by hand.
