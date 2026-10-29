@@ -44,3 +44,14 @@ Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "shows the decrypted CPF and t
 
 **C217** · RF-618 — the public header's "Área da clínica" leads to the backoffice login without a session; after login, the backoffice header's "Ir para o cadastro" leads back to the signup (added 2026-10-28, user request)
 Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "is reachable from the public header"`
+
+Backoffice navigation and tables (added 2026-10-28, user request and bug report):
+
+**C238** · RF-619 — the section bar marks the current section (`aria-current="page"`, nested consultation detail included), navigates on click, and is absent on the login page
+Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "marks the current section in the section bar"`
+
+**C239** · RF-620 — going to the next page keeps `scrollY`, keeps the heading and table header mounted, shows the busy indicator over the previous rows while the response is held, and updates the URL
+Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "pages in place, keeping the rows on screen while the next page loads"`
+
+**C240** · RF-620 — a filter matching nothing shows the empty state, and "Limpar filtros" clears the URL, the search box and the filters
+Proof: `vp run e2e test/e2e/backoffice.spec.ts -g "shows an empty state that clears the filters"`

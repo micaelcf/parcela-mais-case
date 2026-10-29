@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>A jornada</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      .stagechip {
+        position: absolute;
+        top: 58px;
+        width: 142px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+      }
+      .stagechip i {
+        font-style: normal;
+        display: inline-grid;
+        place-items: center;
+        width: 19px;
+        height: 19px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #475569;
+        font-size: 11px;
+      }
+      .stagechip.on {
+        border-color: #a5b4fc;
+        background: #eef2ff;
+        color: #3730a3;
+      }
+      .stagechip.on i {
+        background: #4f46e5;
+        color: #fff;
+      }
+      .arrow {
+        position: absolute;
+        top: 64px;
+        color: #94a3b8;
+        font-size: 15px;
+      }
+      #win {
+        position: absolute;
+        left: 24px;
+        top: 100px;
+        width: 650px;
+        height: 416px;
+        background: #fff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      #chrome {
+        height: 34px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 12px;
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      #chrome .d {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      #url {
+        margin-left: 12px;
+        flex: 1;
+        height: 22px;
+        border-radius: 6px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        font-size: 12px;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+      }
+      .scr {
+        position: absolute;
+        left: 0;
+        top: 34px;
+        width: 650px;
+        height: 382px;
+      }
+      .scr .a {
+        position: absolute;
+      }
+      .h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #94a3b8;
+      }
+      .step .n {
+        display: inline-grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid #cbd5e1;
+        font-size: 11.5px;
+        background: #fff;
+      }
+      .step.cur {
+        color: #3730a3;
+      }
+      .step.cur .n {
+        border-color: #4f46e5;
+        color: #4f46e5;
+      }
+      .step.done {
+        color: #334155;
+      }
+      .step.done .n {
+        border-color: #4f46e5;
+        background: #4f46e5;
+        color: #fff;
+      }
+      .lbl {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #334155;
+      }
+      .inp {
+        width: 420px;
+        height: 36px;
+        margin-top: 5px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0 10px;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        color: #0f172a;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 36px;
+        padding: 0 16px;
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .btn.pri {
+        background: #4f46e5;
+        color: #fff;
+      }
+      .btn.out {
+        border: 1.5px solid #cbd5e1;
+        color: #334155;
+        background: #fff;
+      }
+      .btn.sm {
+        height: 28px;
+        padding: 0 12px;
+        font-size: 12.5px;
+      }
+      .sum {
+        width: 590px;
+        display: flex;
+        gap: 10px;
+        font-size: 13px;
+        color: #334155;
+        padding: 9px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+      }
+      .sum b {
+        width: 78px;
+        color: #0f172a;
+      }
+      .lc {
+        width: 290px;
+        height: 96px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .lc .top {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #334155;
+      }
+      .lc .note {
+        font-size: 12.5px;
+        margin-top: 12px;
+      }
+      .group {
+        width: 610px;
+        height: 124px;
+      }
+      .ghd {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .ghd small {
+        font-size: 12px;
+        font-weight: 500;
+        color: #64748b;
+      }
+      .ghd em {
+        margin-left: auto;
+        font-style: normal;
+        font-size: 12px;
+        font-weight: 600;
+        color: #4338ca;
+      }
+      .offer {
+        position: absolute;
+        left: 0;
+        width: 610px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 6px 0 12px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 9px;
+        background: #fff;
+        font-size: 13px;
+        color: #64748b;
+      }
+      .offer b {
+        width: 120px;
+        font-size: 14px;
+        color: #0f172a;
+      }
+      .offer .btn {
+        margin-left: auto;
+      }
+      .seg {
+        display: flex;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .seg span {
+        padding: 5px 12px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #475569;
+      }
+      .seg span.on {
+        background: #4f46e5;
+        color: #fff;
+      }
+      #overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+      }
+      #modal {
+        position: absolute;
+        left: 125px;
+        top: 105px;
+        width: 400px;
+        background: #fff;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+      }
+      #modal h3 {
+        font-size: 16px;
+      }
+      #modal p {
+        font-size: 12.5px;
+        color: #475569;
+        margin-top: 8px;
+      }
+      .side {
+        position: absolute;
+        left: 692px;
+        width: 244px;
+        border-radius: 14px;
+        border: 2px solid #c7d2fe;
+        background: #eef2ff;
+        padding: 12px 14px;
+      }
+      .side h4 {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 14.5px;
+        color: #3730a3;
+      }
+      .side p {
+        font-size: 12.5px;
+        color: #334155;
+        margin-top: 6px;
+        line-height: 1.4;
+      }
+      #cursor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 22px;
+        height: 22px;
+        pointer-events: none;
+      }
+      #clickfx {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        margin: -15px 0 0 -15px;
+        border-radius: 50%;
+        border: 2.5px solid #4f46e5;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="c">
+      <div class="title"><span class="brand">Parcela Mais</span>A jornada do paciente</div>
+
+      <div id="stage">
+        <div class="stagechip" id="g1" style="left: 24px"><i>1</i>Cadastro</div>
+        <div class="arrow" style="left: 171px">→</div>
+        <div class="stagechip" id="g2" style="left: 192px"><i>2</i>Pré-aprovação</div>
+        <div class="arrow" style="left: 339px">→</div>
+        <div class="stagechip" id="g3" style="left: 360px"><i>3</i>Ofertas</div>
+        <div class="arrow" style="left: 507px">→</div>
+        <div class="stagechip" id="g4" style="left: 528px"><i>4</i>Escolha</div>
+
+        <div id="win">
+          <div id="chrome">
+            <span class="d" style="background: #fca5a5"></span
+            ><span class="d" style="background: #fcd34d"></span
+            ><span class="d" style="background: #86efac"></span>
+            <div id="url"></div>
+          </div>
+
+          <!-- 1. Cadastro -->
+          <div class="scr" id="s1">
+            <div class="a" style="left: 20px; top: 14px; display: flex; gap: 26px">
+              <div class="step" id="st0"><span class="n">1</span>Paciente</div>
+              <div class="step" id="st1"><span class="n">2</span>Contato</div>
+              <div class="step" id="st2"><span class="n">3</span>Financeiro</div>
+              <div class="step" id="st3"><span class="n">4</span>Revisão</div>
+            </div>
+            <div class="a h1" id="stTitle" style="left: 20px; top: 58px"></div>
+            <div class="a" id="fields" style="left: 20px; top: 96px">
+              <div class="lbl" id="l0"></div>
+              <div class="inp" id="i0"></div>
+              <div class="lbl" id="l1" style="margin-top: 14px"></div>
+              <div class="inp" id="i1"></div>
+            </div>
+            <div class="a" id="review" style="left: 20px; top: 96px">
+              <div class="sum"><b>Paciente</b>Maria Silva · CPF 123.456.789-09</div>
+              <div class="sum" style="margin-top: 8px">
+                <b>Contato</b>(11) 98765-4321 · maria@email.com
+              </div>
+              <div class="sum" style="margin-top: 8px">
+                <b>Financeiro</b>renda R$ 6.500,00 · tratamento R$ 12.000,00
+              </div>
+            </div>
+            <div class="a btn out" id="back" style="left: 20px; top: 318px">Voltar</div>
+            <div class="a btn pri" id="next" style="right: 20px; top: 318px">Próximo</div>
+          </div>
+
+          <!-- 2. Pré-aprovação -->
+          <div class="scr" id="s2">
+            <div class="a h1" style="left: 20px; top: 14px">Consultando as financeiras…</div>
+            <div
+              class="a chip"
+              id="live"
+              style="left: 290px; top: 17px; background: #dcfce7; color: #166534"
+            >
+              ● ao vivo
+            </div>
+            <div class="a lc" id="k0" style="left: 20px; top: 60px">
+              <div class="top"><i data-ic="bank"></i>Alfa<span class="pill" id="P0"></span></div>
+              <div class="note" id="n0" style="color: #15803d; font-weight: 600">
+                aprovou R$ 12.000
+              </div>
+            </div>
+            <div class="a lc" id="k1" style="left: 330px; top: 60px">
+              <div class="top"><i data-ic="bank"></i>Beta<span class="pill" id="P1"></span></div>
+              <div class="note" id="n1" style="color: #15803d; font-weight: 600">
+                aprovou R$ 10.000
+              </div>
+            </div>
+            <div class="a lc" id="k2" style="left: 20px; top: 170px">
+              <div class="top"><i data-ic="bank"></i>Gama<span class="pill" id="P2"></span></div>
+              <div class="note" id="n2">perfil não elegível</div>
+            </div>
+            <div class="a lc" id="k3" style="left: 330px; top: 170px">
+              <div class="top"><i data-ic="bank"></i>Delta<span class="pill" id="P3"></span></div>
+              <div class="note" id="n3">sem resposta dentro do prazo</div>
+            </div>
+            <div
+              class="a"
+              id="answered"
+              style="left: 20px; top: 290px; font-size: 13px; color: #475569"
+            ></div>
+          </div>
+
+          <!-- 3. Ofertas / 4. Escolha -->
+          <div class="scr" id="s3">
+            <div class="a h1" id="offersTitle" style="left: 20px; top: 14px">
+              Compare as ofertas e escolha a melhor
+            </div>
+            <div
+              class="a"
+              id="chosen"
+              style="
+                left: 20px;
+                top: 8px;
+                width: 610px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 12px;
+                border-radius: 10px;
+                background: #dcfce7;
+                border: 1.5px solid #86efac;
+                color: #166534;
+              "
+            >
+              <i data-ic="check"></i>
+              <div>
+                <div style="font-size: 15px; font-weight: 700">Oferta escolhida</div>
+                <div style="font-size: 12.5px">Beta · 12x de R$ 905 · total R$ 10.860</div>
+              </div>
+            </div>
+            <div
+              class="a"
+              id="sortbar"
+              style="
+                left: 20px;
+                top: 52px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 12.5px;
+                color: #475569;
+              "
+            >
+              Ordenar por
+              <div class="seg">
+                <span id="sortI">Menor parcela</span><span id="sortT">Menor custo total</span>
+              </div>
+            </div>
+            <div class="a group" id="gA">
+              <div class="ghd">Alfa <small>aprovou R$ 12.000</small><em id="hA"></em></div>
+              <div class="offer" id="oA24">
+                <b>24x de R$ 590</b>total R$ 14.160<span class="btn out sm">Escolher</span>
+              </div>
+              <div class="offer" id="oA12">
+                <b>12x de R$ 1.104</b>total R$ 13.248<span class="btn out sm">Escolher</span>
+              </div>
+            </div>
+            <div class="a group" id="gB">
+              <div class="ghd">Beta <small>aprovou R$ 10.000</small><em id="hB"></em></div>
+              <div class="offer" id="oB18">
+                <b>18x de R$ 640</b>total R$ 11.520<span class="btn out sm">Escolher</span>
+              </div>
+              <div class="offer" id="oB12">
+                <b>12x de R$ 905</b>total R$ 10.860<span class="btn out sm" id="pick"
+                  >Escolher</span
+                >
+              </div>
+            </div>
+            <div id="overlay"></div>
+            <div id="modal">
+              <h3>Confirmar a escolha desta oferta?</h3>
+              <p style="font-size: 14px; color: #0f172a; font-weight: 600">
+                Beta · 12x de R$ 905 · total R$ 10.860
+              </p>
+              <p>A escolha é definitiva: cada consulta aceita uma única oferta escolhida.</p>
+              <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px">
+                <span class="btn out sm">Cancelar</span
+                ><span class="btn pri sm" id="confirm">Confirmar escolha</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side" id="n1s" style="top: 100px">
+          <h4>Cadastro em 4 passos</h4>
+          <p>
+            Paciente → Contato → Financeiro → Revisão. O envio dispara a consulta às financeiras.
+          </p>
+        </div>
+        <div class="side" id="n2s" style="top: 100px">
+          <h4>Pré-aprovação ao vivo</h4>
+          <p>
+            As 4 financeiras respondem em paralelo; cada card muda sozinho via SSE, com prazo de 10
+            s.
+          </p>
+        </div>
+        <div class="side" id="n3s" style="top: 100px">
+          <h4>Ofertas</h4>
+          <p>Agrupadas por financeira; ordene por menor parcela ou por menor custo total.</p>
+        </div>
+        <div class="side" id="n4s" style="top: 100px">
+          <h4>Escolha</h4>
+          <p>Um modal confirma: a escolha é definitiva, uma oferta por consulta.</p>
+        </div>
+
+        <div
+          class="side"
+          id="retry"
+          style="top: 268px; background: #fffbeb; border: 2px dashed #f59e0b"
+        >
+          <h4 style="color: #b45309"><i data-ic="loop"></i>Ninguém aprovou?</h4>
+          <p>
+            A tela mostra o que cada financeira respondeu e sugere um valor que alguma poderia
+            aprovar.
+          </p>
+          <div class="btn pri sm" style="margin-top: 10px">Simular com R$ 8.000</div>
+          <p style="margin-top: 8px; font-weight: 600; color: #b45309">→ abre uma nova consulta</p>
+        </div>
+
+        <div id="clickfx"></div>
+        <svg id="cursor" viewBox="0 0 24 24">
+          <path
+            d="M4 2 L4 19 L8.5 14.8 L11.5 21.5 L14.3 20.3 L11.3 13.7 L17.5 13.5 Z"
+            fill="#0f172a"
+            stroke="#fff"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+      const { $, show, vis, pill, prog, ease, easeIO, lerp, scene } = A;
+
+      const D = 13.6;
+      const STAGES = [0.4, 3.8, 6.8, 9.8, D];
+      const STEP_AT = [0.4, 1.2, 1.9, 2.6, 3.8];
+      const STEP_FIELDS = [
+        ["Paciente", "Nome completo", "Maria Silva", "CPF", "123.456.789-09"],
+        ["Contato", "Celular", "(11) 98765-4321", "E-mail", "maria@email.com"],
+        ["Financeiro", "Renda mensal", "R$ 6.500,00", "Valor do tratamento", "R$ 12.000,00"],
+        ["Revisão"],
+      ];
+      const STEP_URL = ["paciente", "contato", "financeiro", "revisao"];
+      const CARD_AT = [4.3, 5.5, 4.8, 6.2];
+      const CARD_STATE = ["approved", "approved", "refused", "unavailable"];
+      const SORT_AT = 8.3;
+      const PICK_AT = 9.95;
+      const CONFIRM_AT = 10.85;
+
+      // Cursor keyframes: [time, target] where target is an element id or [x, y].
+      const center = (id) => {
+        const r = $(id).getBoundingClientRect();
+        return [r.left + r.width * 0.55, r.top + r.height * 0.6];
+      };
+      const CURSOR = [
+        [0.5, [420, 330]],
+        [1.0, "next"],
+        [3.5, "next"],
+        [3.8, "next"],
+        [7.4, [560, 470]],
+        [8.1, "sortT"],
+        [9.1, "sortT"],
+        [9.85, "pick"],
+        [10.3, "pick"],
+        [10.8, "confirm"],
+        [11.3, "confirm"],
+      ];
+      const CLICKS = [1.1, 1.8, 2.5, 3.55, 8.15, PICK_AT, CONFIRM_AT];
+      const CURSOR_ON = [
+        [0.5, 3.9],
+        [7.4, 11.4],
+      ];
+
+      function cursorAt(t) {
+        let i = CURSOR.findIndex(([at]) => at > t);
+        if (i === -1) i = CURSOR.length - 1;
+        if (i === 0) i = 1;
+        const [a, ta] = CURSOR[i - 1];
+        const [b, tb] = CURSOR[i];
+        const pa = typeof ta === "string" ? center(ta) : ta;
+        const pb = typeof tb === "string" ? center(tb) : tb;
+        const u = easeIO(prog(t, a, b));
+        return [lerp(pa[0], pb[0], u), lerp(pa[1], pb[1], u)];
+      }
+
+      const type = (text, t, a, b) => text.slice(0, Math.round(text.length * prog(t, a, b)));
+
+      scene(D, (t) => {
+        const fade = 1 - prog(t, D - 0.6, D);
+        $("stage").style.opacity = fade;
+        const stage = STAGES.findIndex((a, i) => t >= a && t < STAGES[i + 1]);
+
+        // stage chips + notes
+        for (let i = 0; i < 4; i++) {
+          show(`g${i + 1}`, t, 0.05 + i * 0.07, Infinity, 0.3, 4);
+          $(`g${i + 1}`).className = `stagechip${stage === i ? " on" : ""}`;
+          show(`n${i + 1}s`, t, STAGES[i] + 0.1, i < 3 ? STAGES[i + 1] - 0.25 : Infinity, 0.25, 6);
+        }
+        show("win", t, 0.1, Infinity, 0.3, 8);
+        show("retry", t, 5.0, Infinity, 0.4, 8);
+
+        // 1. Cadastro
+        show("s1", t, 0, STAGES[1] - 0.15, 0.2, 0);
+        const step = Math.max(
+          0,
+          STEP_AT.findIndex((a, i) => t >= a && t < STEP_AT[i + 1]),
+        );
+        const s = t >= STEP_AT[4] ? 3 : step;
+        for (let i = 0; i < 4; i++)
+          $(`st${i}`).className = `step${i < s ? " done" : i === s ? " cur" : ""}`;
+        const f = STEP_FIELDS[s];
+        const t0 = STEP_AT[s];
+        $("stTitle").textContent = f[0];
+        $("fields").style.display = s < 3 ? "block" : "none";
+        $("review").style.display = s === 3 ? "block" : "none";
+        if (s < 3) {
+          $("l0").textContent = f[1];
+          $("l1").textContent = f[3];
+          $("i0").textContent = type(f[2], t, t0 + 0.05, t0 + 0.3);
+          $("i1").textContent = type(f[4], t, t0 + 0.3, t0 + 0.55);
+        }
+        $("back").style.visibility = s > 0 ? "visible" : "hidden";
+        $("next").textContent = s === 3 ? "Solicitar pré-aprovação" : "Próximo";
+        $("url").textContent =
+          stage <= 0
+            ? `parcela.localhost/cadastro/${STEP_URL[s]}`
+            : "parcela.localhost/consultas/3f9c2a1e";
+
+        // 2. Pré-aprovação
+        show("s2", t, STAGES[1], STAGES[2] - 0.15, 0.2, 0);
+        let answered = 0;
+        for (let i = 0; i < 4; i++) {
+          const done = t >= CARD_AT[i];
+          answered += done ? 1 : 0;
+          pill(`P${i}`, done ? CARD_STATE[i] : "pending", t);
+          show(`n${i}`, t, CARD_AT[i], Infinity, 0.2, 3);
+          const fl = vis(t, CARD_AT[i], CARD_AT[i] + 0.5, 0.15);
+          const rgb =
+            CARD_STATE[i] === "approved"
+              ? "34,197,94"
+              : CARD_STATE[i] === "refused"
+                ? "239,68,68"
+                : "100,116,139";
+          $(`k${i}`).style.boxShadow =
+            fl > 0 ? `0 0 0 ${4 * fl}px rgba(${rgb},${0.3 * fl})` : "none";
+        }
+        $("live").style.opacity = 0.65 + 0.35 * Math.cos(t * 5);
+        $("answered").textContent =
+          `${answered} de 4 financeiras responderam${answered === 4 ? " · 2 com oferta" : ""}`;
+
+        // 3. Ofertas (+ 4. Escolha on the same screen)
+        show("s3", t, STAGES[2], Infinity, 0.25, 0);
+        // The list dips out, re-sorts while hidden, and slides back in.
+        const S = SORT_AT;
+        const u = t >= S + 0.25 ? 1 : 0;
+        const listO = 1 - Math.min(prog(t, S, S + 0.2), 1 - prog(t, S + 0.3, S + 0.5));
+        const slide = (1 - ease(prog(t, S + 0.25, S + 0.55))) * 10 * u;
+        const total = t >= S;
+        $("sortI").className = total ? "" : "on";
+        $("sortT").className = total ? "on" : "";
+        $("gA").style.left = "20px";
+        $("gB").style.left = "20px";
+        $("gA").style.top = `${(u ? 226 : 96) + slide}px`;
+        $("gB").style.top = `${(u ? 96 : 226) + slide}px`;
+        $("oA24").style.top = `${u ? 74 : 30}px`;
+        $("oA12").style.top = `${u ? 30 : 74}px`;
+        $("oB18").style.top = `${u ? 74 : 30}px`;
+        $("oB12").style.top = `${u ? 30 : 74}px`;
+        $("hA").textContent = u ? "a partir de R$ 13.248 no total" : "a partir de R$ 590/mês";
+        $("hB").textContent = u ? "a partir de R$ 10.860 no total" : "a partir de R$ 640/mês";
+
+        // 4. Escolha: modal, then the confirmation
+        const modal = vis(t, PICK_AT + 0.15, CONFIRM_AT + 0.15, 0.2);
+        $("overlay").style.opacity = modal;
+        $("modal").style.opacity = modal;
+        $("modal").style.translate =
+          `0 ${(1 - ease(prog(t, PICK_AT + 0.15, PICK_AT + 0.4))) * 10}px`;
+        const done = vis(t, CONFIRM_AT + 0.35, Infinity, 0.3);
+        $("chosen").style.opacity = done;
+        $("offersTitle").style.opacity = 1 - done;
+        $("sortbar").style.opacity = 1 - done;
+        $("gA").style.opacity = listO * (1 - done * 0.65);
+        $("gB").style.opacity = listO;
+        $("oB18").style.opacity = 1 - done * 0.65;
+        $("oB12").style.borderColor = done > 0.5 ? "#86efac" : "#e2e8f0";
+        $("oB12").style.background = done > 0.5 ? "#f0fdf4" : "#fff";
+        $("pick").textContent = done > 0.5 ? "Escolhida ✓" : "Escolher";
+        $("pick").style.color = done > 0.5 ? "#166534" : "";
+        $("pick").style.borderColor = done > 0.5 ? "#86efac" : "";
+
+        // cursor + click ripple
+        const on = CURSOR_ON.some(([a, b]) => t >= a && t <= b);
+        const co = CURSOR_ON.map(([a, b]) => vis(t, a, b - 0.2, 0.2)).reduce(
+          (x, y) => Math.max(x, y),
+          0,
+        );
+        const [cx, cy] = cursorAt(t);
+        $("cursor").style.opacity = on ? co : 0;
+        $("cursor").style.translate = `${cx}px ${cy}px`;
+        const click = CLICKS.find((c) => t >= c && t < c + 0.35);
+        const fx = $("clickfx");
+        if (click !== undefined) {
+          const k = prog(t, click, click + 0.35);
+          fx.style.opacity = 1 - k;
+          fx.style.left = `${cx}px`;
+          fx.style.top = `${cy}px`;
+          fx.style.scale = 0.4 + k;
+        } else fx.style.opacity = 0;
+      });
+    </script>
+  </body>
+</html>

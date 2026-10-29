@@ -99,6 +99,8 @@ Feature base: `fa5b38d` (docs + contract on `main`, 2026-10-28).
 - `RF-616` — Unknown sort or filter fields are rejected
 - `RF-617` — Table state is kept in the URL, except the CPF
 - `RF-618` — The backoffice is reachable from the public app, and back
+- `RF-619` — The backoffice sections have their own navigation bar
+- `RF-620` — Backoffice tables page in place with loading and empty states
 - `RF-701` — `vp run up` starts the dev environment
 - `RF-702` — `vp run up --prod` starts the production-parity stack
 - `RF-703` — The stack runs on both Podman and Docker
@@ -193,7 +195,7 @@ Greenfield feature on a template: the trees in `contract/layout.md` are the prec
 | S6    | requote, per-patient and per-IP caps, no PII in public payloads                                    | 3    | done   | [slices/S6-requote-abuse-privacy.md](slices/S6-requote-abuse-privacy.md) | C89–C100, C161, C162, C169                  |
 | S7    | backoffice auth, metrics, lists, kill switch API                                                   | 4    | done   | [slices/S7-backoffice-api.md](slices/S7-backoffice-api.md)               | C101–C117, C159                             |
 | S8    | public journey UI + UI kit; offers grouped by lender, choice dialog, lender logos, theme toggle    | 4    | done   | [slices/S8-journey-ui.md](slices/S8-journey-ui.md)                       | C118–C144, C224–C232                        |
-| S9    | backoffice UI                                                                                      | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168, C217                       |
+| S9    | backoffice UI; section bar, in-place paging, table states                                          | 5    | done   | [slices/S9-backoffice-ui.md](slices/S9-backoffice-ui.md)                 | C145–C154, C168, C217, C238–C240            |
 | S10   | E2E suite + browser smoke                                                                          | 6    | done   | [slices/S10-e2e-smoke.md](slices/S10-e2e-smoke.md)                       | C155–C157, C164                             |
 | S11   | patient address by CEP (ViaCEP via our API); design-system date/select inputs                      | 7    | done   | [slices/S11-address.md](slices/S11-address.md)                           | C176–C195                                   |
 | S12   | stepper, blur/submit validation, optional e-mail, date picker, pacer search, routes; review, draft | 8    | done   | [slices/S12-signup-ux.md](slices/S12-signup-ux.md)                       | C197–C207, C218–C223, C233–C236             |

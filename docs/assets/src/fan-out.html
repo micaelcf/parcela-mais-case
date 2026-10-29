@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Consulta em paralelo com prazo de 10 s</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 22px;
+        font-size: 12.5px;
+        color: #334155;
+      }
+      .row .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #0891b2;
+        flex: none;
+      }
+      #txFrame {
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        top: 34px;
+        bottom: 8px;
+        border: 1.5px dashed #0891b2;
+        border-radius: 10px;
+      }
+      #txFrame span {
+        position: absolute;
+        right: 8px;
+        top: -9px;
+        font-size: 10.5px;
+        font-weight: 600;
+        color: #0e7490;
+        background: #ecfeff;
+        padding: 0 4px;
+      }
+      #dbRows {
+        position: relative;
+        margin-top: 10px;
+        padding: 2px 8px;
+      }
+      #fin {
+        color: #6d28d9;
+        font-weight: 600;
+      }
+      #fin .dot {
+        background: #8b5cf6;
+      }
+      .lender .hd b {
+        font-size: 15px;
+      }
+      #track {
+        left: 128px;
+        top: 476px;
+        width: 720px;
+        height: 12px;
+        border-radius: 6px;
+        background: #e2e8f0;
+        overflow: hidden;
+      }
+      #fill {
+        height: 100%;
+        width: 0;
+        background: #93c5fd;
+        border-radius: 6px;
+      }
+      .mark {
+        position: absolute;
+        top: 494px;
+        transform: translateX(-50%);
+        font-size: 11.5px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .mark::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: -14px;
+        width: 2px;
+        height: 10px;
+        background: currentColor;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="c">
+      <div class="title">
+        <span class="brand">Parcela Mais</span>Consulta em paralelo com prazo de 10 s
+      </div>
+
+      <div class="cap" id="c1">
+        <b>1</b>O navegador envia <code>POST /api/consultations</code> com
+        <code>Idempotency-Key</code>
+      </div>
+      <div class="cap" id="c2">
+        <b>2</b>A API grava a consulta + 4 tentativas <code>PENDING</code> e enfileira 5 jobs
+        (pg-boss) na mesma transação
+      </div>
+      <div class="cap" id="c3">
+        <b>3</b>Responde <code>202 {id}</code> na hora: a cotação segue em segundo plano
+      </div>
+      <div class="cap" id="c4">
+        <b>4</b>O worker chama as 4 financeiras em paralelo; o prazo de 10 s começa a correr
+      </div>
+      <div class="cap" id="c5">
+        <b>5</b>Prazo estourou: o job de finalização marca Delta como indisponível ·
+        <code>TIMEOUT</code>
+      </div>
+      <div class="cap" id="c6">
+        <b>6</b>A jornada segue com o que voltou: 2 ofertas, de Alfa e Beta
+      </div>
+
+      <div id="stage">
+        <svg class="wires" width="960" height="540">
+          <defs id="defs"></defs>
+          <path
+            id="wReq"
+            class="w"
+            stroke="#3b82f6"
+            d="M174 196 L300 150"
+            marker-end="url(#m-blue)"
+          />
+          <path
+            id="wResp"
+            class="w"
+            stroke="#16a34a"
+            d="M300 178 L174 230"
+            marker-end="url(#m-green)"
+          />
+          <path
+            id="wDb"
+            class="w"
+            stroke="#0891b2"
+            d="M395 196 L395 262"
+            marker-end="url(#m-teal)"
+          />
+          <path
+            id="wJobs"
+            class="w"
+            stroke="#8b5cf6"
+            d="M490 318 L560 290"
+            marker-end="url(#m-purple)"
+          />
+          <path
+            id="wL0"
+            class="w"
+            stroke="#94a3b8"
+            d="M680 268 C 708 268, 708 137, 736 137"
+            marker-end="url(#m-slate)"
+          />
+          <path
+            id="wL1"
+            class="w"
+            stroke="#94a3b8"
+            d="M680 272 C 708 272, 708 219, 736 219"
+            marker-end="url(#m-slate)"
+          />
+          <path
+            id="wL2"
+            class="w"
+            stroke="#94a3b8"
+            d="M680 278 C 708 278, 708 301, 736 301"
+            marker-end="url(#m-slate)"
+          />
+          <path
+            id="wL3"
+            class="w"
+            stroke="#94a3b8"
+            d="M680 282 C 708 282, 708 383, 736 383"
+            marker-end="url(#m-slate)"
+          />
+          <path
+            id="wFin"
+            class="w dash"
+            stroke="#8b5cf6"
+            d="M490 410 L690 410 C 712 410, 712 398, 736 398"
+            marker-end="url(#m-purple)"
+          />
+
+          <circle id="pReq" r="7" fill="#3b82f6" />
+          <circle id="pResp" r="7" fill="#16a34a" />
+          <circle id="pDb" r="7" fill="#0891b2" />
+          <circle id="pJobs" r="7" fill="#8b5cf6" />
+          <circle id="o0" r="6" fill="#64748b" />
+          <circle id="o1" r="6" fill="#64748b" />
+          <circle id="o2" r="6" fill="#64748b" />
+          <circle id="o3" r="6" fill="#64748b" />
+          <circle id="r0" r="7" fill="#16a34a" />
+          <circle id="r1" r="7" fill="#ef4444" />
+          <circle id="r2" r="7" fill="#16a34a" />
+          <circle id="pFin" r="7" fill="#8b5cf6" />
+        </svg>
+
+        <div class="tag" id="tReq" style="left: 237px; top: 173px; color: #2563eb">POST</div>
+        <div class="tag" id="tResp" style="left: 237px; top: 204px; color: #15803d">202 {id}</div>
+        <div class="tag" id="tDb" style="left: 395px; top: 229px; color: #0e7490">1 transação</div>
+        <div class="tag" id="tJobs" style="left: 525px; top: 304px; color: #6d28d9">jobs</div>
+        <div class="tag" id="tFin" style="left: 600px; top: 410px; color: #6d28d9">
+          job de finalização
+        </div>
+
+        <div
+          class="box c-blue"
+          id="nav"
+          style="left: 24px; top: 160px; width: 150px; height: 124px"
+        >
+          <div class="hd"><i data-ic="monitor"></i>Navegador</div>
+          <div class="body">
+            <div
+              class="chip"
+              id="nav202"
+              style="background: #dcfce7; color: #166534; margin-top: 2px"
+            >
+              202 · consulta criada
+            </div>
+            <div
+              class="chip"
+              id="navOffers"
+              style="background: #4f46e5; color: #fff; margin-top: 8px"
+            >
+              2 ofertas →
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="box c-indigo"
+          id="api"
+          style="left: 300px; top: 112px; width: 190px; height: 84px"
+        >
+          <div class="hd"><i data-ic="server"></i>API <small>Elysia</small></div>
+          <div class="body mono" style="font-size: 11.5px">POST /api/consultations</div>
+        </div>
+
+        <div
+          class="box c-teal"
+          id="db"
+          style="left: 300px; top: 262px; width: 190px; height: 170px"
+        >
+          <div class="hd"><i data-ic="database"></i>Postgres <small>+ pg-boss</small></div>
+          <div id="txFrame"><span>mesma transação</span></div>
+          <div id="dbRows">
+            <div class="row" id="d0"><span class="dot"></span>1 consulta</div>
+            <div class="row" id="d1">
+              <span class="dot"></span>4 tentativas <span class="mono">PENDING</span>
+            </div>
+            <div class="row" id="d2"><span class="dot"></span>4 jobs de cotação</div>
+            <div class="row" id="fin">
+              <span class="dot"></span><span id="finTxt">1 job de finalização</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="box c-amber"
+          id="worker"
+          style="left: 560px; top: 232px; width: 120px; height: 86px"
+        >
+          <div class="hd"><i data-ic="cpu"></i>Worker</div>
+          <div class="body">4 chamadas<br />em paralelo</div>
+        </div>
+
+        <div
+          class="box c-white lender"
+          id="L0"
+          style="left: 736px; top: 104px; width: 200px; height: 66px"
+        >
+          <div class="hd">
+            <i data-ic="bank"></i><b>Alfa</b><span class="pill idle" id="P0"></span>
+          </div>
+          <div class="note" id="N0">1 s · aprovou R$ 12.000</div>
+        </div>
+        <div
+          class="box c-white lender"
+          id="L1"
+          style="left: 736px; top: 186px; width: 200px; height: 66px"
+        >
+          <div class="hd">
+            <i data-ic="bank"></i><b>Beta</b><span class="pill idle" id="P1"></span>
+          </div>
+          <div class="note" id="N1">4 s · aprovou R$ 10.000 (menor)</div>
+        </div>
+        <div
+          class="box c-white lender"
+          id="L2"
+          style="left: 736px; top: 268px; width: 200px; height: 66px"
+        >
+          <div class="hd">
+            <i data-ic="bank"></i><b>Gama</b><span class="pill idle" id="P2"></span>
+          </div>
+          <div class="note" id="N2">2 s · perfil não elegível</div>
+        </div>
+        <div
+          class="box c-white lender"
+          id="L3"
+          style="left: 736px; top: 350px; width: 200px; height: 66px"
+        >
+          <div class="hd">
+            <i data-ic="bank"></i><b>Delta</b><span class="pill idle" id="P3"></span>
+          </div>
+          <div class="note" id="N3a">erro 500 ou demora…</div>
+          <div class="note" id="N3b" style="margin-top: -16px">sem resposta no prazo</div>
+        </div>
+
+        <div id="timer">
+          <div
+            class="abs"
+            id="tLabel"
+            style="
+              left: 24px;
+              top: 469px;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 13px;
+              font-weight: 600;
+              color: #334155;
+            "
+          >
+            <i data-ic="clock"></i>prazo
+          </div>
+          <div class="abs" id="track"><div id="fill"></div></div>
+          <div
+            class="abs mono"
+            id="tVal"
+            style="left: 862px; top: 470px; font-size: 14px; font-weight: 700; color: #1d4ed8"
+          >
+            0,0 s
+          </div>
+          <div class="mark" id="m0" style="left: 200px; color: #15803d">Alfa · 1 s</div>
+          <div class="mark" id="m2" style="left: 272px; color: #b91c1c">Gama · 2 s</div>
+          <div class="mark" id="m1" style="left: 416px; color: #15803d">Beta · 4 s</div>
+          <div class="mark" id="m3" style="left: 848px; color: #6d28d9">10 s · finalização</div>
+        </div>
+      </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+      const { $, show, vis, packet, pill, prog, markers, scene, ease } = A;
+      $("defs").innerHTML = markers({
+        blue: "#3b82f6",
+        green: "#16a34a",
+        teal: "#0891b2",
+        purple: "#8b5cf6",
+        slate: "#94a3b8",
+      });
+
+      const D = 14;
+      const S0 = 4.9; // real time at which the 10 s deadline starts
+      const K = 0.52; // real seconds per simulated second
+      const at = (s) => S0 + s * K;
+      const RESP = [1, 4, 2]; // Alfa, Beta, Gama answer at these simulated seconds
+      const STATE = ["approved", "approved", "refused"];
+      const DEADLINE = at(10);
+      const FLIP = DEADLINE + 0.6; // finalize job lands on Delta
+
+      const caps = [1.0, 2.0, 3.3, 4.4, DEADLINE, 11.9, D - 0.6];
+
+      scene(D, (t) => {
+        $("stage").style.opacity = 1 - prog(t, D - 0.6, D);
+        caps.slice(0, -1).forEach((a, i) => show(`c${i + 1}`, t, a, caps[i + 1] - 0.2, 0.2, 4));
+        $("c6").style.opacity = Math.min(vis(t, caps[5], Infinity, 0.2), 1 - prog(t, D - 0.6, D));
+
+        show("nav", t, 0.1);
+        show("api", t, 0.25);
+        show("db", t, 0.4);
+        show("worker", t, 0.55);
+        for (let i = 0; i < 4; i++) show(`L${i}`, t, 0.7 + i * 0.07);
+        show("timer", t, 0.95, Infinity, 0.3, 0);
+
+        // 1. POST
+        show("wReq", t, 1.0, Infinity, 0.25, 0);
+        show("tReq", t, 1.0, Infinity, 0.25, 0);
+        packet("pReq", "wReq", t, 1.1, 1.8);
+        // 2. one transaction: consultation + attempts + jobs
+        show("wDb", t, 2.0, Infinity, 0.25, 0);
+        show("tDb", t, 2.0, Infinity, 0.25, 0);
+        packet("pDb", "wDb", t, 2.05, 2.45);
+        show("txFrame", t, 2.45, Infinity, 0.25, 0);
+        ["d0", "d1", "d2", "fin"].forEach((id, i) =>
+          show(id, t, 2.55 + i * 0.18, Infinity, 0.25, 4),
+        );
+        // 3. 202 right away
+        show("wResp", t, 3.3, Infinity, 0.25, 0);
+        show("tResp", t, 3.3, Infinity, 0.25, 0);
+        packet("pResp", "wResp", t, 3.35, 3.95);
+        show("nav202", t, 3.95, Infinity, 0.3, 4);
+        // 4. fan-out
+        show("wJobs", t, 4.4, Infinity, 0.25, 0);
+        show("tJobs", t, 4.4, Infinity, 0.25, 0);
+        packet("pJobs", "wJobs", t, 4.45, S0);
+        for (let i = 0; i < 4; i++) {
+          show(`wL${i}`, t, S0 - 0.15, Infinity, 0.2, 0);
+          packet(`o${i}`, `wL${i}`, t, S0, at(0.4));
+        }
+        const sim = Math.min(10, Math.max(0, (t - S0) / K));
+        for (let i = 0; i < 3; i++) {
+          packet(
+            `r${i === 0 ? 0 : i === 1 ? 2 : 1}`,
+            `wL${i}`,
+            t,
+            at(RESP[i] - 0.4),
+            at(RESP[i]),
+            true,
+          );
+          const settled = t >= at(RESP[i]);
+          pill(`P${i}`, t < at(0.4) ? "idle" : settled ? STATE[i] : "pending", t);
+          show(`N${i}`, t, at(RESP[i]), Infinity, 0.25, 3);
+          show(`m${i}`, t, at(RESP[i]), Infinity, 0.25, 0);
+        }
+        pill("P3", t < at(0.4) ? "idle" : t < FLIP ? "pending" : "unavailable", t);
+        show("N3a", t, at(3), FLIP - 0.2, 0.25, 3);
+        show("N3b", t, FLIP, Infinity, 0.25, 3);
+
+        // timer
+        $("fill").style.width = `${sim * 10}%`;
+        $("fill").style.background = t >= DEADLINE ? "#c4b5fd" : "#93c5fd";
+        $("tVal").textContent = `${sim.toFixed(1).replace(".", ",")} s`;
+        $("tVal").style.color = t >= DEADLINE ? "#6d28d9" : "#1d4ed8";
+
+        // 5. deadline → finalize job → Delta TIMEOUT
+        const pulse = vis(t, DEADLINE, DEADLINE + 0.5, 0.25);
+        $("fin").style.background = `rgba(139,92,246,${0.18 * pulse})`;
+        $("fin").style.borderRadius = "6px";
+        $("finTxt").textContent = t >= DEADLINE ? "finalização: disparou" : "1 job de finalização";
+        show("wFin", t, DEADLINE, Infinity, 0.25, 0);
+        show("tFin", t, DEADLINE, Infinity, 0.25, 0);
+        show("m3", t, DEADLINE, Infinity, 0.25, 0);
+        packet("pFin", "wFin", t, DEADLINE + 0.05, FLIP);
+
+        // 6. offers
+        const dim = 1 - 0.5 * ease(prog(t, 11.9, 12.3));
+        $("L2").style.opacity *= dim;
+        $("L3").style.opacity *= dim;
+        show("navOffers", t, 11.9, Infinity, 0.3, 4);
+      });
+    </script>
+  </body>
+</html>

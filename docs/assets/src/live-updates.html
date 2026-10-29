@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Status ao vivo via SSE</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      .dbrow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 24px;
+        margin: 0 -6px;
+        padding: 0 6px;
+        border-radius: 6px;
+        font-size: 12.5px;
+        color: #334155;
+      }
+      .dbrow .mono {
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .card {
+        position: absolute;
+        left: 12px;
+        width: 178px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 10px;
+        background: #fff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #334155;
+      }
+      .card .ic {
+        width: 17px;
+        height: 17px;
+      }
+      #status {
+        margin-top: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .phase {
+        position: absolute;
+        top: 438px;
+        width: 296px;
+        height: 80px;
+        border-radius: 14px;
+        border: 2px solid #e2e8f0;
+        background: #fff;
+        padding: 10px 14px;
+      }
+      .phase .hd {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14.5px;
+        font-weight: 700;
+      }
+      .phase p {
+        margin-top: 5px;
+        font-size: 12.5px;
+        color: #475569;
+      }
+      .phase i.n {
+        font-style: normal;
+        display: inline-grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        color: #fff;
+        font-size: 11px;
+      }
+      #bell {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        color: #d97706;
+        transform-origin: 50% 10%;
+      }
+      #ring {
+        rotate: -90deg;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="c">
+      <div class="title"><span class="brand">Parcela Mais</span>Status ao vivo via SSE</div>
+
+      <div class="cap" id="c1">
+        <b>1</b>O worker grava o resultado no Postgres e dispara
+        <code>NOTIFY consultation_&lt;id&gt;</code>
+      </div>
+      <div class="cap" id="c2">
+        <b>2</b>A API, em <code>LISTEN</code>, relê a visão da consulta…
+      </div>
+      <div class="cap" id="c3">
+        <b>3</b>…e envia <code>event: snapshot</code> pelo SSE: o card passa de consultando para
+        aprovada
+      </div>
+      <div class="cap" id="c4">
+        <b>4</b>Fallback: a cada 2 s a API relê a visão mesmo sem NOTIFY, e cobre um aviso perdido
+      </div>
+      <div class="cap" id="c5">
+        <b>5</b>Se a conexão cai, o navegador reconecta com backoff e recebe o snapshot completo
+      </div>
+
+      <div id="stage">
+        <svg class="wires" width="960" height="540">
+          <defs id="defs"></defs>
+          <path
+            id="wWrite"
+            class="w"
+            stroke="#d97706"
+            d="M144 205 L210 205"
+            marker-end="url(#m-amber)"
+          />
+          <path
+            id="wNotify"
+            class="w"
+            stroke="#f59e0b"
+            d="M360 180 L450 180"
+            marker-end="url(#m-amberl)"
+          />
+          <path
+            id="wRead"
+            class="w dash"
+            stroke="#0891b2"
+            d="M450 236 L360 236"
+            marker-start="url(#m-teal)"
+            marker-end="url(#m-teal)"
+          />
+          <path
+            id="wSse"
+            class="w"
+            stroke="#16a34a"
+            d="M620 205 L730 205"
+            marker-end="url(#m-green)"
+          />
+          <path id="wSseDown" class="w dash" stroke="#ef4444" d="M620 205 L730 205" />
+
+          <circle id="pWrite" r="7" fill="#d97706" />
+          <circle id="pNotify" r="7" fill="#f59e0b" />
+          <circle id="pRead" r="6" fill="#0891b2" />
+          <circle id="pSse" r="7" fill="#16a34a" />
+          <circle id="pLost" r="7" fill="#f59e0b" />
+        </svg>
+
+        <div class="tag" id="tWrite" style="left: 177px; top: 205px; color: #b45309">grava</div>
+        <div class="tag" id="tNotify" style="left: 405px; top: 180px; color: #b45309">NOTIFY</div>
+        <div class="tag" id="tRead" style="left: 405px; top: 236px; color: #0e7490">relê</div>
+        <div class="tag" id="tSse" style="left: 675px; top: 205px; color: #15803d">SSE</div>
+        <div
+          class="tag mono"
+          id="tSnap"
+          style="left: 675px; top: 180px; color: #15803d; font-size: 10.5px; padding: 1px 6px"
+        >
+          event: snapshot
+        </div>
+        <div
+          class="tag"
+          id="tFull"
+          style="left: 675px; top: 180px; color: #15803d; font-size: 10.5px; padding: 1px 6px"
+        >
+          snapshot completo
+        </div>
+        <div class="tag" id="tLost" style="left: 405px; top: 118px; color: #dc2626">
+          ✕ NOTIFY perdido
+        </div>
+        <div class="tag" id="tDown" style="left: 675px; top: 232px; color: #dc2626">✕ caiu</div>
+
+        <div
+          class="box c-amber"
+          id="worker"
+          style="left: 24px; top: 160px; width: 120px; height: 90px"
+        >
+          <div class="hd"><i data-ic="cpu"></i>Worker</div>
+          <div class="body">resultado de<br /><span id="wTxt">Alfa</span></div>
+        </div>
+
+        <div
+          class="box c-teal"
+          id="db"
+          style="left: 210px; top: 130px; width: 150px; height: 150px"
+        >
+          <div class="hd"><i data-ic="database"></i>Postgres</div>
+          <div style="margin-top: 6px">
+            <div class="dbrow" id="R0">Alfa <span class="mono" id="S0"></span></div>
+            <div class="dbrow" id="R1">Beta <span class="mono" id="S1"></span></div>
+            <div class="dbrow" id="R2">Gama <span class="mono" id="S2"></span></div>
+            <div class="dbrow" id="R3">Delta <span class="mono" id="S3"></span></div>
+          </div>
+        </div>
+
+        <div
+          class="box c-indigo"
+          id="api"
+          style="left: 450px; top: 140px; width: 170px; height: 130px"
+        >
+          <div class="hd"><i data-ic="server"></i>API <small>Elysia</small></div>
+          <i data-ic="bell" class="ic" id="bell"></i>
+          <div class="body mono" style="font-size: 11.5px; margin-top: 10px">
+            LISTEN<br />consultation_&lt;id&gt;
+          </div>
+          <div class="body" style="font-size: 12px; margin-top: 8px">SSE: GET …/events</div>
+        </div>
+
+        <div
+          class="box c-white"
+          id="poll"
+          style="
+            left: 450px;
+            top: 290px;
+            width: 170px;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+            border-color: #a5f3fc;
+          "
+        >
+          <svg width="26" height="26" viewBox="0 0 26 26" id="ringBox">
+            <circle cx="13" cy="13" r="10" fill="none" stroke="#e2e8f0" stroke-width="4" />
+            <circle
+              id="ring"
+              cx="13"
+              cy="13"
+              r="10"
+              fill="none"
+              stroke="#0891b2"
+              stroke-width="4"
+              stroke-dasharray="62.83"
+              stroke-dashoffset="62.83"
+              style="transform-origin: 13px 13px"
+            />
+          </svg>
+          <span style="font-size: 12.5px; font-weight: 600; color: #0e7490">relê a cada 2 s</span>
+        </div>
+
+        <div
+          class="box c-blue"
+          id="nav"
+          style="left: 730px; top: 100px; width: 206px; height: 316px"
+        >
+          <div class="hd"><i data-ic="monitor"></i>Navegador</div>
+          <div id="status"></div>
+          <div class="card" id="K0" style="top: 70px">Alfa<span class="pill" id="P0"></span></div>
+          <div class="card" id="K1" style="top: 128px">Beta<span class="pill" id="P1"></span></div>
+          <div class="card" id="K2" style="top: 186px">Gama<span class="pill" id="P2"></span></div>
+          <div class="card" id="K3" style="top: 244px">Delta<span class="pill" id="P3"></span></div>
+        </div>
+
+        <div class="phase" id="ph1" style="left: 24px">
+          <div class="hd" style="color: #b45309">
+            <i class="n" style="background: #f59e0b">1</i>NOTIFY · caminho rápido
+          </div>
+          <p>Cada resultado gravado avisa a API na hora.</p>
+        </div>
+        <div class="phase" id="ph2" style="left: 332px">
+          <div class="hd" style="color: #0e7490">
+            <i class="n" style="background: #0891b2">2</i>Releitura a cada 2 s
+          </div>
+          <p>Se um aviso se perde, a próxima releitura pega.</p>
+        </div>
+        <div class="phase" id="ph3" style="left: 640px">
+          <div class="hd" style="color: #b91c1c">
+            <i class="n" style="background: #ef4444">3</i>Reconexão com backoff
+          </div>
+          <p>0,5 s → 1 s → 2 s → 4 s, e chega o snapshot completo.</p>
+        </div>
+      </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+      const { $, show, vis, packet, pill, prog, markers, scene, ease } = A;
+      $("defs").innerHTML = markers({
+        amber: "#d97706",
+        amberl: "#f59e0b",
+        teal: "#0891b2",
+        green: "#16a34a",
+      });
+
+      const D = 13.2;
+      // DB row changes (worker writes / finalize) and when each card learns about it.
+      const DB_AT = [1.5, 9.1, 5.3, 9.5];
+      const DB_STATE = ["APPROVED", "APPROVED", "REFUSED", "UNAVAILABLE"];
+      const CARD_AT = [4.0, 11.5, 8.1, 11.5];
+      const CARD_STATE = ["approved", "approved", "refused", "unavailable"];
+      const DB_COLOR = {
+        PENDING: "#64748b",
+        APPROVED: "#15803d",
+        REFUSED: "#b91c1c",
+        UNAVAILABLE: "#475569",
+      };
+      const PH = [
+        [1.0, 4.6, "#fcd34d"],
+        [4.6, 8.3, "#67e8f9"],
+        [8.3, D, "#fca5a5"],
+      ];
+      const caps = [1.0, 2.4, 3.4, 4.6, 8.3];
+
+      function flash(t, at, rgb) {
+        const f = vis(t, at, at + 0.5, 0.15);
+        return f > 0 ? `0 0 0 ${4 * f}px rgba(${rgb},${0.35 * f})` : "none";
+      }
+
+      scene(D, (t) => {
+        $("stage").style.opacity = 1 - prog(t, D - 0.6, D);
+        caps.forEach((a, i) => {
+          const o = show(`c${i + 1}`, t, a, (caps[i + 1] ?? Infinity) - 0.2, 0.2, 4);
+          if (i === caps.length - 1) $(`c${i + 1}`).style.opacity = o * (1 - prog(t, D - 0.6, D));
+        });
+
+        show("worker", t, 0.1);
+        show("db", t, 0.25);
+        show("api", t, 0.4);
+        show("nav", t, 0.55);
+        PH.forEach(([a, b, c], i) => {
+          const el = $(`ph${i + 1}`);
+          const on = t >= a && t < b ? Math.min(prog(t, a, a + 0.3), 1 - prog(t, b - 0.3, b)) : 0;
+          el.style.opacity = vis(t, 0.8 + i * 0.08) * (0.45 + 0.55 * on);
+          el.style.borderColor = on > 0.5 ? c : "#e2e8f0";
+        });
+        for (const id of ["wWrite", "tWrite", "wNotify", "tNotify", "wRead", "tRead", "tSse"])
+          show(id, t, 0.9, Infinity, 0.3, 0);
+
+        // DB rows
+        for (let i = 0; i < 4; i++) {
+          const s = t >= DB_AT[i] ? DB_STATE[i] : "PENDING";
+          $(`S${i}`).textContent = s;
+          $(`S${i}`).style.color = DB_COLOR[s];
+          const f = vis(t, DB_AT[i], DB_AT[i] + 0.6, 0.15);
+          $(`R${i}`).style.background = `rgba(8,145,178,${0.15 * f})`;
+        }
+        // Browser cards
+        for (let i = 0; i < 4; i++) {
+          const done = t >= CARD_AT[i];
+          pill(`P${i}`, done ? CARD_STATE[i] : "pending", t);
+          $(`K${i}`).style.boxShadow = flash(t, CARD_AT[i], i === 2 ? "239,68,68" : "34,197,94");
+        }
+
+        // Worker label follows the write in flight
+        $("wTxt").textContent = t < 4.7 ? "Alfa" : t < 8.6 ? "Gama" : "Beta";
+
+        // 1. write + NOTIFY
+        packet("pWrite", "wWrite", t, 1.0, 1.5);
+        packet("pNotify", "wNotify", t, 1.6, 2.2);
+        const ring = vis(t, 2.2, 2.7, 0.05);
+        $("bell").style.rotate = `${Math.sin(t * 40) * 18 * ring}deg`;
+        // 2. reread
+        packet("pRead", "wRead", t, 2.5, 2.85);
+        if (t > 2.85 && t < 3.4) packet("pRead", "wRead", t, 2.9, 3.25, true);
+        // 3. snapshot over SSE
+        packet("pSse", "wSse", t, 3.45, 4.0);
+        $("tSnap").style.opacity = vis(t, 3.35, 3.95, 0.15) + vis(t, 7.55, 8.05, 0.15);
+
+        // 4. fallback: lost NOTIFY, then the 2 s reread picks it up
+        show("poll", t, 4.6, Infinity, 0.3, 6);
+        const cycle = t < 5.0 ? 0 : ((t - 5.0) % 2) / 2;
+        $("ring").style.strokeDashoffset = 62.83 * (1 - cycle);
+        $("poll").style.boxShadow =
+          [7.0, 9.0, 11.0].map((a) => flash(t, a, "8,145,178")).find((s) => s !== "none") ?? "none";
+        if (t >= 4.7 && t < 5.4) packet("pWrite", "wWrite", t, 4.8, 5.3);
+        const lost = t >= 5.4 && t <= 5.75;
+        $("pLost").style.opacity = lost ? 1 - prog(t, 5.6, 5.75) : 0;
+        if (lost) {
+          const p = $("wNotify").getPointAtLength(prog(t, 5.4, 5.75) * 45);
+          $("pLost").setAttribute("cx", p.x);
+          $("pLost").setAttribute("cy", p.y);
+        }
+        show("tLost", t, 5.7, 7.0, 0.25, 4);
+        if (t >= 6.9 && t < 7.7) {
+          packet("pRead", "wRead", t, 7.0, 7.3);
+          if (t > 7.3) packet("pRead", "wRead", t, 7.3, 7.6, true);
+        }
+        if (t >= 7.6) packet("pSse", "wSse", t, 7.65, 8.1);
+
+        // 5. connection drops, browser backs off, reconnects, full snapshot
+        if (t >= 8.6 && t < 9.2) packet("pWrite", "wWrite", t, 8.7, 9.1);
+        const down = t >= 8.4 && t < 10.9;
+        $("wSse").style.opacity = down
+          ? 0
+          : vis(t, 0.9) * (t >= 10.9 ? vis(t, 10.9, Infinity, 0.2) : 1);
+        $("tSse").style.opacity = $("wSse").style.opacity;
+        $("wSseDown").style.opacity = down ? vis(t, 8.4, 10.7, 0.2) : 0;
+        show("tDown", t, 8.45, 10.7, 0.2, 0);
+        if (t >= 10.9) packet("pSse", "wSse", t, 10.95, 11.5);
+        $("tFull").style.opacity = vis(t, 10.9, 11.5, 0.15);
+
+        const st = $("status");
+        const [text, color] =
+          t < 8.4
+            ? ["● SSE conectado", "#15803d"]
+            : t < 8.9
+              ? ["● conexão caiu", "#dc2626"]
+              : t < 9.4
+                ? ["↻ reconectando em 0,5 s", "#b45309"]
+                : t < 10.0
+                  ? ["↻ reconectando em 1 s", "#b45309"]
+                  : t < 10.9
+                    ? ["↻ reconectando em 2 s", "#b45309"]
+                    : t < 11.5
+                      ? ["● SSE conectado", "#15803d"]
+                      : ["✓ consulta concluída", "#15803d"];
+        st.textContent = text;
+        st.style.color = color;
+      });
+    </script>
+  </body>
+</html>
