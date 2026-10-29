@@ -164,7 +164,9 @@ Fora do escopo por decisão: etapas pós-escolha (contrato, pagamento) e retenta
 
 ## Como usei IA
 
-Construí o projeto em par com um agente de IA ([oh-my-pi](https://github.com/can1357/oh-my-pi), modelo Claude), numa única sessão de ~30 h. Eu decidi stack, escopo e regras; o agente propôs alternativas, escreveu o código e os testes, e auditou o próprio trabalho. Mas tudo isso não foi randômico e por simples prompts, usei um harness open source (inclusive que eu mesmo fiz) que cuidou da parte de decisões, Q&A, montagem da spec, implementação em paralelo bem como a IA deve testar e checar o que fez. Usei esse daqui: [ef-harness](https://github.com/micaelcf/ef-harness) (pode dar uma estrela por favor)
+Construí o projeto em par com um agente de IA ([oh-my-pi](https://github.com/can1357/oh-my-pi), modelo Claude), numa única sessão de ~30 h. Eu decidi stack, escopo e regras; o agente propôs alternativas, escreveu o código e os testes, e auditou o próprio trabalho.
+
+Nada disso foi aleatório nem feito com prompts soltos: usei um _harness_ open source, feito por mim, que conduz as decisões, as perguntas e respostas, a montagem da spec, a implementação em paralelo e a forma como a IA testa e confere o próprio trabalho: [ef-harness](https://github.com/micaelcf/ef-harness) (se gostar, deixe uma estrela ⭐).
 
 ```mermaid
 flowchart LR

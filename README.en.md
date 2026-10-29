@@ -166,6 +166,8 @@ Out of scope by decision: post-choice stages (contract, payment) and lender retr
 
 I built this together with an AI agent ([oh-my-pi](https://github.com/can1357/oh-my-pi), Claude model) in a single ~30 h session. I decided the stack, scope and rules; the agent proposed alternatives, wrote the code and tests, and audited its own work.
 
+None of it was random or driven by loose prompts: I used an open-source harness I built myself, which runs the decisions, the Q&A, writing the spec, the parallel implementation, and how the AI tests and checks its own work: [ef-harness](https://github.com/micaelcf/ef-harness) (a star is welcome ⭐).
+
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rounds of questions"] --> D["📄 RFC + PRD"]
