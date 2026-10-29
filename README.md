@@ -148,7 +148,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>jornada · cenários · teclado · backoffice"]
 ```
 
-- **256 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **75** E2E no navegador.
+- **258 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **76** E2E no navegador.
 - Cobrem o que pode quebrar: dígitos do CPF, centavos da Price, financeira que não responde, erro 500, finalizador correndo contra worker atrasado, dupla escolha simultânea, CPF fora das respostas públicas e da URL.
 - **Bônus do case:** retomar após recarregar ✅ · acessibilidade de teclado e leitor de tela ✅ · logs e métricas por financeira (backoffice) ✅ · deploy público ⏭️
 
@@ -169,7 +169,7 @@ Construí o projeto em par com um agente de IA ([oh-my-pi](https://github.com/ca
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rodadas de perguntas"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contratos + 241 checks"]
+    D --> C["🔎 Discovery<br/>contratos + 242 checks"]
     C --> S["🧩 Implementação<br/>em fatias, com subagentes"]
     S --> A["🛡️ 3 auditorias adversariais<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>checado 3×"]

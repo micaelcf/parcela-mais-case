@@ -69,3 +69,6 @@ Proof: `vp run e2e test/e2e/signup.spec.ts -g "drops a draft last edited more th
 
 **C236** · RF-123, RF-414 — "Novo cadastro" from a consultation discards a half-done draft: the signup opens empty
 Proof: `vp run e2e test/e2e/signup.spec.ts -g "starts empty from Novo cadastro, dropping a half-done draft"`
+
+**C242** · RF-105, RF-118 — amounts mask as typed (`12345` → `12.345`, `,5` → `12.345,5`, thousands dots placed by the mask, at most two cents digits), nothing is flagged while typing, and leaving the field pads the cents (`12.345,50`) (added 2026-10-28, user report)
+Proof: `vp test src/components/modules/signup/masks.test.ts`; `vp run e2e test/e2e/signup.spec.ts -g "masks amounts as they are typed"`
