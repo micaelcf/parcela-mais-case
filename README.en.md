@@ -187,7 +187,7 @@ pie title Who decided (91 decisions)
 - **I asked, the agent designed:** the `sessionStorage` draft, local HTTPS with automatic trust, `vp run down`, backoffice access.
 - **The agent recommended, I accepted:** SSE with snapshots, one job per lender + finalizer, no retries, encrypting only the CPF, a capability URL without personal data.
 - **The agent decided alone:** integer cents with _half-up_ rounding, `Idempotency-Key`, LISTEN before the snapshot + 2 s re-read, and the audit fixes (data leaks, the dev server exposed on the network).
-- **Every decision, with its owner and evidence:** [docs/DECISOES.md](docs/DECISOES.md) (bilingual).
+- **Every decision, with its owner and evidence:** [docs/DECISOES.md](docs/DECISOES.md) (in Portuguese; quoted evidence kept as written).
 
 ## Documentation
 
