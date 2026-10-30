@@ -8,6 +8,11 @@ import { closeTestApp, testLenderRegistry } from "../setup/app-fetch";
 import { createConsultation, waitSettled } from "./consultation-client";
 
 const RUNS = 20;
+/**
+ * Consultations in flight at once. Forced Delta answers 400 ms inside the 2 s test deadline; with
+ * all 20 (80 lender calls) at once, queue pickup on a 4-vCPU CI runner ate that margin.
+ */
+const BATCH = 10;
 
 const worker = createWorker({ lenderRegistry: testLenderRegistry });
 beforeAll(() => worker.start());
@@ -56,11 +61,14 @@ const GUARANTEES: Record<ForcedScenario, (view: ConsultationPublicView) => void>
 describe("forced scenarios", () => {
   it("each forced scenario holds 20 of 20", async () => {
     for (const scenario of FORCED) {
-      // One scenario at a time, its 20 consultations concurrently.
-      const ids = await Promise.all(
-        Array.from({ length: RUNS }, () => createConsultation({}, scenario)),
-      );
-      const views = await Promise.all(ids.map((id) => waitSettled(id)));
+      // One scenario at a time, its consultations in batches.
+      const views: ConsultationPublicView[] = [];
+      for (let started = 0; started < RUNS; started += BATCH) {
+        const ids = await Promise.all(
+          Array.from({ length: BATCH }, () => createConsultation({}, scenario)),
+        );
+        views.push(...(await Promise.all(ids.map((id) => waitSettled(id)))));
+      }
       expect(views).toHaveLength(RUNS);
       for (const view of views) {
         expect(view.simulationScenario).toBe(scenario);
