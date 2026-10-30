@@ -24,7 +24,7 @@ const facts = (overrides: Partial<DevNetworkFacts>): DevNetworkFacts => ({
   engine: podman,
   interfaces,
   defaultRouteInterface: null,
-  dockerBridgeGateway: null,
+  dockerHostGateway: null,
   ...overrides,
 });
 
@@ -72,12 +72,12 @@ describe("dev server binding per OS", () => {
     expect(devBinding(facts({ platform: "linux" }))).toMatchObject({ ok: false });
   });
 
-  it("Linux + Docker with docker0 down: the bridge gateway Docker reports (host-gateway)", () => {
+  it("Linux + Docker with docker0 down: the address Docker resolves host-gateway to", () => {
     // No container on the default bridge leaves docker0 without carrier, and the OS interface list
     // skips interfaces that aren't running; host-gateway still resolves to its gateway address.
     const { docker0: _down, ...withoutDocker0 } = interfaces;
     const linuxDocker = { platform: "linux", engine: docker, interfaces: withoutDocker0 } as const;
-    expect(devBinding(facts({ ...linuxDocker, dockerBridgeGateway: "172.17.0.1" }))).toMatchObject({
+    expect(devBinding(facts({ ...linuxDocker, dockerHostGateway: "172.17.0.1" }))).toMatchObject({
       ok: true,
       listen: "172.17.0.1",
       lanReachable: false,

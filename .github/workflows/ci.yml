@@ -82,7 +82,7 @@ jobs:
         run: |
           mkdir -p test-results
           cp up.log test-results/
-          docker compose -p parcela-mais-case logs --no-color > test-results/compose.log 2>&1 || true
+          docker compose -f compose.yaml -f compose.dev.yaml -p parcela-mais-case logs --no-color > test-results/compose.log 2>&1 || true
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
