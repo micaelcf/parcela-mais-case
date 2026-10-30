@@ -1,4 +1,5 @@
 import { X509Certificate } from "node:crypto";
+import { mkdirSync } from "node:fs";
 
 import type { CommandResult, RunCommand } from "./run";
 import type { Sleep } from "./health";
@@ -67,6 +68,8 @@ export type TrustStore = {
   readonly check: readonly string[];
   /** Runs in order; the first may prompt (Windows dialog, macOS password). */
   readonly install: ReadonlyArray<readonly string[]>;
+  /** Created (with parents) before `install`: certutil makes a database, not its directory. */
+  readonly directory?: string;
   trusted(result: CommandResult): boolean;
 };
 
@@ -107,10 +110,9 @@ function nssStore(
   return {
     label,
     check: ["certutil", "-d", `sql:${db}`, "-L", "-n", nickname],
-    // certutil creates the database, not its directory (missing until Chrome first runs).
-    install: create
-      ? [["mkdir", "-p", db], ["certutil", "-d", `sql:${db}`, "-N", "--empty-password"], add]
-      : [add],
+    install: create ? [["certutil", "-d", `sql:${db}`, "-N", "--empty-password"], add] : [add],
+    // Missing until Chrome first runs (a fresh machine, a CI runner).
+    ...(create ? { directory: db } : {}),
     trusted: exitedZero,
   };
 }
@@ -198,10 +200,15 @@ export async function trustStatus(run: RunCommand, plan: TrustPlan): Promise<Sto
     statuses.push({
       label: store.label,
       trusted: store.trusted(await run(store.check, { quiet: true })),
-      fix: store.install.map(shellLine).join(" && "),
+      fix: manualSteps(store).map(shellLine).join(" && "),
     });
   }
   return statuses;
+}
+
+/** What a person runs to trust the CA in `store` by hand. */
+function manualSteps(store: TrustStore): ReadonlyArray<readonly string[]> {
+  return store.directory ? [["mkdir", "-p", store.directory], ...store.install] : store.install;
 }
 
 /**
@@ -224,6 +231,7 @@ export async function ensureTrusted(
     log(`trusting ${ca.commonName} in the ${store.label}`);
     if (plan.prompt) log(`  ${plan.prompt}`);
     let installed = true;
+    if (store.directory) mkdirSync(store.directory, { recursive: true });
     for (const argv of store.install) {
       if ((await run(argv)).exitCode !== 0) {
         installed = false;
@@ -235,7 +243,7 @@ export async function ensureTrusted(
     log(
       `! the ${store.label} does not trust ${ca.commonName}: browsers will warn about the certificate`,
     );
-    for (const argv of store.install) log(`  to trust it later, run: ${shellLine(argv)}`);
+    for (const argv of manualSteps(store)) log(`  to trust it later, run: ${shellLine(argv)}`);
   }
   return allTrusted;
 }

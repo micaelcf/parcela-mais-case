@@ -144,19 +144,22 @@ describe("trust plan per platform", () => {
       "-i",
       "/r/root.crt",
     ];
-    expect(plan.stores.map(({ check, install }) => ({ check, install }))).toEqual([
+    expect(
+      plan.stores.map(({ check, install, directory }) => ({ check, install, directory })),
+    ).toEqual([
       {
         check: ["certutil", "-d", "sql:/home/me/.pki/nssdb", "-L", "-n", nick],
-        // certutil creates the database, not its directory (missing until Chrome first runs).
         install: [
-          ["mkdir", "-p", "/home/me/.pki/nssdb"],
           ["certutil", "-d", "sql:/home/me/.pki/nssdb", "-N", "--empty-password"],
           add("/home/me/.pki/nssdb"),
         ],
+        // certutil creates the database, not its directory (missing until Chrome first runs).
+        directory: "/home/me/.pki/nssdb",
       },
       ...profiles.map((profile) => ({
         check: ["certutil", "-d", `sql:${profile}`, "-L", "-n", nick],
         install: [add(profile)],
+        directory: undefined,
       })),
     ]);
     expect(plan.stores.flat().some((store) => store.install.flat().includes("sudo"))).toBe(false);
