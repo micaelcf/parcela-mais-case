@@ -75,6 +75,8 @@ jobs:
         run: |
           nohup bun run up > up.log 2>&1 &
           bash .github/scripts/wait-for-stack.sh "$!" up.log
+      - name: Warm up the dev server
+        run: node .github/scripts/warm-up.mjs
       - name: E2E suite
         run: bun run e2e
       - name: Collect stack logs
