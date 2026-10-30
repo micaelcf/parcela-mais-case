@@ -18,6 +18,17 @@ export const CONTAINER_CA_ROOT = "/data/caddy/pki/authorities/local/root.crt";
 export const DEV_CADDY_DATA = ".local/caddy";
 export const DEV_CA_ROOT = `${DEV_CADDY_DATA}/caddy/pki/authorities/local/root.crt`;
 
+/**
+ * A shell command for inside a Caddy container that lets the host user read the CA root through
+ * the bind mount. Rootful Docker on Linux runs Caddy as root, and Caddy writes its data dirs 0700:
+ * the host user couldn't read the root it has to trust. Directories become traversable (not
+ * listable) and only the certificate readable; the CA's key stays 0600.
+ */
+export const EXPOSE_CA_ROOT = [
+  "chmod a+x /data/caddy /data/caddy/pki /data/caddy/pki/authorities /data/caddy/pki/authorities/local",
+  `chmod a+r ${CONTAINER_CA_ROOT}`,
+].join(" && ");
+
 export type LocalCa = {
   readonly pem: string;
   /** Subject CN, e.g. `parcela-mais-case dev - 2026 ECC Root` (Caddyfile `pki.ca.local.name`). */

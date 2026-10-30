@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { networkInterfaces } from "node:os";
 
@@ -17,12 +18,29 @@ function defaultRouteInterface(): string | null {
   return null;
 }
 
+/** The Docker default bridge's gateway (`host-gateway`), or null when Docker doesn't answer. */
+function dockerBridgeGateway(engine: Engine): string | null {
+  try {
+    const format = "{{range .IPAM.Config}}{{.Gateway}}{{end}}";
+    const output = execFileSync(engine.bin, ["network", "inspect", "bridge", "--format", format], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 10_000,
+    });
+    return /^\d+\.\d+\.\d+\.\d+$/.test(output.trim()) ? output.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Read-only facts `devBinding` needs about this machine. */
 export function gatherDevNetworkFacts(engine: Engine): DevNetworkFacts {
+  const linux = process.platform === "linux";
   return {
     platform: process.platform,
     engine,
     interfaces: networkInterfaces(),
-    defaultRouteInterface: process.platform === "linux" ? defaultRouteInterface() : null,
+    defaultRouteInterface: linux ? defaultRouteInterface() : null,
+    dockerBridgeGateway: linux && engine.name === "docker" ? dockerBridgeGateway(engine) : null,
   };
 }
