@@ -1,3 +1,5 @@
+import { availableParallelism } from "node:os";
+
 import { defineConfig, lazyPlugins } from "vite-plus";
 import { devtools } from "@tanstack/devtools-vite";
 
@@ -102,8 +104,9 @@ const config = defineConfig({
           testTimeout: 60_000,
           hookTimeout: 60_000,
           // Each file runs a real worker and races a 2 s lender deadline; more files at once than
-          // this starves the event loop enough that slow-but-valid lenders finalize as TIMEOUT.
-          maxWorkers: 4,
+          // the machine carries starves the event loop enough that slow-but-valid lenders finalize
+          // as TIMEOUT: at most 4 files, one per 2 CPUs (a 4-vCPU CI runner runs 2).
+          maxWorkers: Math.max(1, Math.min(4, Math.floor(availableParallelism() / 2))),
           // A project with its own maxWorkers needs its own group: units first, then integration.
           sequence: { groupOrder: 1 },
         },

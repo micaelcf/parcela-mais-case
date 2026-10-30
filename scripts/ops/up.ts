@@ -12,9 +12,16 @@ import { $, spawn, which } from "bun";
 
 import { devBinding, devProcessEnv } from "./lib/dev-binding";
 import { gatherDevNetworkFacts } from "./lib/dev-network";
-import { detectEngine } from "./lib/engine";
+import { compose, detectEngine, devCompose } from "./lib/engine";
 import { type HealthFetch, sleep } from "./lib/health";
-import { DEV_CA_ROOT, DEV_CADDY_DATA, ensureTrusted, trustPlan, waitForCa } from "./lib/local-ca";
+import {
+  DEV_CA_ROOT,
+  DEV_CADDY_DATA,
+  ensureTrusted,
+  EXPOSE_CA_ROOT,
+  trustPlan,
+  waitForCa,
+} from "./lib/local-ca";
 import { assertLocalCommand, createRunner } from "./lib/run";
 import { scriptLog } from "./lib/script-log";
 import { createShellExec } from "./lib/shell-exec";
@@ -65,6 +72,14 @@ mkdirSync(DEV_CADDY_DATA, { recursive: true });
 const readLocalFile = async (path: string) =>
   existsSync(path) ? readFileSync(path, "utf8") : null;
 
+/** Reads the CA root on the host; on Linux, first lets the host user read it (EXPOSE_CA_ROOT). */
+const caRootReader = (caddy: string[]) => async (path: string) => {
+  // Fails until Caddy has written the root; the caller polls.
+  if (process.platform === "linux")
+    await run([...caddy, "sh", "-c", EXPOSE_CA_ROOT], { quiet: true });
+  return readLocalFile(path);
+};
+
 if (parsed.mode === "prod") {
   process.exit(
     await runProdUp({
@@ -74,7 +89,7 @@ if (parsed.mode === "prod") {
       sleep,
       env: process.env,
       log,
-      readFile: readLocalFile,
+      readFile: caRootReader(compose(engine, "exec", "-T", "caddy")),
       trust,
     }),
   );
@@ -93,7 +108,8 @@ const setup = await runDevSetup({
 });
 if (setup !== 0) process.exit(setup);
 
-const ca = await waitForCa(() => readLocalFile(DEV_CA_ROOT), sleep);
+const readDevCa = caRootReader(devCompose(engine, "exec", "-T", "caddy-dev"));
+const ca = await waitForCa(() => readDevCa(DEV_CA_ROOT), sleep);
 if (ca) await trust(ca, DEV_CA_ROOT);
 else
   log(`! caddy-dev wrote no CA root at ${DEV_CA_ROOT}: browsers will warn about the certificate`);
