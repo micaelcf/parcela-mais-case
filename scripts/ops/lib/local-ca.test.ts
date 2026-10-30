@@ -147,7 +147,9 @@ describe("trust plan per platform", () => {
     expect(plan.stores.map(({ check, install }) => ({ check, install }))).toEqual([
       {
         check: ["certutil", "-d", "sql:/home/me/.pki/nssdb", "-L", "-n", nick],
+        // certutil creates the database, not its directory (missing until Chrome first runs).
         install: [
+          ["mkdir", "-p", "/home/me/.pki/nssdb"],
           ["certutil", "-d", "sql:/home/me/.pki/nssdb", "-N", "--empty-password"],
           add("/home/me/.pki/nssdb"),
         ],

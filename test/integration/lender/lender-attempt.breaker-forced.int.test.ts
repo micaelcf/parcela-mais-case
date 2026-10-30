@@ -28,8 +28,12 @@ describe("Delta circuit breaker", () => {
       Array.from({ length: BREAKER.windowSize }, () => createConsultation({}, "DELTA_FAILS")),
     );
     await Promise.all(forced.map((id) => waitSettled(id)));
+    // A full window of forced failures. Under load one may hit the 2 s test deadline before its
+    // HTTP 500: still a forced failure, which the breaker must equally ignore (RF-218). The exact
+    // LENDER_ERROR outcome of DELTA_FAILS is consultation.scenarios.int.test.ts's claim.
     for (const delta of await Promise.all(forced.map(deltaAttemptOf))) {
-      expect(delta).toMatchObject({ status: "UNAVAILABLE", reason: "LENDER_ERROR" });
+      expect(delta.status).toBe("UNAVAILABLE");
+      expect(["LENDER_ERROR", "TIMEOUT"]).toContain(delta.reason);
     }
     expect((await lenderAttemptService.breakerStates()).DELTA).toBe("CLOSED");
 
