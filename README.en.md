@@ -213,7 +213,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>journey · scenarios · keyboard · backoffice"]
 ```
 
-- **272** unit and integration tests (Vitest, real Postgres, no factories) + **81** browser E2E tests.
+- **274** unit and integration tests (Vitest, real Postgres, no factories) + **81** browser E2E tests.
 - They cover what can break: CPF check digits, Price cents, a lender that never answers, HTTP 500, the finalizer racing a late worker, two simultaneous choices, blocked SSE falling back to polling, the CPF kept out of public responses and URLs.
 - **CI on GitHub Actions:** every pull request to `main` runs formatting, lint, types and the build; unit + integration tests on a real Postgres; the whole E2E suite against the stack `bun run up` itself starts; and the proxy specs against `bun run up --prod`. `main` only takes pull requests, with all four checks green.
 - **Case bonuses:** resume after reload ✅ · keyboard and screen-reader accessibility ✅ · per-lender logs and metrics (backoffice) ✅ · public deploy ⏭️
