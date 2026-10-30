@@ -77,12 +77,22 @@ describe("dev server binding per OS", () => {
     // skips interfaces that aren't running; host-gateway still resolves to its gateway address.
     const { docker0: _down, ...withoutDocker0 } = interfaces;
     const linuxDocker = { platform: "linux", engine: docker, interfaces: withoutDocker0 } as const;
-    expect(devBinding(facts({ ...linuxDocker, dockerHostGateway: "172.17.0.1" }))).toMatchObject({
+    expect(
+      devBinding(
+        facts({ ...linuxDocker, dockerHostGateway: { address: "172.17.0.1", override: false } }),
+      ),
+    ).toMatchObject({
       ok: true,
       listen: "172.17.0.1",
       lanReachable: false,
     });
     expect(devBinding(facts(linuxDocker))).toMatchObject({ ok: false });
+    // A daemon.json override can be any address, a LAN one included: never reported host-only.
+    expect(
+      devBinding(
+        facts({ ...linuxDocker, dockerHostGateway: { address: "192.168.1.67", override: true } }),
+      ),
+    ).toMatchObject({ ok: true, listen: "192.168.1.67", lanReachable: true });
   });
 
   it("never listens on every interface, and only Linux + Podman lands on a shared network", () => {

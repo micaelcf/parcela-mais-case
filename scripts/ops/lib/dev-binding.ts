@@ -21,10 +21,11 @@ export type DevNetworkFacts = {
   /** Linux: the interface of the IPv4 default route (`/proc/net/route`), or null. */
   readonly defaultRouteInterface: string | null;
   /**
-   * Linux + Docker: the address `host-gateway` resolves to (a daemon.json override, else the
-   * default bridge's gateway, as Docker reports them); null elsewhere or when Docker doesn't answer.
+   * Linux + Docker: the address `host-gateway` resolves to, and whether it came from a daemon.json
+   * override (any address, possibly on the LAN) rather than the default bridge's gateway; null
+   * elsewhere or when Docker doesn't answer.
    */
-  readonly dockerHostGateway: string | null;
+  readonly dockerHostGateway: { readonly address: string; readonly override: boolean } | null;
 };
 
 export type DevBinding =
@@ -91,8 +92,16 @@ const DEV_BINDINGS: Partial<Record<NodeJS.Platform, (facts: DevNetworkFacts) => 
     if (facts.engine.name === "docker") {
       // docker0 is missing from the OS interface list while no container uses the default bridge
       // (no carrier, so not "running"); Docker's own answer covers that.
-      const address =
-        facts.dockerHostGateway ?? ipv4(facts.interfaces, (name) => name === "docker0");
+      const gateway = facts.dockerHostGateway;
+      if (gateway?.override) {
+        return {
+          ok: true,
+          listen: gateway.address,
+          note: "daemon.json's host-gateway override: it may be on the LAN",
+          lanReachable: true,
+        };
+      }
+      const address = gateway?.address ?? ipv4(facts.interfaces, (name) => name === "docker0");
       return address
         ? {
             ok: true,

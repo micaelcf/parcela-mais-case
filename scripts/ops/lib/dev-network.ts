@@ -77,11 +77,11 @@ function readText(path: string): string | null {
  * rootless), else the default bridge's IPv4 gateway; null when Docker doesn't answer. A
  * `--host-gateway-ip` dockerd flag isn't visible here.
  */
-function dockerHostGateway(engine: Engine): string | null {
+function dockerHostGateway(engine: Engine): DevNetworkFacts["dockerHostGateway"] {
   for (const file of ["/etc/docker/daemon.json", join(homedir(), ".config/docker/daemon.json")]) {
     const text = readText(file);
     const override = text === null ? null : hostGatewayOverride(text);
-    if (override) return override;
+    if (override) return { address: override, override: true };
   }
   try {
     const format = "{{json .IPAM.Config}}";
@@ -90,7 +90,8 @@ function dockerHostGateway(engine: Engine): string | null {
       stdio: ["ignore", "pipe", "ignore"],
       timeout: 10_000,
     });
-    return ipv4BridgeGateway(output);
+    const address = ipv4BridgeGateway(output);
+    return address ? { address, override: false } : null;
   } catch {
     return null;
   }
