@@ -2,6 +2,8 @@
 
 > 🇧🇷 Português · [🇺🇸 English](README.en.md)
 
+[![CI](https://github.com/micaelcf/parcela-mais-case/actions/workflows/ci.yml/badge.svg)](https://github.com/micaelcf/parcela-mais-case/actions/workflows/ci.yml)
+
 A clínica preenche o cadastro do paciente uma vez; o backend consulta **4 financeiras simuladas em paralelo**, mostra cada resposta **ao vivo** e, em até **10 s**, segue com o que voltou. O paciente compara as ofertas (Tabela Price) e escolhe uma.
 
 ![A jornada: cadastro, pré-aprovação ao vivo, ofertas e escolha](docs/assets/journey.gif)
@@ -211,8 +213,9 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>jornada · cenários · teclado · backoffice"]
 ```
 
-- **271 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **81** E2E no navegador.
+- **272 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **81** E2E no navegador.
 - Cobrem o que pode quebrar: dígitos do CPF, centavos da Price, financeira que não responde, erro 500, finalizador correndo contra worker atrasado, dupla escolha simultânea, SSE bloqueado caindo para polling, CPF fora das respostas públicas e da URL.
+- **CI no GitHub Actions:** todo PR para a `main` roda formatação, lint, tipos e build; unitários + integração num Postgres de verdade; o E2E inteiro contra a stack do próprio `bun run up`; e os specs de proxy contra o `bun run up --prod`. A `main` só recebe PR, com os quatro checks verdes.
 - **Bônus do case:** retomar após recarregar ✅ · acessibilidade de teclado e leitor de tela ✅ · logs e métricas por financeira (backoffice) ✅ · deploy público ⏭️
 
 ## O que ficou de fora e próximos passos
@@ -238,16 +241,16 @@ Nada disso foi aleatório nem feito com prompts soltos: usei um _harness_ open s
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rodadas de perguntas"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contratos + 246 checks"]
+    D --> C["🔎 Discovery<br/>contratos + 247 checks"]
     C --> S["🧩 Implementação<br/>em fatias, com subagentes"]
     S --> A["🛡️ 3 auditorias adversariais<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>checado 3×"]
 ```
 
 ```mermaid
-pie title Quem decidiu (94 decisões)
+pie title Quem decidiu (95 decisões)
     "Eu" : 47
-    "Eu pedi, o agente desenhou" : 12
+    "Eu pedi, o agente desenhou" : 13
     "O agente recomendou, eu aceitei" : 18
     "O agente (implementação e auditoria)" : 17
 ```
