@@ -2,6 +2,8 @@
 
 > [🇧🇷 Português](README.md) · 🇺🇸 English
 
+[![CI](https://github.com/micaelcf/parcela-mais-case/actions/workflows/ci.yml/badge.svg)](https://github.com/micaelcf/parcela-mais-case/actions/workflows/ci.yml)
+
 The clinic fills in the patient's signup once; the backend queries **4 simulated lenders in parallel**, shows each answer **live** and, within **10 s**, moves on with whatever came back. The patient compares the offers (Price amortization) and picks one. _(The animations are labelled in Portuguese, like the app.)_
 
 ![The journey: signup, live pre-approval, offers and choice](docs/assets/journey.gif)
@@ -211,8 +213,9 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>journey · scenarios · keyboard · backoffice"]
 ```
 
-- **271** unit and integration tests (Vitest, real Postgres, no factories) + **81** browser E2E tests.
+- **272** unit and integration tests (Vitest, real Postgres, no factories) + **81** browser E2E tests.
 - They cover what can break: CPF check digits, Price cents, a lender that never answers, HTTP 500, the finalizer racing a late worker, two simultaneous choices, blocked SSE falling back to polling, the CPF kept out of public responses and URLs.
+- **CI on GitHub Actions:** every pull request to `main` runs formatting, lint, types and the build; unit + integration tests on a real Postgres; the whole E2E suite against the stack `bun run up` itself starts; and the proxy specs against `bun run up --prod`. `main` only takes pull requests, with all four checks green.
 - **Case bonuses:** resume after reload ✅ · keyboard and screen-reader accessibility ✅ · per-lender logs and metrics (backoffice) ✅ · public deploy ⏭️
 
 ## Left out and next steps
@@ -238,16 +241,16 @@ None of it was random or driven by loose prompts: I used an open-source harness 
 ```mermaid
 flowchart LR
     G["🔥 Grill<br/>30 rounds of questions"] --> D["📄 RFC + PRD"]
-    D --> C["🔎 Discovery<br/>contracts + 246 checks"]
+    D --> C["🔎 Discovery<br/>contracts + 247 checks"]
     C --> S["🧩 Implementation<br/>in slices, with subagents"]
     S --> A["🛡️ 3 adversarial audits<br/>FAIL → FAIL → PASS"]
     A --> H["🤝 API handoff<br/>fact-checked 3×"]
 ```
 
 ```mermaid
-pie title Who decided (94 decisions)
+pie title Who decided (95 decisions)
     "Me" : 47
-    "I asked, the agent designed" : 12
+    "I asked, the agent designed" : 13
     "The agent recommended, I accepted" : 18
     "The agent (implementation and audits)" : 17
 ```

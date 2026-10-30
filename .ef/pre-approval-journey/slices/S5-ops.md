@@ -87,3 +87,6 @@ Proof: `vp test scripts/ops/lib/up-plan.test.ts -t "give each process its own co
 
 **C244** · RF-714 — `up` copies `.env.example` to `.env.local` only when it's missing and never rewrites it; doctor fails on missing dependencies and only warns about a missing `.env.local` (added 2026-10-28, user request)
 Proof: `vp test scripts/ops/lib/doctor-checks.test.ts`; live on a fresh `git clone`: `bun install`, `bun scripts/ops/ensure-env.ts` twice → created once, then byte-identical; doctor shows the new checks and the copied `.env.local` validates as a server env
+
+**C247** · RF-715 — `bun run up` and `bun run up --prod` work on Linux + rootful Docker: the dev server binds the bridge gateway Docker reports when `docker0` is down, the host user can read Caddy's CA root, and the CA is trusted in an NSS user db that didn't exist yet; CI runs every layer on each pull request to `main` (added 2026-10-30, user request)
+Proof: `vp test scripts/ops/lib/dev-binding.test.ts -t "docker0 down"`; `vp test scripts/ops/lib/local-ca.test.ts -t "Linux: the NSS user db"`; GitHub Actions run 40992817712 on PR #1: check, 272 unit + integration, 80 E2E (+1 prod-only skip), 4 proxy specs, all green
