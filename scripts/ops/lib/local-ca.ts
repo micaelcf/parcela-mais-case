@@ -107,7 +107,10 @@ function nssStore(
   return {
     label,
     check: ["certutil", "-d", `sql:${db}`, "-L", "-n", nickname],
-    install: create ? [["certutil", "-d", `sql:${db}`, "-N", "--empty-password"], add] : [add],
+    // certutil creates the database, not its directory (missing until Chrome first runs).
+    install: create
+      ? [["mkdir", "-p", db], ["certutil", "-d", `sql:${db}`, "-N", "--empty-password"], add]
+      : [add],
     trusted: exitedZero,
   };
 }
