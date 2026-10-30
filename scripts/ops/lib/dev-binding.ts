@@ -21,10 +21,10 @@ export type DevNetworkFacts = {
   /** Linux: the interface of the IPv4 default route (`/proc/net/route`), or null. */
   readonly defaultRouteInterface: string | null;
   /**
-   * Linux + Docker: the default bridge's gateway as Docker reports it, the address `host-gateway`
-   * resolves to; null elsewhere or when Docker doesn't answer.
+   * Linux + Docker: the address `host-gateway` resolves to (a daemon.json override, else the
+   * default bridge's gateway, as Docker reports them); null elsewhere or when Docker doesn't answer.
    */
-  readonly dockerBridgeGateway: string | null;
+  readonly dockerHostGateway: string | null;
 };
 
 export type DevBinding =
@@ -92,7 +92,7 @@ const DEV_BINDINGS: Partial<Record<NodeJS.Platform, (facts: DevNetworkFacts) => 
       // docker0 is missing from the OS interface list while no container uses the default bridge
       // (no carrier, so not "running"); Docker's own answer covers that.
       const address =
-        facts.dockerBridgeGateway ?? ipv4(facts.interfaces, (name) => name === "docker0");
+        facts.dockerHostGateway ?? ipv4(facts.interfaces, (name) => name === "docker0");
       return address
         ? {
             ok: true,

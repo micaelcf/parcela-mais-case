@@ -15,7 +15,8 @@ while ((SECONDS < deadline)); do
     cat "$log"
     exit 1
   fi
-  if [[ -f "$ca" ]] && curl -fsS --cacert "$ca" https://parcela.localhost:8443/api/health; then
+  # Bounded per probe, so a connection that never answers can't outlast the deadline.
+  if [[ -f "$ca" ]] && curl -fsS --connect-timeout 5 --max-time 10 --cacert "$ca" https://parcela.localhost:8443/api/health; then
     echo
     echo "stack ready after ${SECONDS}s"
     exit 0
