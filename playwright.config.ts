@@ -32,7 +32,8 @@ export default defineConfig({
   workers: 4,
   retries: 0,
   forbidOnly: Boolean(process.env.CI),
-  reporter: "list",
+  // CI: GitHub annotations on failing lines and an HTML report (uploaded when the job fails).
+  reporter: process.env.CI ? [["list"], ["github"], ["html", { open: "never" }]] : "list",
   // Lenders answer in up to 15 s and every consultation settles by its 10 s deadline.
   timeout: 90_000,
   expect: { timeout: 20_000 },

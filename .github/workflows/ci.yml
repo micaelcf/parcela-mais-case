@@ -1,0 +1,123 @@
+# The whole suite on every pull request to main, and again on main once it merges:
+# - static checks and the production build;
+# - unit and integration tests, the latter on a real Postgres (a service container);
+# - the E2E suite against the stack the README's one command starts (`bun run up`);
+# - the proxy specs, which only run against the production stack (`bun run up --prod`).
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels the run it replaces; runs on main always finish.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check (format, lint, types, build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Format, lint and type-aware lint
+        run: bunx vp check
+      - name: Type check
+        run: bun run typecheck
+      - name: Production build
+        run: bun run build
+
+  test:
+    name: Unit and integration tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      # The database the integration project expects (vite.config.ts `testEnv.DATABASE_URL`); each
+      # run creates its own template and per-file databases in it and drops them at the end.
+      postgres:
+        image: docker.io/library/postgres:18-alpine
+        env:
+          POSTGRES_USER: parcela
+          POSTGRES_PASSWORD: parcela
+          POSTGRES_DB: parcela
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U parcela -d parcela"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Unit and integration tests
+        run: bunx vp test
+
+  e2e:
+    name: E2E (dev stack)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # The runner image also has Podman; the stack runs on its Docker daemon.
+      CONTAINER_ENGINE: docker
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/e2e-prerequisites
+      - name: Start the stack (bun run up)
+        run: |
+          nohup bun run up > up.log 2>&1 &
+          bash .github/scripts/wait-for-stack.sh "$!" up.log
+      - name: E2E suite
+        run: bun run e2e
+      - name: Collect stack logs
+        if: failure()
+        run: |
+          mkdir -p test-results
+          cp up.log test-results/
+          docker compose -p parcela-mais-case logs --no-color > test-results/compose.log 2>&1 || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: e2e-dev-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  e2e-prod:
+    name: E2E (prod stack, proxy specs)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CONTAINER_ENGINE: docker
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/e2e-prerequisites
+      - name: Build and start the production stack (bun run up --prod)
+        run: |
+          cp .env.example .env
+          bun run up --prod
+      - name: Proxy specs
+        run: bun run e2e test/e2e/proxy.spec.ts
+      - name: Collect stack logs
+        if: failure()
+        run: |
+          mkdir -p test-results
+          docker compose -p parcela-mais-case --profile prod logs --no-color > test-results/compose.log 2>&1 || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: e2e-prod-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
