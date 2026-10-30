@@ -213,7 +213,7 @@ flowchart LR
     I --> E["E2E (Playwright)<br/>jornada · cenários · teclado · backoffice"]
 ```
 
-- **272 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **81** E2E no navegador.
+- **274 testes** unitários e de integração (Vitest, Postgres real, sem _factories_) + **81** E2E no navegador.
 - Cobrem o que pode quebrar: dígitos do CPF, centavos da Price, financeira que não responde, erro 500, finalizador correndo contra worker atrasado, dupla escolha simultânea, SSE bloqueado caindo para polling, CPF fora das respostas públicas e da URL.
 - **CI no GitHub Actions:** todo PR para a `main` roda formatação, lint, tipos e build; unitários + integração num Postgres de verdade; o E2E inteiro contra a stack do próprio `bun run up`; e os specs de proxy contra o `bun run up --prod`. A `main` só recebe PR, com os quatro checks verdes.
 - **Bônus do case:** retomar após recarregar ✅ · acessibilidade de teclado e leitor de tela ✅ · logs e métricas por financeira (backoffice) ✅ · deploy público ⏭️
